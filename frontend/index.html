@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TacticalGrid — Laboratorio de sistemas inteligentes</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/phaser@4.2.1/dist/phaser.min.js"></script>
+  <script defer src="/api.js"></script>
+  <script defer src="/scene.js"></script>
+</head>
+<body>
+  <div id="game" aria-label="Tablero TacticalGrid"></div>
+  <button id="audioToggle" type="button" data-on="false">SONIDO · OFF</button>
+  <button id="panelToggle" type="button" aria-expanded="false" aria-controls="uiPanel">CONTROLES</button>
+  <aside id="uiPanel" class="collapsed" aria-label="Controles de TacticalGrid">
+    <h1>TACTICALGRID</h1>
+    <div class="subhead">Sistemas Inteligentes I · Laboratorio</div>
+    <div id="connection" class="status">Conectando con Python…</div>
+    <div class="state-summary"><span id="turn">Turno · —</span><span id="boardDimensions">— × —</span></div>
+    <div id="source" class="caption">Escenario: —</div>
+    <div class="button-pair">
+      <button id="loadScenario" type="button">Cargar JSON</button>
+      <button id="restart" type="button">Reiniciar</button>
+    </div>
+    <input id="scenarioFile" type="file" accept=".json,application/json" hidden>
+
+    <h2>Búsqueda</h2>
+    <label for="unit">Unidad de inicio</label>
+    <select id="unit"></select>
+    <label for="algorithm">Algoritmo</label>
+    <select id="algorithm">
+      <option value="bfs">BFS</option>
+      <option value="dfs">DFS</option>
+      <option value="ucs">Costo uniforme (UCS)</option>
+      <option value="astar">A*</option>
+      <option value="beam">Beam Search</option>
+    </select>
+    <label>Objetivo (fila, columna)</label>
+    <div class="target-row">
+      <input id="targetRow" type="number" min="0" value="10" aria-label="Fila objetivo">
+      <input id="targetCol" type="number" min="0" value="10" aria-label="Columna objetivo">
+      <button id="pickTarget" type="button" title="Elegir celda en tablero">Elegir</button>
+    </div>
+    <div class="button-pair">
+      <select id="heuristic" title="Heurística">
+        <option value="manhattan">Manhattan</option>
+        <option value="second">Segunda</option>
+      </select>
+      <select id="beamK" title="Ancho Beam">
+        <option value="1">k = 1</option><option value="2" selected>k = 2</option>
+        <option value="4">k = 4</option><option value="8">k = 8</option>
+      </select>
+    </div>
+    <button id="runSearch" class="primary" type="button">Ejecutar búsqueda</button>
+
+    <h2>Decisión adversarial</h2>
+    <div class="button-pair">
+      <select id="adversarial" aria-label="Algoritmo adversarial">
+        <option value="minimax">Minimax</option>
+        <option value="alpha_beta">Alfa-beta</option>
+      </select>
+      <input id="depth" type="number" min="0" max="12" value="4" aria-label="Profundidad">
+    </div>
+    <select id="order" aria-label="Orden de sucesores">
+      <option value="normal">Orden normal</option><option value="reverse">Orden invertido</option>
+    </select>
+    <button id="runAdversarial" type="button">Evaluar estado</button>
+    <div class="button-pair">
+      <button id="runVerify" type="button">Verificar estado</button>
+      <button id="runTest" type="button">Prueba del JSON</button>
+    </div>
+    <h2>Resultado</h2>
+    <pre id="result" aria-live="polite">Esperando resultado.</pre>
+    <p class="help">Clic en pieza propia, luego en destino: solicita un movimiento al backend. </p>
+  </aside>
+  <div id="toast" role="status" aria-live="polite">El tablero representa el escenario cargado en Python.</div>
+</body>
+</html>
