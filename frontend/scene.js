@@ -60,7 +60,7 @@ class TacticalGridScene extends Phaser.Scene {
   }
   applyState(state, animate = false) {
     if (!state?.mapa || !Array.isArray(state.terreno)) {
-      this.ui.reportError(new Error("El backend no devolvió un escenario con mapa y terreno.")); return;
+      this.ui.reportError(new Error("El servidor no devolvió un escenario con mapa y terreno.")); return;
     }
     const previous = this.state;
     const oldUnits = new Map((previous?.unidades || []).map(u => [u.id, u]));
