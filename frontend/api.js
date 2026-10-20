@@ -151,7 +151,7 @@ class TacticalGridUI {
         this.scene.showSearchPath((data.result.path || data.result.camino || []));
       }
       this.report(data.result ?? data.state ?? data);
-      this.say(expected === "state" || (expected === "auto" && data.state) ? "Estado recibido del backend." : "Resultado del algoritmo recibido del backend.");
+      this.say(expected === "state" || (expected === "auto" && data.state) ? "Estado recibido del servidor." : "Resultado del algoritmo recibido del servidor.");
       return data;
     } catch (err) { this.reportError(err); return null; }
   }

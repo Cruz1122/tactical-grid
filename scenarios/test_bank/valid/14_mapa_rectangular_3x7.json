@@ -1,0 +1,91 @@
+{
+  "version": "1.0",
+  "mapa": {
+    "filas": 3,
+    "columnas": 7
+  },
+  "tipos_terreno": {
+    "camino": {
+      "costo": 1,
+      "transitable": true
+    },
+    "pasto": {
+      "costo": 2,
+      "transitable": true
+    },
+    "bosque": {
+      "costo": 4,
+      "transitable": true
+    },
+    "pantano": {
+      "costo": 7,
+      "transitable": true
+    },
+    "muro": {
+      "transitable": false
+    }
+  },
+  "terreno": [
+    [
+      "camino",
+      "camino",
+      "camino",
+      "camino",
+      "camino",
+      "camino",
+      "camino"
+    ],
+    [
+      "camino",
+      "camino",
+      "camino",
+      "camino",
+      "camino",
+      "camino",
+      "camino"
+    ],
+    [
+      "camino",
+      "camino",
+      "camino",
+      "camino",
+      "camino",
+      "camino",
+      "camino"
+    ]
+  ],
+  "bases": {
+    "A": {
+      "fila": 0,
+      "columna": 0
+    },
+    "B": {
+      "fila": 2,
+      "columna": 6
+    }
+  },
+  "recurso": {
+    "fila": 1,
+    "columna": 3
+  },
+  "unidades": [
+    {
+      "id": "A1",
+      "bando": "A",
+      "tipo": "estandar",
+      "fila": 0,
+      "columna": 1
+    },
+    {
+      "id": "B1",
+      "bando": "B",
+      "tipo": "estandar",
+      "fila": 2,
+      "columna": 5
+    }
+  ],
+  "turno": "A",
+  "juego": {
+    "portador_recurso": null
+  }
+}

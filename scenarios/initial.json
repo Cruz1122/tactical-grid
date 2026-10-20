@@ -566,14 +566,14 @@
       {
         "id": "A_REY_1",
         "fila": 0,
-        "columna": 0
+        "columna": 1
       }
     ],
     "B": [
       {
         "id": "B_REY_1",
         "fila": 19,
-        "columna": 19
+        "columna": 18
       }
     ]
   },

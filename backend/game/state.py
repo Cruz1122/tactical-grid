@@ -1,11 +1,5 @@
-def state_key(state: dict) -> tuple:
-    raise NotImplementedError
+"""Compatibilidad histórica para funciones de estado del motor."""
 
-def successors(state: dict) -> list[dict]:
-    raise NotImplementedError
+from backend.game.engine import is_goal, state_key, successors, transition
 
-def is_goal(state: dict, goal: dict) -> bool:
-    raise NotImplementedError
-
-def transition(state: dict, action: dict) -> dict:
-    raise NotImplementedError
+__all__ = ["is_goal", "state_key", "successors", "transition"]
