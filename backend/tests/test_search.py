@@ -7,6 +7,7 @@ from unittest.mock import patch
 from starlette.types import Message
 
 from backend import main
+from backend.algorithms.astar import astar, manhattan, second_heuristic
 from backend.algorithms.bfs import bfs
 from backend.algorithms.dfs import dfs
 from backend.game import engine as game_engine
@@ -390,6 +391,207 @@ class SearchTests(unittest.TestCase):
         self.assertEqual(state["turno"], "B")
 
 
+class AStarTests(unittest.TestCase):
+    def test_start_equal_to_goal_and_unreachable_goal(self) -> None:
+        state = make_state(start=(2, 2))
+        for heuristic in ("manhattan", "second"):
+            result = astar(state, "A1", {"fila": 2, "columna": 2}, heuristic)
+            self.assertTrue(result["found"])
+            self.assertEqual(result["path"], [{"fila": 2, "columna": 2}])
+            self.assertEqual(result["moves"], 0)
+            self.assertEqual(result["cost"], 0.0)
+            self.assertEqual(result["states_generated"], 1)
+            self.assertEqual(result["states_expanded"], 0)
+
+        barrier = {(row, 3) for row in range(7)}
+        state = make_state(
+            start=(3, 1),
+            walls=barrier,
+            bases={"A": (0, 0), "B": (6, 0)},
+            queen_spawn=(0, 4),
+        )
+        result = astar(state, "A1", {"fila": 3, "columna": 5}, "second")
+        self.assertTrue(result["input_valid"])
+        self.assertFalse(result["found"])
+        self.assertEqual(result["path"], [])
+        self.assertIsNone(result["cost"])
+
+    def test_obstacles_and_different_terrain_costs_produce_legal_paths(self) -> None:
+        state = make_state(
+            start=(0, 1), rows=5, columns=5, walls={(0, 2)},
+            special_terrain={(1, 1): "pantano", (1, 2): "bosque"},
+        )
+        original = copy.deepcopy(state)
+        result = astar(state, "A1", {"fila": 0, "columna": 3}, "second")
+        replayed, cost = replay_path(state, "A1", result["path"])
+
+        self.assertTrue(result["found"])
+        self.assertGreater(result["moves"], 2)
+        self.assertEqual(cost, result["cost"])
+        self.assertEqual(replayed["unidades"][0]["columna"], 3)
+        self.assertEqual(state, original)
+
+        rook_state = make_state(
+            "rook", (3, 1), special_terrain={(3, 2): "bosque", (3, 3): "pantano"}
+        )
+        weighted = astar(rook_state, "A1", {"fila": 3, "columna": 4}, "second")
+        self.assertEqual(weighted["cost"], 5.0)
+        self.assertEqual(weighted["moves"], 3)
+
+    def test_positive_terrain_cost_below_one_is_respected(self) -> None:
+        state = make_state("rook", (0, 0), rows=3, columns=3)
+        state["tipos_terreno"]["barato"] = {"costo": 0.25, "transitable": True}
+        state["terreno"][0][2] = "barato"
+
+        estimate = second_heuristic(state, (0, 0), (0, 2), "rook")
+        result = astar(state, "A1", {"fila": 0, "columna": 2}, "second")
+
+        self.assertEqual(estimate, 0.5)
+        self.assertTrue(result["found"])
+        self.assertEqual(result["cost"], 1.25)
+
+    def test_empty_rows_and_columns_use_conservative_zero_minima(self) -> None:
+        state = make_state("estandar", (0, 0), rows=3, columns=3)
+        state["terreno"][1] = ["muro"] * 3
+        self.assertEqual(second_heuristic(state, (0, 0), (2, 2), "estandar"), 3.0)
+
+        state = make_state("estandar", (0, 0), rows=3, columns=3)
+        for row in state["terreno"]:
+            row[1] = "muro"
+        self.assertEqual(second_heuristic(state, (0, 0), (2, 2), "estandar"), 3.0)
+
+    def test_both_heuristics_search_all_four_unit_types(self) -> None:
+        cases = (
+            ("estandar", (2, 2), (2, 3), 1.0),
+            ("rook", (2, 1), (2, 5), 4.0),
+            ("bishop", (1, 1), (5, 5), 4.0),
+            ("knight", (2, 2), (4, 3), 1.0),
+        )
+        for unit_type, start, goal, expected_cost in cases:
+            state = make_state(unit_type, start)
+            for heuristic in ("manhattan", "second"):
+                with self.subTest(unit_type=unit_type, heuristic=heuristic):
+                    result = astar(
+                        state, "A1", {"fila": goal[0], "columna": goal[1]}, heuristic
+                    )
+                    replayed, cost = replay_path(state, "A1", result["path"])
+                    self.assertTrue(result["found"])
+                    self.assertEqual(result["path"][-1], {"fila": goal[0], "columna": goal[1]})
+                    self.assertEqual(cost, result["cost"])
+                    self.assertEqual(result["cost"], expected_cost)
+                    self.assertEqual(replayed["unidades"][0]["fila"], goal[0])
+
+    def test_standard_heuristic_matches_the_documented_three_by_three_example(self) -> None:
+        state = make_state("estandar", (0, 0), rows=3, columns=3)
+        state["tipos_terreno"].update(
+            {
+                "costo_2": {"costo": 2, "transitable": True},
+                "costo_3": {"costo": 3, "transitable": True},
+                "costo_4": {"costo": 4, "transitable": True},
+            }
+        )
+        state["terreno"] = [
+            ["camino", "costo_2", "camino"],
+            ["costo_3", "costo_4", "costo_3"],
+            ["camino", "costo_2", "camino"],
+        ]
+
+        self.assertEqual(manhattan((0, 0), (2, 2)), 4)
+        self.assertEqual(second_heuristic(state, (0, 0), (2, 2), "estandar"), 7)
+        self.assertEqual(second_heuristic(state, (1, 1), (2, 2), "estandar"), 2)
+
+    def test_second_heuristic_is_consistent_on_legal_moves(self) -> None:
+        target = (4, 4)
+        for unit_type in ("estandar", "rook", "bishop", "knight"):
+            state = make_state(
+                unit_type,
+                (0, 0),
+                rows=5,
+                columns=5,
+                walls={(1, 3)},
+                special_terrain={(0, 1): "bosque", (2, 2): "pantano", (4, 3): "bosque"},
+            )
+            for row in range(5):
+                for column in range(5):
+                    if (row, column) == (1, 3):
+                        continue
+                    state["unidades"][0]["fila"] = row
+                    state["unidades"][0]["columna"] = column
+                    position = (row, column)
+                    estimate = second_heuristic(state, position, target, unit_type)
+                    for destination in legal_moves(state, "A1"):
+                        next_position = (destination["fila"], destination["columna"])
+                        step_cost = move_cost(state, "A1", destination)
+                        next_estimate = second_heuristic(
+                            state, next_position, target, unit_type
+                        )
+                        self.assertLessEqual(
+                            estimate,
+                            step_cost + next_estimate + 1e-9,
+                            (unit_type, position, next_position),
+                        )
+            self.assertEqual(second_heuristic(state, target, target, unit_type), 0)
+
+    def test_second_heuristic_is_admissible_against_known_optimal_direct_routes(self) -> None:
+        cases = (
+            ("estandar", (2, 2), (2, 3), 1.0),
+            ("rook", (2, 1), (2, 5), 4.0),
+            ("bishop", (1, 1), (5, 5), 4.0),
+            ("knight", (2, 2), (4, 3), 1.0),
+        )
+        for unit_type, start, goal, optimal_cost in cases:
+            state = make_state(unit_type, start)
+            estimate = second_heuristic(state, start, goal, unit_type)
+            result = astar(state, "A1", {"fila": goal[0], "columna": goal[1]}, "second")
+            self.assertLessEqual(estimate, optimal_cost)
+            self.assertEqual(result["cost"], optimal_cost)
+
+    def test_hypothetical_capture_and_queen_spawn_are_preserved(self) -> None:
+        state = make_state(
+            "rook",
+            (2, 0),
+            enemies=[{"id": "B1", "bando": "B", "tipo": "estandar", "fila": 2, "columna": 3}],
+            carrier="B1",
+            queen_spawn=(0, 6),
+        )
+        state["unidades"][1]["spawn"] = {"fila": 4, "columna": 3}
+        original = copy.deepcopy(state)
+        captured = astar(state, "A1", {"fila": 2, "columna": 3}, "second")
+        captured_state, _ = replay_path(state, "A1", captured["path"])
+        victim = next(unit for unit in captured_state["unidades"] if unit["id"] == "B1")
+
+        self.assertTrue(captured["found"])
+        self.assertEqual((victim["fila"], victim["columna"]), (4, 3))
+        self.assertEqual(captured_state["recurso"], {"fila": 0, "columna": 6})
+        self.assertEqual(captured_state["recurso_spawn"], {"fila": 0, "columna": 6})
+
+        transport = make_state("estandar", (2, 1), queen_spawn=(2, 3))
+        transport_original = copy.deepcopy(transport)
+        spawn = copy.deepcopy(transport["recurso_spawn"])
+        result = astar(transport, "A1", {"fila": 2, "columna": 4}, "second")
+        final_state, _ = replay_path(transport, "A1", result["path"])
+        self.assertEqual(final_state["juego"]["portador_recurso"], "A1")
+        self.assertEqual(final_state["recurso_spawn"], spawn)
+        self.assertEqual(transport, transport_original)
+        self.assertEqual(state, original)
+
+    def test_search_metrics_and_routes_are_deterministic_without_mutation(self) -> None:
+        state = make_state(start=(3, 3), walls={(2, 3), (4, 3)})
+        state["turno"] = "B"
+        original = copy.deepcopy(state)
+        first = astar(state, "A1", {"fila": 3, "columna": 5}, "second")
+        second = astar(state, "A1", {"fila": 3, "columna": 5}, "second")
+
+        for field in (
+            "found", "path", "moves", "cost", "states_generated", "states_expanded", "max_frontier"
+        ):
+            self.assertEqual(first[field], second[field])
+        self.assertEqual(state, original)
+        self.assertGreaterEqual(first["states_generated"], first["states_expanded"] + 1)
+        self.assertGreaterEqual(first["max_frontier"], 1)
+        self.assertGreaterEqual(first["elapsed_seconds"], 0)
+
+
 class SearchApiTests(unittest.IsolatedAsyncioTestCase):
     def setUp(self) -> None:
         with main.lock:
@@ -420,6 +622,42 @@ class SearchApiTests(unittest.IsolatedAsyncioTestCase):
                 self.assertEqual(response["result"]["path"][-1], {"fila": 3, "columna": 5})
                 self.assertEqual(response["result"]["cost"], float(response["result"]["moves"]))
                 self.assertEqual(main.current_state, original)
+        self.assertEqual(main.current_state, original)
+
+    async def test_astar_heuristics_are_available_on_search_and_test_endpoints(self) -> None:
+        state = make_state("estandar", (0, 0), rows=3, columns=3)
+        state["prueba"] = {
+            "modo": "busqueda",
+            "unidad_inicio": "A1",
+            "objetivo": {"fila": 2, "columna": 2},
+        }
+        with main.lock:
+            main.current_state = copy.deepcopy(state)
+        original = copy.deepcopy(main.current_state)
+
+        for heuristic in ("manhattan", "second"):
+            with self.subTest(endpoint="search", heuristic=heuristic):
+                status, response = await post_json(
+                    "/api/search",
+                    {
+                        "algorithm": "astar",
+                        "unit_id": "A1",
+                        "goal": {"row": 2, "column": 2},
+                        "heuristic": heuristic,
+                    },
+                )
+                self.assertEqual(status, 200)
+                self.assertTrue(response["result"]["found"])
+                self.assertEqual(response["result"]["path"][-1], {"fila": 2, "columna": 2})
+
+            with self.subTest(endpoint="test", heuristic=heuristic):
+                status, response = await post_json(
+                    "/api/test", {"algorithm": "astar", "heuristic": heuristic}
+                )
+                self.assertEqual(status, 200)
+                self.assertEqual(response["mode"], "busqueda")
+                self.assertTrue(response["result"]["found"])
+
         self.assertEqual(main.current_state, original)
 
     async def test_search_test_mode_dispatches_to_dfs(self) -> None:
