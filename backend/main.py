@@ -4,7 +4,7 @@ from pathlib import Path
 from threading import RLock
 from typing import Any, Literal
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -24,6 +24,12 @@ from backend.game.engine import (
     collect_queen,
     configure_kings,
     generate_kings,
+)
+from backend.game.presentation import (
+    build_presentation,
+    legal_move_descriptors,
+    state_revision,
+    transition_events,
 )
 from backend.game.validation import ScenarioValidationError, validate_utf8_string
 from backend.scenarios import prepare_scenario
@@ -55,10 +61,12 @@ class Position(BaseModel):
 class MoveRequest(BaseModel):
     unit_id: str = Field(min_length=1)
     destination: Position
+    revision: str | None = Field(default=None, min_length=1)
 
 
 class CollectRequest(BaseModel):
     unit_id: str = Field(min_length=1)
+    revision: str | None = Field(default=None, min_length=1)
 
 
 class KingConfigurationRequest(BaseModel):
@@ -146,11 +154,92 @@ def scene_script():
     return FileResponse(FRONTEND / "scene.js", media_type="text/javascript")
 
 
+def state_response(
+    state: dict[str, Any],
+    *,
+    source: str | None = None,
+    previous: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Project a state response without adding transient UI data to the state."""
+    response: dict[str, Any] = {
+        "state": deepcopy(state),
+        "presentation": build_presentation(
+            state,
+            transition_events(previous, state) if previous is not None else (),
+        ),
+    }
+    if source is not None:
+        response["source"] = source
+    return response
+
+
 @app.get("/api/state")
 def get_state():
     """Devuelve una copia del estado oficial y el nombre del escenario cargado."""
     with lock:
-        return {"state": deepcopy(current_state), "source": source_name}
+        return state_response(current_state, source=source_name)
+
+
+@app.get("/api/legal-moves")
+def get_legal_moves(unit_id: str = Query(min_length=1)):
+    """Devuelve movimientos legales y la recogida explícita de la reina.
+
+    La lectura nunca muta la partida. Una unidad que no pertenece al turno, una
+    partida terminada o una unidad inactiva recibe una respuesta vacía con una
+    razón explícita para que la interfaz pueda bloquear acciones locales sin
+    convertir una lectura válida en un error de mutación.
+    """
+    with lock:
+        state = deepcopy(current_state)
+        source = source_name
+
+    unit = next(
+        (
+            candidate
+            for candidate in state.get("unidades", [])
+            if isinstance(candidate, dict) and candidate.get("id") == unit_id
+        ),
+        None,
+    )
+    if unit is None:
+        raise HTTPException(status_code=404, detail=f"No existe la unidad {unit_id!r}")
+
+    game = state.get("juego", {})
+    reason: str | None = None
+    allowed = True
+    if isinstance(game, dict) and game.get("estado") == "finalizado":
+        allowed = False
+        reason = "finalizado"
+    elif unit.get("activo", True) is not True:
+        allowed = False
+        reason = "inactiva"
+    elif unit.get("bando") != state.get("turno"):
+        allowed = False
+        reason = "turno"
+
+    destinations = legal_move_descriptors(state, unit_id) if allowed else []
+    normal = [
+        {"row": item["row"], "column": item["column"]}
+        for item in destinations
+        if item["kind"] == "normal"
+    ]
+    captures = [
+        {"row": item["row"], "column": item["column"]}
+        for item in destinations
+        if item["kind"] == "capture"
+    ]
+    presentation = build_presentation(state)
+    return {
+        "unit_id": unit_id,
+        "allowed": allowed,
+        "reason": reason,
+        "destinations": destinations,
+        "normal": normal,
+        "captures": captures,
+        "collect_allowed": presentation["recogida_autorizada"].get(unit_id, False),
+        "presentation": presentation,
+        "source": source,
+    }
 
 
 @app.post(
@@ -242,8 +331,7 @@ async def load_scenario(request: Request):
         response_content = {
             "ok": True,
             "message": "Escenario cargado correctamente",
-            "state": deepcopy(candidate),
-            "source": candidate_source,
+            **state_response(candidate, source=candidate_source),
         }
         try:
             response = JSONResponse(content=response_content)
@@ -265,7 +353,7 @@ def reset():
     global current_state
     with lock:
         current_state = deepcopy(initial_state)
-        return {"state": deepcopy(current_state), "source": source_name}
+        return state_response(current_state, source=source_name)
 
 
 @app.post("/api/move")
@@ -273,6 +361,12 @@ def move(body: MoveRequest):
     """Ejecuta un movimiento legal y publica el resultado solo al completarse."""
     global current_state
     with lock:
+        if body.revision is not None and body.revision != state_revision(current_state):
+            raise HTTPException(
+                status_code=409,
+                detail="El estado de la partida cambió; vuelve a consultar los destinos legales.",
+            )
+        previous = deepcopy(current_state)
         try:
             candidate = apply_move(current_state, body.unit_id, body.destination.as_scenario_position())
         except ScenarioValidationError as error:
@@ -280,7 +374,7 @@ def move(body: MoveRequest):
         except (ValueError, TypeError) as error:
             raise HTTPException(status_code=422, detail=str(error)) from error
         current_state = candidate
-        return {"state": deepcopy(current_state)}
+        return state_response(current_state, source=source_name, previous=previous)
 
 
 @app.post("/api/collect")
@@ -288,6 +382,12 @@ def collect(body: CollectRequest):
     """Recoge explícitamente la reina sin desplazar a la unidad."""
     global current_state
     with lock:
+        if body.revision is not None and body.revision != state_revision(current_state):
+            raise HTTPException(
+                status_code=409,
+                detail="El estado de la partida cambió; vuelve a consultar los destinos legales.",
+            )
+        previous = deepcopy(current_state)
         try:
             candidate = collect_queen(current_state, body.unit_id)
         except ScenarioValidationError as error:
@@ -295,7 +395,7 @@ def collect(body: CollectRequest):
         except (ValueError, TypeError) as error:
             raise HTTPException(status_code=422, detail=str(error)) from error
         current_state = candidate
-        return {"state": deepcopy(current_state)}
+        return state_response(current_state, source=source_name, previous=previous)
 
 
 @app.post("/api/kings")
@@ -303,6 +403,7 @@ def set_kings(body: KingConfigurationRequest):
     """Configura reyes manuales, automáticos o inicia sin ellos."""
     global current_state
     with lock:
+        previous = deepcopy(current_state)
         try:
             if body.mode == "manual":
                 if body.kings is None or set(body.kings) != {"A", "B"}:
@@ -323,7 +424,7 @@ def set_kings(body: KingConfigurationRequest):
         except (ValueError, TypeError) as error:
             raise HTTPException(status_code=422, detail=str(error)) from error
         current_state = candidate
-        return {"state": deepcopy(current_state)}
+        return state_response(current_state, source=source_name, previous=previous)
 
 
 def search_state(state: dict, body: SearchRequest):
@@ -392,7 +493,7 @@ def test(body: TestRequest):
     config = state.get("prueba") or {}
     mode = config.get("modo")
     if mode == "partida":
-        return {"mode": mode, "state": state}
+        return {"mode": mode, **state_response(state, source=source_name)}
     if mode == "busqueda":
         try:
             goal = config["objetivo"]

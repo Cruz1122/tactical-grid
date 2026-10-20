@@ -54,27 +54,44 @@ No crear módulos vacíos por anticipado, ni duplicar un módulo que el reposito
 Rutas orientativas del proyecto (deben verificarse en el código real):
 
 - `GET /api/state`: consultar el estado oficial.
+- `GET /api/legal-moves?unit_id=A1`: consultar destinos y acciones legales de una
+  unidad del turno actual. La respuesta clasifica cada movimiento con
+  `kind: "normal"` o `kind: "capture"`; si la unidad está sobre una reina
+  disponible añade `kind: "collect"` en su casilla actual. Para una unidad
+  inactiva, de otro turno o una partida terminada devuelve una lista vacía y una
+  razón (`inactiva`, `turno` o `finalizado`) sin mutar el estado.
 - `POST /api/scenarios`: sustituir el escenario tras una carga válida.
 - `POST /api/reset`: reiniciar conforme al escenario cargado.
-- `POST /api/move`: solicitar una jugada válida.
+- `POST /api/move`: solicitar una jugada válida. Puede incluir la `revision` que
+  el cliente observó; si quedó obsoleta, la API devuelve `409` sin mutar.
+- `POST /api/collect`: recoger explícitamente la reina que está bajo una unidad.
+- `POST /api/kings`: configurar reyes en modo `none`, `manual` o `automatic`.
 - `POST /api/search`: resolver navegación de una unidad seleccionada.
 - `POST /api/adversarial`: recomendar una acción mediante juego adversarial.
 - `POST /api/verify`: revisar una ruta, decisión o estado.
 - `POST /api/test`: ejecutar una prueba configurada, si la aplicación la admite.
 - `/docs`: documentación interactiva de FastAPI cuando está activo el servicio.
 
-No suponer que una ruta propuesta ya funciona: estas son **interfaces de diseño**.
+Las respuestas que contienen estado incluyen una proyección top-level `presentation`
+calculada a partir de la copia oficial. Sus campos son `revision` (huella estable
+para reconciliación de lecturas asíncronas), `jaques` por bando,
+`recogida_autorizada` por unidad y `eventos_ultimo_turno`. Los eventos de captura,
+reaparición, recogida, reposición de la reina en su spawn y resultado solo se derivan después de que
+el motor confirma la transición; no se publican estados optimistas.
 
 ## Flujo conceptual de una jugada
 
 ```text
 Usuario/IA solicita movimiento
   → API recibe datos
+  → frontend bloquea mutaciones duplicadas y consulta destinos legales
   → validación de acción y consulta al motor
   → transición calcula un nuevo estado sin alterar el anterior
   → validación de invariantes
   → confirmación del estado oficial
   → API responde
+  → si la revisión enviada quedó obsoleta, la API responde conflicto sin mutar
+  → frontend reconcilia `/api/state` si se pierde la respuesta, sin repetir el POST
   → frontend redibuja a partir de la respuesta real
 ```
 

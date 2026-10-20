@@ -99,6 +99,7 @@ class ScenarioValidationTests(unittest.TestCase):
 
         self.assertEqual(scenario, original)
         self.assertEqual(state["unidades"][0]["spawn"], {"fila": 0, "columna": 1})
+        self.assertEqual(state["recurso_spawn"], {"fila": 2, "columna": 2})
         self.assertTrue(state["unidades"][0]["activo"])
         self.assertEqual(state["datos_extra"], {"mantener": True})
         validate_state(state)
@@ -193,6 +194,17 @@ class ScenarioValidationTests(unittest.TestCase):
         scenario = valid_scenario()
         scenario["juego"]["portador_recurso"] = "A1"
         self.assert_invalid(scenario, "debe ser null o coincidir")
+
+    def test_carrier_without_current_resource_requires_original_spawn(self) -> None:
+        scenario = valid_scenario()
+        scenario["juego"]["portador_recurso"] = "A1"
+        scenario["recurso"] = None
+        self.assert_invalid(scenario, "recurso_spawn")
+
+    def test_uncarried_resource_spawn_cannot_contradict_initial_resource(self) -> None:
+        scenario = valid_scenario()
+        scenario["recurso_spawn"] = {"fila": 0, "columna": 3}
+        self.assert_invalid(scenario, "debe coincidir con la posición inicial de recurso")
 
 
 class ScenarioApiTests(unittest.IsolatedAsyncioTestCase):

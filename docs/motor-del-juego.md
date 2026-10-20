@@ -22,7 +22,7 @@ Acciones de `transition`:
 
 La segunda acción no mueve la unidad y consume el turno. Solo es legal si la reina está disponible bajo la unidad activa del bando en turno y el rey de ese bando no está en jaque.
 
-Las unidades capturadas pasan a inactivas fuera del tablero (`fila` y `columna` iguales a `-1`). Después de cada acción se prueban sus `spawn` en orden ascendente por ID; reaparecen solo si la casilla es transitable y no está ocupada por una unidad activa, rey o reina en el suelo. La configuración de reyes también reserva los `spawn` de todas las unidades, incluidas las inactivas, para no impedir su reaparición. Si el portador es capturado, la reina cae donde ocurrió la captura y no se recoge automáticamente.
+Las unidades capturadas pasan a inactivas fuera del tablero (`fila` y `columna` iguales a `-1`). Después de cada acción se prueban sus `spawn` en orden ascendente por ID; reaparecen solo si la casilla es transitable y no está ocupada por una unidad activa, rey o reina en el suelo. La configuración de reyes también reserva los `spawn` de todas las unidades, incluidas las inactivas, para no impedir su reaparición. `recurso_spawn` conserva la posición inicial de la reina. Si el portador es capturado, la reina vuelve a ese spawn y no se recoge automáticamente; el `spawn` de la víctima permanece intacto.
 
 Una unidad que transporta la reina y llega a su propia base gana; esta victoria tiene prioridad sobre el empate. De lo contrario, después de cambiar el turno y procesar las reapariciones deterministas, la ausencia de movimientos y de recogida explícita legal termina la partida en empate. Configurar reyes también finaliza en empate si deja al bando inicial sin acciones. El jaque se calcula con `is_in_check`, nunca se almacena; solo restringe recoger la reina. Una reina ya transportada se conserva aunque aparezca jaque.
 
@@ -54,6 +54,27 @@ Se utilizó IA generativa durante el desarrollo para proponer y editar código, 
 
 Pendiente de confirmación por el estudiante. En esta sesión se ejecutaron las pruebas automatizadas indicadas abajo, pero eso no demuestra que un integrante haya revisado personalmente el código ni validado el comportamiento en una ejecución manual. Antes de entregar, el estudiante debe ejecutar y revisar los casos y actualizar esta declaración con su validación real.
 
-## Validación
+## Proyección HTTP y validación
 
-Prueba automatizada: `.venv/bin/python -m unittest discover -s backend/tests -v`. Las pruebas cubren pureza, errores sin mutación, API, reapariciones, reina, resultados y configuración de reyes.
+`backend/game/presentation.py` mantiene los datos transitorios de interfaz fuera del
+estado oficial. `build_presentation` calcula jaques y autorizaciones de recogida;
+`transition_events` compara dos estados confirmados para identificar captura y
+reaparición, incluida la reaparición inmediata de una víctima en su `spawn`.
+`GET /api/legal-moves` reutiliza `legal_moves` y añade la clasificación
+normal/captura. Cuando la unidad está sobre una reina disponible, también añade
+un descriptor `kind: "collect"` en su casilla actual para que la interfaz pueda
+ejecutar la recogida como una acción del tablero, sin mantener reglas paralelas.
+
+La suite automatizada se ejecuta con `python -m pytest -q` dentro de un entorno
+virtual que instala `requirements.txt` y pytest. Las pruebas cubren pureza, errores
+sin mutación, API, reapariciones, reina, resultados, configuración de reyes,
+proyección de jaques, clasificación de destinos y bloqueo por turno/estado terminal.
+La validación manual de navegador cubre la carga de escenarios 4×4 y 20×20, los
+alias ingleses/españoles, la selección con destinos resaltados, un movimiento real,
+recogida explícita y configuración manual de reyes. La pérdida de respuesta se
+trata en el cliente como una condición de reconciliación: se consulta `/api/state`
+y no se reintenta automáticamente la mutación.
+
+Las jugadas del frontend incluyen opcionalmente la `revision` de la presentación
+que el usuario vio. Si otro cliente cambió el estado antes del `POST`, la API
+responde `409` sin mutar y el frontend vuelve a consultar el estado oficial.

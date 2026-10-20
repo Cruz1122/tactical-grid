@@ -3,77 +3,117 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>TacticalGrid — Laboratorio de sistemas inteligentes</title>
-  <link rel="stylesheet" href="/styles.css">
+  <meta name="theme-color" content="#131a1d">
+  <title>TacticalGrid</title>
+  <link rel="stylesheet" href="/styles.css?v=22">
   <script defer src="https://cdn.jsdelivr.net/npm/phaser@4.2.1/dist/phaser.min.js"></script>
-  <script defer src="/api.js"></script>
-  <script defer src="/scene.js"></script>
+  <script defer src="/api.js?v=22"></script>
+  <script defer src="/scene.js?v=24"></script>
 </head>
 <body>
-  <div id="game" aria-label="Tablero TacticalGrid"></div>
-  <button id="audioToggle" type="button" data-on="false">SONIDO · OFF</button>
-  <button id="panelToggle" type="button" aria-expanded="false" aria-controls="uiPanel">CONTROLES</button>
-  <aside id="uiPanel" class="collapsed" aria-label="Controles de TacticalGrid">
-    <h1>TACTICALGRID</h1>
-    <div class="subhead">Sistemas Inteligentes I · Laboratorio</div>
-    <div id="connection" class="status">Conectando con Python…</div>
-    <div class="state-summary"><span id="turn">Turno · —</span><span id="boardDimensions">— × —</span></div>
-    <div id="source" class="caption">Escenario: —</div>
-    <div class="button-pair">
-      <button id="loadScenario" type="button">Cargar JSON</button>
-      <button id="restart" type="button">Reiniciar</button>
+  <header class="topbar">
+    <div class="brand" aria-label="TacticalGrid">
+      <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+      <span>TACTICAL<span>GRID</span></span>
     </div>
-    <input id="scenarioFile" type="file" accept=".json,application/json" hidden>
+    <div class="topbar-actions">
+      <button id="audioToggle" class="icon-button" type="button" data-on="false" aria-pressed="false" aria-label="Activar sonido" title="Activar sonido">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5 6.8 8.5H3v7h3.8L11 19V5Zm4.2 4.2a4 4 0 0 1 0 5.6M18 6.5a7.7 7.7 0 0 1 0 11"/></svg>
+      </button>
+      <button id="panelToggle" class="icon-button" type="button" aria-expanded="true" aria-controls="uiPanel" aria-label="Ocultar controles" title="Ocultar controles">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+      </button>
+    </div>
+  </header>
 
-    <h2>Búsqueda</h2>
-    <label for="unit">Unidad de inicio</label>
-    <select id="unit"></select>
-    <label for="algorithm">Algoritmo</label>
-    <select id="algorithm">
-      <option value="bfs">BFS</option>
-      <option value="dfs">DFS</option>
-      <option value="ucs">Costo uniforme (UCS)</option>
-      <option value="astar">A*</option>
-      <option value="beam">Beam Search</option>
-    </select>
-    <label>Objetivo (fila, columna)</label>
-    <div class="target-row">
-      <input id="targetRow" type="number" min="0" value="10" aria-label="Fila objetivo">
-      <input id="targetCol" type="number" min="0" value="10" aria-label="Columna objetivo">
-      <button id="pickTarget" type="button" title="Elegir celda en tablero">Elegir</button>
+  <main>
+    <div id="game" tabindex="0" role="application" aria-label="Tablero TacticalGrid" aria-describedby="gameHelp"></div>
+    <div id="actionHint" class="action-hint" aria-live="polite">
+      <span class="action-hint-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"></circle><path d="M12 11v5m0-8v.1"></path></svg></span>
+      <span class="action-hint-copy">Selecciona una ficha de tu turno.</span>
     </div>
-    <div class="button-pair">
-      <select id="heuristic" title="Heurística">
-        <option value="manhattan">Manhattan</option>
-        <option value="second">Segunda</option>
-      </select>
-      <select id="beamK" title="Ancho Beam">
-        <option value="1">k = 1</option><option value="2" selected>k = 2</option>
-        <option value="4">k = 4</option><option value="8">k = 8</option>
-      </select>
-    </div>
-    <button id="runSearch" class="primary" type="button">Ejecutar búsqueda</button>
+  </main>
 
-    <h2>Decisión adversarial</h2>
-    <div class="button-pair">
-      <select id="adversarial" aria-label="Algoritmo adversarial">
-        <option value="minimax">Minimax</option>
-        <option value="alpha_beta">Alfa-beta</option>
-      </select>
-      <input id="depth" type="number" min="0" max="12" value="4" aria-label="Profundidad">
-    </div>
-    <select id="order" aria-label="Orden de sucesores">
-      <option value="normal">Orden normal</option><option value="reverse">Orden invertido</option>
-    </select>
-    <button id="runAdversarial" type="button">Evaluar estado</button>
-    <div class="button-pair">
-      <button id="runVerify" type="button">Verificar estado</button>
-      <button id="runTest" type="button">Prueba del JSON</button>
-    </div>
-    <h2>Resultado</h2>
-    <pre id="result" aria-live="polite">Esperando resultado.</pre>
-    <p class="help">Clic en pieza propia, luego en destino: solicita un movimiento al backend. </p>
+  <aside id="uiPanel" aria-label="Controles de partida">
+    <div id="connection" class="connection-indicator" hidden></div>
+    <section class="panel-section global-section" aria-labelledby="globalTitle">
+      <div class="global-heading">
+        <div><span class="eyebrow">ESTADO GLOBAL</span><h1 id="globalTitle">Partida</h1></div>
+        <span id="turn" class="turn-pill" data-team="A">Turno —</span>
+      </div>
+      <p id="gameStatus" class="phase-label">Preparando partida</p>
+      <div class="global-grid">
+        <div class="global-stat queen-stat">
+          <span class="stat-icon queen-icon"><img src="/assets/pieces/queen_a.png" alt=""></span>
+          <span><small>REINA</small><strong id="globalQueen">—</strong></span>
+        </div>
+      <div class="global-stat army-stat">
+        <span class="army-dots" aria-hidden="true"><i class="team-dot team-a"></i><i class="team-dot team-b"></i></span>
+        <span><small>EN JUEGO</small><strong><span id="teamACount">—</span> · <span id="teamBCount">—</span></strong></span>
+        </div>
+      </div>
+    </section>
+    <section class="panel-section scenario-section" aria-labelledby="scenarioTitle">
+      <div class="section-heading">
+        <div><span class="eyebrow">PARTIDA</span><h1 id="scenarioTitle">Escenario</h1></div>
+        <span id="boardDimensions" class="dimension-badge">— × —</span>
+      </div>
+      <p id="source" class="scenario-name">Cargando escenario…</p>
+      <div class="button-pair">
+        <button id="loadScenario" class="button secondary" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v3h16v-3"/></svg>Cargar</button>
+        <button id="restart" class="button secondary" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10a8 8 0 1 1 2 7.7M4 10V5m0 5h5"/></svg>Reiniciar</button>
+      </div>
+      <button id="syncState" class="button warning" type="button" disabled>Sincronizar partida</button>
+      <input id="scenarioFile" type="file" accept=".json,application/json" hidden>
+    </section>
+
+    <section class="panel-section king-section" aria-labelledby="kingsTitle">
+      <div class="section-heading compact"><div><span class="eyebrow">REGLAS</span><h2 id="kingsTitle">Configuración de reyes</h2></div></div>
+      <p class="section-copy">Elige cómo entran los reyes antes del primer movimiento.</p>
+      <input id="kingMode" type="hidden" value="none">
+      <div class="king-mode-grid" role="radiogroup" aria-label="Modo de reyes">
+        <button class="king-mode-card is-selected" type="button" data-king-mode="none" role="radio" aria-checked="true"><span class="empty-piece-icon" aria-hidden="true">×</span><span>Sin reyes</span></button>
+        <button class="king-mode-card" type="button" data-king-mode="manual" role="radio" aria-checked="false"><span class="mode-piece-wrap"><img src="/assets/pieces/king_a.png" alt=""></span><span>Manual</span></button>
+        <button class="king-mode-card" type="button" data-king-mode="automatic" role="radio" aria-checked="false"><span class="mode-piece-wrap"><img src="/assets/pieces/king_a.png" alt=""><svg class="auto-badge" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v3m0 12v3M3 12h3m12 0h3M5.6 5.6l2.1 2.1m8.6 8.6 2.1 2.1m0-12.8-2.1 2.1M7.7 16.3l-2.1 2.1"/><circle cx="12" cy="12" r="3"/></svg></span><span>Automático</span></button>
+      </div>
+      <div id="automaticKings" class="king-fields" hidden>
+        <p class="field-caption">Cantidad por equipo</p>
+        <div class="count-grid">
+          <label><span><i class="team-dot team-a"></i>Blancas</span><input id="kingCountA" type="number" min="0" step="1" value="1"></label>
+          <label><span><i class="team-dot team-b"></i>Negras</span><input id="kingCountB" type="number" min="0" step="1" value="1"></label>
+        </div>
+      </div>
+      <div id="manualKings" class="king-fields" hidden>
+        <p class="field-caption">Coordenadas · fila,columna;…</p>
+        <label class="coordinate-field"><span><i class="team-dot team-a"></i>Blancas</span><input id="manualKingsA" type="text" inputmode="numeric" placeholder="1,1; 2,2"></label>
+        <label class="coordinate-field"><span><i class="team-dot team-b"></i>Negras</span><input id="manualKingsB" type="text" inputmode="numeric" placeholder="17,17"></label>
+      </div>
+      <button id="configureKings" class="button primary" type="button">Aplicar configuración</button>
+    </section>
+    <section class="panel-section history-section" aria-labelledby="historyTitle">
+      <div class="section-heading compact">
+        <div><span class="eyebrow">CRONOLOGÍA</span><h2 id="historyTitle">Movimientos</h2></div>
+        <span id="historyCount" class="history-count">0</span>
+      </div>
+      <p id="historyEmpty" class="history-empty">La partida todavía no ha comenzado.</p>
+      <ol id="moveHistory" class="move-history" aria-live="polite"></ol>
+    </section>
   </aside>
-  <div id="toast" role="status" aria-live="polite">El tablero representa el escenario cargado en Python.</div>
+
+  <p id="gameHelp" class="sr-only">Selecciona una ficha del equipo en turno y luego elige uno de sus destinos resaltados.</p>
+  <div id="toastRegion" class="toast-region" role="region" aria-label="Notificaciones" aria-live="polite" aria-atomic="false"></div>
+
+  <section id="resultScreen" hidden role="dialog" aria-modal="true" aria-labelledby="resultTitle" aria-describedby="resultMessage">
+    <div class="result-card">
+      <div class="result-rays" aria-hidden="true"></div>
+      <h2 id="resultTitle">Victoria</h2>
+      <div id="winnerPieces" class="winner-pieces" aria-label="Fichas de la partida"></div>
+      <p id="resultMessage"></p>
+      <div class="result-actions">
+        <button id="resultRestart" class="button primary" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10a8 8 0 1 1 2 7.7M4 10V5m0 5h5"/></svg>Jugar de nuevo</button>
+        <button id="resultClose" class="button ghost" type="button">Ver tablero</button>
+      </div>
+    </div>
+  </section>
 </body>
 </html>

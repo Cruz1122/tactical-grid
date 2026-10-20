@@ -51,6 +51,14 @@ def _ground_queen(state: dict[str, Any]) -> Position | None:
         return None
 
 
+def _queen_spawn(state: dict[str, Any]) -> Position | None:
+    """Return the queen's immutable original spawn position, if available."""
+    try:
+        return _position(state.get("recurso_spawn"))
+    except ValueError:
+        return None
+
+
 def _capture_unit(
     state: dict[str, Any], attacker_id: str, victim_id: str, position: Position
 ) -> None:
@@ -68,8 +76,11 @@ def _capture_unit(
 
     game = state["juego"]
     if game.get("portador_recurso") == victim_id:
+        queen_spawn = _queen_spawn(state)
+        if queen_spawn is None:
+            raise ValueError("La reina no conserva un spawn original válido")
         game["portador_recurso"] = None
-        state["recurso"] = _position_dict(position)
+        state["recurso"] = _position_dict(queen_spawn)
 
     victim["activo"] = False
     victim["fila"] = -1
@@ -175,7 +186,14 @@ def state_key(state: dict[str, Any]) -> tuple[Any, ...]:
     scenario_key = freeze(
         {
             key: state.get(key)
-            for key in ("version", "mapa", "tipos_terreno", "terreno", "bases")
+            for key in (
+                "version",
+                "mapa",
+                "tipos_terreno",
+                "terreno",
+                "bases",
+                "recurso_spawn",
+            )
         }
     )
     return (
@@ -282,7 +300,8 @@ def capture(state: dict[str, Any], attacker_id: str, victim_id: str) -> dict[str
 
     Preconditions: atacante y víctima activos, enemigos y en la misma casilla.
     Postconditions: retorna una copia con víctima inactiva o reaparecida; si era
-    portadora, la reina queda disponible bajo el atacante sin recogida automática.
+    portadora, la reina vuelve a su spawn original sin recogida automática y el
+    spawn de la víctima permanece intacto.
     Complexity: O(U log U + K) en tiempo y O(S + U) en espacio.
     """
     candidate = deepcopy(state)

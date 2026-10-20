@@ -44,7 +44,7 @@ Una captura ocurre cuando una unidad termina legalmente en la casilla de una uni
 - Después de cada acción se vuelve a comprobar si una unidad inactiva puede reaparecer.
 - La partida no puede tener dos unidades móviles activas ocupando la misma casilla.
 
-Si se captura al portador, la reina cae en la casilla donde ocurrió la captura. **El atacante no recoge la reina automáticamente**: hace falta una recogida posterior que cumpla las reglas. Si el atacante sigue en esa casilla, puede realizar una acción explícita de recogida que consume un turno. Esto permite que la reina esté en el suelo en una casilla ocupada temporalmente por el atacante; no equivale a dos unidades superpuestas.
+Si se captura al portador, la reina vuelve a su `recurso_spawn` original. **El atacante no recoge la reina automáticamente** y la reina nunca se coloca en la casilla de captura por este evento. El `spawn` de la ficha capturada conserva su posición inicial y se usa únicamente para su propia reaparición. Si la reina ya está en el suelo bajo una ficha aliada por la configuración del escenario, esa ficha puede realizar una recogida explícita que consume un turno.
 
 ## Reyes y jaque
 
@@ -77,7 +77,7 @@ El jaque **solo impide recoger la reina**. No impide mover, capturar, bloquear, 
 - Las unidades activas no se superponen entre sí.
 - Ninguna unidad activa ocupa obstáculo ni casilla de rey.
 - Los reyes no pueden bloquear bases y sus ubicaciones deben ser válidas.
-- La reina y una unidad pueden compartir posición en el caso excepcional de una captura de portador sin recogida automática; el estado debe distinguir posesión de mera coincidencia espacial.
+- La reina y una unidad pueden compartir posición únicamente si el escenario la carga así o si su `recurso_spawn` coincide con una unidad; el estado debe distinguir la posesión de mera coincidencia espacial.
 - Una partida terminada no acepta más acciones.
 
 **Referencias:** `TacticalGrid_Reglas.md`, secciones 1–6; `Primer proyecto.pdf`, pp. 2–3. Las normas de `estandar`, reyes opcionales y empate corresponden a decisiones posteriores del equipo.

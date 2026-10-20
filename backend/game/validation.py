@@ -303,6 +303,30 @@ def validate_scenario(scenario: dict[str, Any]) -> None:
             if carrier_position != resource_position:
                 errors.append("recurso: debe ser null o coincidir con la posición de la unidad portadora")
 
+    resource_spawn = scenario.get("recurso_spawn")
+    resource_spawn_position: tuple[int, int] | None = None
+    if resource_spawn is not None:
+        resource_spawn_position = _check_position(
+            resource_spawn,
+            "recurso_spawn",
+            rows,
+            columns,
+            terrain,
+            terrain_types,
+            errors,
+        )
+    elif carrier_id is not None and resource is None:
+        errors.append(
+            "recurso_spawn: debe conservar el spawn original cuando la reina ya tiene portador"
+        )
+    if (
+        carrier_id is None
+        and resource_position is not None
+        and resource_spawn_position is not None
+        and resource_spawn_position != resource_position
+    ):
+        errors.append("recurso_spawn: debe coincidir con la posición inicial de recurso")
+
     kings: list[tuple[str, tuple[int, int]]] = []
     king_ids: set[str] = set()
     if "reyes" in scenario:

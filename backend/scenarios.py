@@ -13,6 +13,9 @@ def prepare_scenario(scenario: dict[str, Any]) -> dict[str, Any]:
     """
     validate_scenario(scenario)
     state = deepcopy(scenario)
+    resource_spawn = state.get("recurso_spawn") or state.get("recurso")
+    if resource_spawn is not None:
+        state["recurso_spawn"] = deepcopy(resource_spawn)
     for unit in state["unidades"]:
         initial_position = {"fila": unit["fila"], "columna": unit["columna"]}
         unit["spawn"] = initial_position

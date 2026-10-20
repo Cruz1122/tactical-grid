@@ -31,6 +31,7 @@ La normalización y la validación no son lo mismo: `validate_scenario` **inspec
 - Catálogo `tipos_terreno` consistente; cada terreno usado por la matriz existe.
 - Terrenos transitables con costo numérico positivo; obstáculos no requieren ese costo.
 - Bases, recurso y unidades con coordenadas válidas dentro del tablero.
+- `recurso_spawn`, si aparece, con coordenadas válidas; sin portador debe coincidir con la posición inicial de `recurso`. Si la partida empieza con portador y `recurso` es `null`, `recurso_spawn` es obligatorio.
 - Campos `id`, `bando`, `tipo` y posición de cada unidad donde correspondan.
 - IDs únicos; bandos y turno `A` o `B`.
 - `juego.portador_recurso` nulo o referencia a una unidad existente.
@@ -51,6 +52,7 @@ El PDF no obliga a rechazar un mapa externo por medir menos de 20 × 20. Tampoco
 - Obtiene el `spawn` de cada unidad a partir de su posición de inicio.
 - Inicializa el estado de actividad y los datos internos necesarios para el motor, sin inventar reyes ausentes.
 - Mantiene coherencia entre reina en tablero y portador del recurso.
+- Conserva `recurso_spawn` desde el `recurso` inicial; una captura posterior usa esa posición y nunca la casilla de captura.
 - Deja la partida en una condición apta para configuración previa al primer movimiento.
 
 No decide rutas ni ejecuta movimientos. No convierte la carga de un JSON en una jugada.
@@ -93,6 +95,8 @@ Un mensaje útil señala el campo y el motivo: «`terreno[2][4]`: tipo desconoci
 | Unidad sobre obstáculo o fuera de límites | Se rechaza |
 | IDs duplicados o turno inválido | Se rechaza |
 | Portador que no existe | Se rechaza |
+| `recurso_spawn` contradictorio con `recurso` inicial sin portador | Se rechaza |
+| Portador con `recurso: null` sin `recurso_spawn` | Se rechaza |
 | Dos unidades activas superpuestas | Se rechaza |
 | Reyes explícitos en posiciones ilegales | Se rechaza |
 | Escenario de dimensiones válidas distintas a 20 × 20 | Se acepta si cumple las demás reglas |

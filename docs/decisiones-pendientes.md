@@ -29,10 +29,10 @@ Esta lista evita que se confundan **reglas ya acordadas** con detalles todavía 
 - Reyes automáticos: celdas transitables en orden fila-columna, cantidades explícitas por bando y selección voraz determinista; puede fallar sin mutación aunque exista otra distribución.
 - Ningún rey ocupa el `spawn` de una unidad, para no impedir una reaparición futura.
 - Accesibilidad: las bases deben permanecer conectadas por celdas transitables ortogonales que no ocupen reyes.
-- Reina tras captura del portador: queda en la casilla de captura; el atacante puede recogerla en una acción explícita posterior que consume turno.
+- Reina tras captura del portador: vuelve a `recurso_spawn`, su posición inicial inmutable; el atacante no la recoge automáticamente y el `spawn` de la ficha capturada no se modifica.
 - Jaque: bloquea la recogida explícita y se consulta tras retirar temporalmente la reina para una recogida normal; el portador conserva la reina aunque su rey quede en jaque.
-- Estado externo con portador y `recurso` en la posición del portador: se valida y se normaliza internamente a `recurso: null`.
-- Orden por acción: movimiento/captura y caída de reina, reapariciones por ID, victoria inmediata; si no hay victoria, cambio de turno y comprobación de empate.
+- Estado externo con portador y `recurso` en la posición del portador: se valida, se conserva esa posición como `recurso_spawn` y se normaliza internamente a `recurso: null`.
+- Orden por acción: movimiento/captura y reposición de la reina en `recurso_spawn`, reapariciones por ID, victoria inmediata; si no hay victoria, cambio de turno y comprobación de empate.
 
 ## Reglas del documento original modificadas por el equipo
 

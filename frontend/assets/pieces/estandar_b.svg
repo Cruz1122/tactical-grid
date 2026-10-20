@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="768" height="768" viewBox="0 0 768 768" role="img" aria-labelledby="title">
+  <title id="title">Unidad estándar del bando B</title>
+  <g fill="#111820" stroke="#111820" stroke-linejoin="round">
+    <path d="M384 106 512 218 384 330 256 218Z"/>
+    <path d="M356 302h56v230h-56z"/>
+    <path d="m286 532 98-38 98 38-28 66H314Z"/>
+    <path d="M214 598h340v42H214z"/>
+    <path d="M160 662h448v42H160z"/>
+  </g>
+</svg>
