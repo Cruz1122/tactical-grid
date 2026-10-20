@@ -283,3 +283,60 @@ class ScenarioApiTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn("turno", str(error["detail"]))
         self.assertEqual(current["state"], loaded["state"])
         self.assertEqual(current["source"], loaded["source"])
+
+
+class ScenarioBankApiTests(unittest.IsolatedAsyncioTestCase):
+    def setUp(self) -> None:
+        with main.lock:
+            self.initial_state = copy.deepcopy(main.initial_state)
+            self.current_state = copy.deepcopy(main.current_state)
+            self.source_name = main.source_name
+        self.bank_path = Path(__file__).resolve().parents[2] / "scenarios" / "test_bank"
+        self.manifest = json.loads((self.bank_path / "manifest.json").read_text(encoding="utf-8"))
+
+    def tearDown(self) -> None:
+        with main.lock:
+            main.initial_state = self.initial_state
+            main.current_state = self.current_state
+            main.source_name = self.source_name
+
+    def test_bank_has_expected_case_distribution(self) -> None:
+        results = [case["resultado_esperado"] for case in self.manifest]
+        self.assertEqual(results.count("ACEPTAR"), 16)
+        self.assertEqual(results.count("RECHAZAR_422"), 66)
+        self.assertEqual(results.count("POR_DEFINIR"), 7)
+
+    async def test_all_valid_bank_scenarios_load(self) -> None:
+        cases = [case for case in self.manifest if case["resultado_esperado"] == "ACEPTAR"]
+        for case in cases:
+            with self.subTest(scenario=case["archivo"]):
+                scenario_path = self.bank_path / case["archivo"]
+                status, response = await request_json(
+                    "/api/scenarios", scenario_path.read_bytes()
+                )
+                self.assertEqual(status, 200, response)
+                self.assertTrue(response["ok"])
+
+    async def test_all_invalid_bank_scenarios_reject_atomically(self) -> None:
+        cases = [case for case in self.manifest if case["resultado_esperado"] == "RECHAZAR_422"]
+        baseline_path = self.bank_path / "valid" / "01_profesor_4x4.json"
+
+        for case in cases:
+            with self.subTest(scenario=case["archivo"]):
+                baseline_status, baseline = await request_json(
+                    "/api/scenarios", baseline_path.read_bytes()
+                )
+                self.assertEqual(baseline_status, 200)
+
+                scenario_path = self.bank_path / case["archivo"]
+                body = scenario_path.read_bytes()
+                if not case["clasificacion"].endswith("/syntax"):
+                    body = json.dumps(json.loads(body)).encode("utf-8")
+
+                status, response = await request_json("/api/scenarios", body)
+                state_status, current = await request_json("/api/state", method="GET")
+
+                self.assertEqual(status, 422, response)
+                self.assertEqual(state_status, 200)
+                self.assertEqual(current["state"], baseline["state"])
+                self.assertEqual(current["source"], baseline["source"])

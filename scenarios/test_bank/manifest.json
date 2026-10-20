@@ -1,0 +1,803 @@
+[
+  {
+    "archivo": "invalid/game/01_turno_C.json",
+    "clasificacion": "invalid/game",
+    "resultado_esperado": "RECHAZAR_422",
+    "campo": "turno",
+    "motivo": "Turno no corresponde a A/B",
+    "error_ejemplo": "turno: debe ser A o B",
+    "observaciones": ""
+  },
+  {
+    "archivo": "invalid/game/02_turno_minuscula.json",
+    "clasificacion": "invalid/game",
+    "resultado_esperado": "RECHAZAR_422",
+    "campo": "turno",
+    "motivo": "Turno debe conservar valores A/B",
+    "error_ejemplo": "turno: debe ser A o B",
+    "observaciones": ""
+  },
+  {
+    "archivo": "invalid/game/03_portador_no_existe.json",
+    "clasificacion": "invalid/game",
+    "resultado_esperado": "RECHAZAR_422",
+    "campo": "juego.portador_recurso",
+    "motivo": "Referencia a unidad inexistente",
+    "error_ejemplo": "juego.portador_recurso: unidad Z999 no encontrada",
+    "observaciones": ""
+  },
+  {
+    "archivo": "invalid/game/04_portador_no_string.json",
+    "clasificacion": "invalid/game",
+    "resultado_esperado": "RECHAZAR_422",
+    "campo": "juego.portador_recurso",
+    "motivo": "No es ID de unidad ni null",
+    "error_ejemplo": "juego.portador_recurso: debe ser ID de unidad o null",
+    "observaciones": ""
+  },
+  {
+    "archivo": "invalid/kings/01_rey_fuera.json",
+    "clasificacion": "invalid/kings",
+    "resultado_esperado": "RECHAZAR_422",
+    "campo": "reyes.A[0].fila",
+    "motivo": "Rey fuera del tablero",
+    "error_ejemplo": "reyes.A[0].fila: fuera del mapa",
+    "observaciones": "Se aplica a reyes explícitos en JSON; configuración runtime se valida más adelante."
+  },
+  {
+    "archivo": "invalid/kings/02_rey_en_muro.json",
+    "clasificacion": "invalid/kings",
+    "resultado_esperado": "RECHAZAR_422",
+    "campo": "reyes.A[0]",
+    "motivo": "Rey sobre muro",
+    "error_ejemplo": "reyes.A[0]: casilla no transitable",
+    "observaciones": "Se aplica a reyes explícitos en JSON; configuración runtime se valida más adelante."
+  },
+  {
+    "archivo": "invalid/kings/03_rey_en_base.json",
+    "clasificacion": "invalid/kings",
+    "resultado_esperado": "RECHAZAR_422",
+    "campo": "reyes.A[0]",
+    "motivo": "Rey bloquea base",
+    "error_ejemplo": "reyes.A[0]: no puede ocupar bases",
+    "observaciones": "Se aplica a reyes explícitos en JSON; configuración runtime se valida más adelante."
+  },
+  {
+    "archivo": "invalid/kings/04_rey_sobre_unidad.json",
+    "clasificacion": "invalid/kings",
+    "resultado_esperado": "RECHAZAR_422",
+    "campo": "reyes.A[0]",
+    "motivo": "Rey solapado con unidad A1",
+    "error_ejemplo": "reyes.A[0]: celda ocupada por A1",
+    "observaciones": "Se aplica a reyes explícitos en JSON; configuración runtime se valida más adelante."
+  },
+  {
+    "archivo": "invalid/kings/05_rey_sobre_reina.json",
+    "clasificacion": "invalid/kings",
+    "resultado_esperado": "RECHAZAR_422",
+    "campo": "reyes.A[0]",
+    "motivo": "Rey solapado con reina",
+    "error_ejemplo": "reyes.A[0]: celda ocupada por recurso",
+    "observaciones": "Se aplica a reyes explícitos en JSON; configuración runtime se valida más adelante."
+  },
+  {
+    "archivo": "invalid/kings/06_reyes_superpuestos.json",
+    "clasificacion": "invalid/kings",
+    "resultado_esperado": "RECHAZAR_422",
+    "campo": "reyes.B[0]",
+    "motivo": "Reyes de bandos distintos en la misma celda",
+    "error_ejemplo": "reyes.B[0]: celda ocupada por otro rey",
+    "observaciones": "Se aplica a reyes explícitos en JSON; configuración runtime se valida más adelante."
+  },
+  {
+    "archivo": "invalid/kings/07_reyes_no_objeto.json",
+    "clasificacion": "invalid/kings",
+    "resultado_esperado": "RECHAZAR_422",
+    "campo": "reyes",
+    "motivo": "Estructura de reyes incorrecta",
+    "error_ejemplo": "reyes: se esperaba objeto por bandos",
+    "observaciones": "Se aplica a reyes explícitos en JSON; configuración runtime se valida más adelante."
+  },
+  {
+    "archivo": "invalid/map/01_filas_cero.json",
+    "clasificacion": "invalid/map",
+    "resultado_esperado": "RECHAZAR_422",
+    "campo": "mapa.filas",
+    "motivo": "Filas no positivas",
+    "error_ejemplo": "mapa.filas: debe ser mayor que cero",
+    "observaciones": ""
+  },
+  {
+    "archivo": "invalid/map/02_columnas_negativas.json",
+    "clasificacion": "invalid/map",
+    "resultado_esperado": "RECHAZAR_422",
+    "campo": "mapa.columnas",
+    "motivo": "Columnas negativas",
+    "error_ejemplo": "mapa.columnas: debe ser mayor que cero",
+    "observaciones": ""
+  },
+  {
+    "archivo": "invalid/map/03_filas_no_enteras.json",
+    "clasificacion": "invalid/map",
+    "resultado_esperado": "RECHAZAR_422",
+    "campo": "mapa.filas",
+    "motivo": "Dimensiones deben ser enteros",
+    "error_ejemplo": "mapa.filas: debe ser un entero",
+    "observaciones": ""
+  },
+  {
+    "archivo": "invalid/map/04_cantidad_filas_incorrecta.json",
+    "clasificacion": "invalid/map",
+    "resultado_esperado": "RECHAZAR_422",
+    "campo": "terreno",
+    "motivo": "Matriz tiene 3 filas y declara 4",
+    "error_ejemplo": "terreno: se esperaban 4 filas y se recibieron 3",
+    "observaciones": ""
+  },
+  {
+    "archivo": "invalid/map/05_columnas_incorrectas.json",
+    "clasificacion": "invalid/map",
+    "resultado_esperado": "RECHAZAR_422",
+    "campo": "terreno[2]",
+    "motivo": "Una fila tiene 3 columnas y declara 4",
+    "error_ejemplo": "terreno[2]: se esperaban 4 columnas",
+    "observaciones": ""
+  },
+  {
+    "archivo": "invalid/map/06_fila_no_lista.json",
+    "clasificacion": "invalid/map",
+    "resultado_esperado": "RECHAZAR_422",
+    "campo": "terreno[1]",
+    "motivo": "Una fila no es lista",
+    "error_ejemplo": "terreno[1]: se esperaba lista de celdas",
+    "observaciones": ""
+  },
+  {
+    "archivo": "invalid/map/07_matriz_no_lista.json",
+    "clasificacion": "invalid/map",
+    "resultado_esperado": "RECHAZAR_422",
+    "campo": "terreno",
+    "motivo": "Matriz no es una lista bidimensional",
+    "error_ejemplo": "terreno: se esperaba matriz",
+    "observaciones": ""
+  },
+  {
+    "archivo": "invalid/map/08_dimension_booleana.json",
+    "clasificacion": "invalid/map",
+    "resultado_esperado": "RECHAZAR_422",
+    "campo": "mapa.filas",
+    "motivo": "true no debe admitirse como 1",
+    "error_ejemplo": "mapa.filas: debe ser un entero, no booleano",
+    "observaciones": ""
+  },
+  {
+    "archivo": "invalid/positions/01_base_A_fila_negativa.json",
+    "clasificacion": "invalid/positions",
+    "resultado_esperado": "RECHAZAR_422",
+    "campo": "bases.A.fila",
+    "motivo": "Fila negativa",
+    "error_ejemplo": "bases.A.fila: fuera del mapa",
+    "observaciones": ""
+  },
+  {
+    "archivo": "invalid/positions/02_base_B_columna_fuera.json",
+    "clasificacion": "invalid/positions",
+    "resultado_esperado": "RECHAZAR_422",
+    "campo": "bases.B.columna",
+    "motivo": "Columna igual a ancho, fuera del mapa",
+    "error_ejemplo": "bases.B.columna: fuera del mapa (0..3)",
+    "observaciones": ""
+  },
+  {
+    "archivo": "invalid/positions/03_base_en_muro.json",
+    "clasificacion": "invalid/positions",
+    "resultado_esperado": "RECHAZAR_422",
+    "campo": "bases.A",
+    "motivo": "Base sobre casilla no transitable",
+    "error_ejemplo": "bases.A: la base no puede ubicarse en un obstáculo",
+    "observaciones": ""
+  },
+  {
+    "archivo": "invalid/positions/04_recurso_fuera.json",
+    "clasificacion": "invalid/positions",
+    "resultado_esperado": "RECHAZAR_422",
+    "campo": "recurso.fila",
+    "motivo": "Recurso fuera del mapa",
+    "error_ejemplo": "recurso.fila: fuera del mapa (0..3)",
+    "observaciones": ""
+  },
+  {
+    "archivo": "invalid/positions/05_recurso_en_muro.json",
+    "clasificacion": "invalid/positions",
+    "resultado_esperado": "RECHAZAR_422",
+    "campo": "recurso",
+    "motivo": "Reina sobre obstáculo",
+    "error_ejemplo": "recurso: no puede ubicarse en celda no transitable",
+    "observaciones": ""
+  },
+  {
+    "archivo": "invalid/positions/06_unidad_columna_negativa.json",
+    "clasificacion": "invalid/positions",
+    "resultado_esperado": "RECHAZAR_422",
+    "campo": "unidades[0].columna",
+    "motivo": "Unidad fuera de límites",
+    "error_ejemplo": "unidades[0].columna: fuera del mapa",
+    "observaciones": ""
+  },
+  {
+    "archivo": "invalid/positions/07_unidad_en_muro.json",
+    "clasificacion": "invalid/positions",
+    "resultado_esperado": "RECHAZAR_422",
+    "campo": "unidades[0]",
+    "motivo": "Unidad en obstáculo",
+    "error_ejemplo": "unidades[0]: unidad sobre terreno no transitable",
+    "observaciones": ""
+  },
+  {
+    "archivo": "invalid/positions/08_coordenada_texto.json",
+    "clasificacion": "invalid/positions",
+    "resultado_esperado": "RECHAZAR_422",
+    "campo": "recurso.fila",
+    "motivo": "Coordenada no entera",
+    "error_ejemplo": "recurso.fila: debe ser entero",
+    "observaciones": ""
+  },
+  {
+    "archivo": "invalid/structure/01_falta_version.json",
+    "clasificacion": "invalid/structure",
+    "resultado_esperado": "RECHAZAR_422",
+    "campo": "version",
+    "motivo": "Falta versión obligatoria",
+    "error_ejemplo": "version: campo obligatorio",
+    "observaciones": ""
+  },
+  {
+    "archivo": "invalid/structure/02_falta_mapa.json",
+    "clasificacion": "invalid/structure",
+    "resultado_esperado": "RECHAZAR_422",
+    "campo": "mapa",
+    "motivo": "Falta la definición de dimensiones",
+    "error_ejemplo": "mapa: campo obligatorio",
+    "observaciones": ""
+  },
+  {
+    "archivo": "invalid/structure/03_falta_tipos_terreno.json",
+    "clasificacion": "invalid/structure",
+    "resultado_esperado": "RECHAZAR_422",
+    "campo": "tipos_terreno",
+    "motivo": "Falta catálogo de terrenos",
+    "error_ejemplo": "tipos_terreno: campo obligatorio",
+    "observaciones": ""
+  },
+  {
+    "archivo": "invalid/structure/04_falta_terreno.json",
+    "clasificacion": "invalid/structure",
+    "resultado_esperado": "RECHAZAR_422",
+    "campo": "terreno",
+    "motivo": "Falta la matriz",
+    "error_ejemplo": "terreno: campo obligatorio",
+    "observaciones": ""
+  },
+  {
+    "archivo": "invalid/structure/05_falta_bases.json",
+    "clasificacion": "invalid/structure",
+    "resultado_esperado": "RECHAZAR_422",
+    "campo": "bases",
+    "motivo": "Faltan bases",
+    "error_ejemplo": "bases: campo obligatorio",
+    "observaciones": ""
+  },
+  {
+    "archivo": "invalid/structure/06_falta_recurso.json",
+    "clasificacion": "invalid/structure",
+    "resultado_esperado": "RECHAZAR_422",
+    "campo": "recurso",
+    "motivo": "Falta el recurso; portador es null",
+    "error_ejemplo": "recurso: campo obligatorio",
+    "observaciones": ""
+  },
+  {
+    "archivo": "invalid/structure/07_falta_unidades.json",
+    "clasificacion": "invalid/structure",
+    "resultado_esperado": "RECHAZAR_422",
+    "campo": "unidades",
+    "motivo": "Falta el listado de unidades",
+    "error_ejemplo": "unidades: campo obligatorio",
+    "observaciones": ""
+  },
+  {
+    "archivo": "invalid/structure/08_falta_turno.json",
+    "clasificacion": "invalid/structure",
+    "resultado_esperado": "RECHAZAR_422",
+    "campo": "turno",
+    "motivo": "Falta el turno",
+    "error_ejemplo": "turno: campo obligatorio",
+    "observaciones": ""
+  },
+  {
+    "archivo": "invalid/structure/09_falta_juego.json",
+    "clasificacion": "invalid/structure",
+    "resultado_esperado": "RECHAZAR_422",
+    "campo": "juego",
+    "motivo": "Falta estado del juego",
+    "error_ejemplo": "juego: campo obligatorio",
+    "observaciones": ""
+  },
+  {
+    "archivo": "invalid/structure/10_falta_portador_recurso.json",
+    "clasificacion": "invalid/structure",
+    "resultado_esperado": "RECHAZAR_422",
+    "campo": "juego.portador_recurso",
+    "motivo": "Falta campo obligatorio del juego",
+    "error_ejemplo": "juego.portador_recurso: campo obligatorio",
+    "observaciones": ""
+  },
+  {
+    "archivo": "invalid/structure/11_raiz_lista.json",
+    "clasificacion": "invalid/structure",
+    "resultado_esperado": "RECHAZAR_422",
+    "campo": "$",
+    "motivo": "La raíz debe ser un objeto",
+    "error_ejemplo": "$: se esperaba objeto JSON",
+    "observaciones": ""
+  },
+  {
+    "archivo": "invalid/structure/12_mapa_no_objeto.json",
+    "clasificacion": "invalid/structure",
+    "resultado_esperado": "RECHAZAR_422",
+    "campo": "mapa",
+    "motivo": "Mapa debe ser objeto con dimensiones",
+    "error_ejemplo": "mapa: se esperaba un objeto",
+    "observaciones": ""
+  },
+  {
+    "archivo": "invalid/structure/13_unidades_no_lista.json",
+    "clasificacion": "invalid/structure",
+    "resultado_esperado": "RECHAZAR_422",
+    "campo": "unidades",
+    "motivo": "Debe ser listado de unidades",
+    "error_ejemplo": "unidades: se esperaba una lista",
+    "observaciones": ""
+  },
+  {
+    "archivo": "invalid/structure/14_juego_no_objeto.json",
+    "clasificacion": "invalid/structure",
+    "resultado_esperado": "RECHAZAR_422",
+    "campo": "juego",
+    "motivo": "Juego debe ser objeto",
+    "error_ejemplo": "juego: se esperaba un objeto",
+    "observaciones": ""
+  },
+  {
+    "archivo": "invalid/structure/15_base_B_ausente.json",
+    "clasificacion": "invalid/structure",
+    "resultado_esperado": "RECHAZAR_422",
+    "campo": "bases.B",
+    "motivo": "Base del bando B obligatoria",
+    "error_ejemplo": "bases.B: campo obligatorio",
+    "observaciones": ""
+  },
+  {
+    "archivo": "invalid/syntax/01_json_incompleto.json",
+    "clasificacion": "invalid/syntax",
+    "resultado_esperado": "RECHAZAR_422",
+    "campo": "$",
+    "motivo": "JSON truncado",
+    "error_ejemplo": "JSON mal formado: fin inesperado",
+    "observaciones": ""
+  },
+  {
+    "archivo": "invalid/syntax/02_coma_final.json",
+    "clasificacion": "invalid/syntax",
+    "resultado_esperado": "RECHAZAR_422",
+    "campo": "$",
+    "motivo": "Coma sobrante",
+    "error_ejemplo": "JSON mal formado: se esperaba nombre de propiedad",
+    "observaciones": ""
+  },
+  {
+    "archivo": "invalid/syntax/03_texto_no_json.json",
+    "clasificacion": "invalid/syntax",
+    "resultado_esperado": "RECHAZAR_422",
+    "campo": "$",
+    "motivo": "Contenido no analizable como JSON",
+    "error_ejemplo": "JSON mal formado",
+    "observaciones": ""
+  },
+  {
+    "archivo": "invalid/terrain/01_terreno_desconocido.json",
+    "clasificacion": "invalid/terrain",
+    "resultado_esperado": "RECHAZAR_422",
+    "campo": "terreno[2][1]",
+    "motivo": "Referencia a catálogo inexistente",
+    "error_ejemplo": "terreno[2][1]: tipo de terreno lava desconocido",
+    "observaciones": ""
+  },
+  {
+    "archivo": "invalid/terrain/02_costo_cero.json",
+    "clasificacion": "invalid/terrain",
+    "resultado_esperado": "RECHAZAR_422",
+    "campo": "tipos_terreno.pantano.costo",
+    "motivo": "Costo cero para terreno transitable",
+    "error_ejemplo": "tipos_terreno.pantano.costo: debe ser mayor que cero",
+    "observaciones": ""
+  },
+  {
+    "archivo": "invalid/terrain/03_costo_negativo.json",
+    "clasificacion": "invalid/terrain",
+    "resultado_esperado": "RECHAZAR_422",
+    "campo": "tipos_terreno.pantano.costo",
+    "motivo": "Costo negativo para terreno transitable",
+    "error_ejemplo": "tipos_terreno.pantano.costo: debe ser mayor que cero",
+    "observaciones": ""
+  },
+  {
+    "archivo": "invalid/terrain/04_costo_ausente_transitable.json",
+    "clasificacion": "invalid/terrain",
+    "resultado_esperado": "RECHAZAR_422",
+    "campo": "tipos_terreno.pasto.costo",
+    "motivo": "Terreno transitable sin costo",
+    "error_ejemplo": "tipos_terreno.pasto.costo: campo requerido para transitable",
+    "observaciones": ""
+  },
+  {
+    "archivo": "invalid/terrain/05_costo_texto.json",
+    "clasificacion": "invalid/terrain",
+    "resultado_esperado": "RECHAZAR_422",
+    "campo": "tipos_terreno.bosque.costo",
+    "motivo": "Costo no numérico",
+    "error_ejemplo": "tipos_terreno.bosque.costo: se esperaba número positivo",
+    "observaciones": ""
+  },
+  {
+    "archivo": "invalid/terrain/06_transitable_ausente.json",
+    "clasificacion": "invalid/terrain",
+    "resultado_esperado": "RECHAZAR_422",
+    "campo": "tipos_terreno.bosque.transitable",
+    "motivo": "Falta indicador de transitabilidad",
+    "error_ejemplo": "tipos_terreno.bosque.transitable: campo obligatorio",
+    "observaciones": ""
+  },
+  {
+    "archivo": "invalid/terrain/07_transitable_texto.json",
+    "clasificacion": "invalid/terrain",
+    "resultado_esperado": "RECHAZAR_422",
+    "campo": "tipos_terreno.camino.transitable",
+    "motivo": "Transitabilidad no booleana",
+    "error_ejemplo": "tipos_terreno.camino.transitable: debe ser booleano",
+    "observaciones": ""
+  },
+  {
+    "archivo": "invalid/terrain/08_catalogo_vacio.json",
+    "clasificacion": "invalid/terrain",
+    "resultado_esperado": "RECHAZAR_422",
+    "campo": "tipos_terreno",
+    "motivo": "Terrenos de la matriz no aparecen en catálogo",
+    "error_ejemplo": "terreno[0][0]: tipo de terreno camino desconocido",
+    "observaciones": ""
+  },
+  {
+    "archivo": "invalid/test_config/01_modo_inexistente.json",
+    "clasificacion": "invalid/test_config",
+    "resultado_esperado": "RECHAZAR_422",
+    "campo": "prueba.modo",
+    "motivo": "Modo no reconocido por contrato",
+    "error_ejemplo": "prueba.modo: se esperaba busqueda, partida o adversarial",
+    "observaciones": ""
+  },
+  {
+    "archivo": "invalid/test_config/02_prueba_no_objeto.json",
+    "clasificacion": "invalid/test_config",
+    "resultado_esperado": "RECHAZAR_422",
+    "campo": "prueba",
+    "motivo": "Configuración prueba debe ser objeto",
+    "error_ejemplo": "prueba: se esperaba un objeto",
+    "observaciones": ""
+  },
+  {
+    "archivo": "invalid/test_config/03_objetivo_fuera.json",
+    "clasificacion": "invalid/test_config",
+    "resultado_esperado": "RECHAZAR_422",
+    "campo": "prueba.objetivo.fila",
+    "motivo": "Meta de navegación fuera del mapa",
+    "error_ejemplo": "prueba.objetivo: coordenada fuera del mapa",
+    "observaciones": ""
+  },
+  {
+    "archivo": "invalid/test_config/04_unidad_inicio_no_existe.json",
+    "clasificacion": "invalid/test_config",
+    "resultado_esperado": "RECHAZAR_422",
+    "campo": "prueba.unidad_inicio",
+    "motivo": "ID para búsqueda no existe",
+    "error_ejemplo": "prueba.unidad_inicio: unidad INEXISTENTE no encontrada",
+    "observaciones": ""
+  },
+  {
+    "archivo": "invalid/units/01_id_duplicado.json",
+    "clasificacion": "invalid/units",
+    "resultado_esperado": "RECHAZAR_422",
+    "campo": "unidades[1].id",
+    "motivo": "Identificador repetido",
+    "error_ejemplo": "unidades[1].id: ID duplicado A1",
+    "observaciones": ""
+  },
+  {
+    "archivo": "invalid/units/02_bando_desconocido.json",
+    "clasificacion": "invalid/units",
+    "resultado_esperado": "RECHAZAR_422",
+    "campo": "unidades[0].bando",
+    "motivo": "Solo A y B",
+    "error_ejemplo": "unidades[0].bando: debe ser A o B",
+    "observaciones": ""
+  },
+  {
+    "archivo": "invalid/units/03_unidades_superpuestas.json",
+    "clasificacion": "invalid/units",
+    "resultado_esperado": "RECHAZAR_422",
+    "campo": "unidades[1]",
+    "motivo": "Dos unidades en misma casilla",
+    "error_ejemplo": "unidades[1]: posición ocupada por A1",
+    "observaciones": ""
+  },
+  {
+    "archivo": "invalid/units/04_id_ausente.json",
+    "clasificacion": "invalid/units",
+    "resultado_esperado": "RECHAZAR_422",
+    "campo": "unidades[0].id",
+    "motivo": "Falta ID",
+    "error_ejemplo": "unidades[0].id: campo obligatorio",
+    "observaciones": ""
+  },
+  {
+    "archivo": "invalid/units/05_tipo_ausente.json",
+    "clasificacion": "invalid/units",
+    "resultado_esperado": "RECHAZAR_422",
+    "campo": "unidades[0].tipo",
+    "motivo": "Falta tipo de movimiento",
+    "error_ejemplo": "unidades[0].tipo: campo obligatorio",
+    "observaciones": ""
+  },
+  {
+    "archivo": "invalid/units/06_tipo_no_implementado.json",
+    "clasificacion": "invalid/units",
+    "resultado_esperado": "RECHAZAR_422",
+    "campo": "unidades[0].tipo",
+    "motivo": "Tipo sin patrón de movimiento definido",
+    "error_ejemplo": "unidades[0].tipo: tipo no soportado mago",
+    "observaciones": "Rechazar solo si el motor admite los cuatro tipos acordados; el PDF no enumera tipos exhaustivamente."
+  },
+  {
+    "archivo": "invalid/units/07_posicion_ausente.json",
+    "clasificacion": "invalid/units",
+    "resultado_esperado": "RECHAZAR_422",
+    "campo": "unidades[0].fila",
+    "motivo": "Falta fila de unidad",
+    "error_ejemplo": "unidades[0].fila: campo obligatorio",
+    "observaciones": ""
+  },
+  {
+    "archivo": "invalid/units/08_unidades_no_objeto.json",
+    "clasificacion": "invalid/units",
+    "resultado_esperado": "RECHAZAR_422",
+    "campo": "unidades[0]",
+    "motivo": "Elemento de unidades no es objeto",
+    "error_ejemplo": "unidades[0]: se esperaba un objeto",
+    "observaciones": ""
+  },
+  {
+    "archivo": "invalid/units/09_bando_minuscula.json",
+    "clasificacion": "invalid/units",
+    "resultado_esperado": "RECHAZAR_422",
+    "campo": "unidades[0].bando",
+    "motivo": "Solo A y B, exactos",
+    "error_ejemplo": "unidades[0].bando: debe ser A o B",
+    "observaciones": "No convertir bandos silenciosamente; PDF usa A/B."
+  },
+  {
+    "archivo": "review/01_portador_existente_y_recurso_posicionado.json",
+    "clasificacion": "review",
+    "resultado_esperado": "POR_DEFINIR",
+    "campo": "—",
+    "motivo": "Portador existente mientras recurso sigue en el JSON",
+    "error_ejemplo": "PENDIENTE: definir representación con portador.",
+    "observaciones": "El PDF exige recurso y portador, pero no concreta cómo representar la reina transportada en un escenario externo. Decidir si recurso se ignora, es null o produce error."
+  },
+  {
+    "archivo": "review/02_alias_torre_en_espanol.json",
+    "clasificacion": "review",
+    "resultado_esperado": "POR_DEFINIR",
+    "campo": "—",
+    "motivo": "Alias español torre para tipo de unidad",
+    "error_ejemplo": "PENDIENTE: catálogo de alias externos.",
+    "observaciones": "El archivo original de reglas lo ejemplifica; el diseño usa rook. Definir si se normaliza o se rechaza."
+  },
+  {
+    "archivo": "review/03_alias_caballo_en_espanol.json",
+    "clasificacion": "review",
+    "resultado_esperado": "POR_DEFINIR",
+    "campo": "—",
+    "motivo": "Alias español caballo",
+    "error_ejemplo": "PENDIENTE: catálogo de alias externos.",
+    "observaciones": "Definir si se normaliza a knight."
+  },
+  {
+    "archivo": "review/04_bases_separadas_por_barrera_total.json",
+    "clasificacion": "review",
+    "resultado_esperado": "POR_DEFINIR",
+    "campo": "—",
+    "motivo": "Bases en regiones inconexas separadas por pared completa",
+    "error_ejemplo": "PENDIENTE: criterio de alcanzabilidad.",
+    "observaciones": "El requisito indica bases alcanzables, pero el criterio exacto según tipo de pieza, ocupación y turnos está por definir."
+  },
+  {
+    "archivo": "review/05_unidad_inicial_sobre_reina.json",
+    "clasificacion": "review",
+    "resultado_esperado": "POR_DEFINIR",
+    "campo": "—",
+    "motivo": "Unidad ubicada inicialmente en la casilla de la reina",
+    "error_ejemplo": "PENDIENTE: regla de coincidencia recurso/unidad.",
+    "observaciones": "Cómo se representa una reina en la casilla de una unidad aún sin ser recogida, especialmente bajo jaque, no está resuelto."
+  },
+  {
+    "archivo": "review/06_busqueda_sin_objetivo.json",
+    "clasificacion": "review",
+    "resultado_esperado": "POR_DEFINIR",
+    "campo": "—",
+    "motivo": "Prueba busqueda sin objetivo",
+    "error_ejemplo": "PENDIENTE: requisitos del modo busqueda.",
+    "observaciones": "La prueba del PDF incluye objetivo, pero no define con detalle el esquema estricto de prueba para cada modo."
+  },
+  {
+    "archivo": "review/07_bases_coincidentes.json",
+    "clasificacion": "review",
+    "resultado_esperado": "POR_DEFINIR",
+    "campo": "—",
+    "motivo": "Ambas bases sobre misma celda transitable",
+    "error_ejemplo": "PENDIENTE: decidir si rechazar bases coincidentes.",
+    "observaciones": "Probablemente conviene prohibirlo; el PDF no enumera expresamente la restricción."
+  },
+  {
+    "archivo": "valid/01_profesor_4x4.json",
+    "clasificacion": "valid",
+    "resultado_esperado": "ACEPTAR",
+    "campo": "—",
+    "motivo": "Contrato de ejemplo del PDF, 4×4 y unidades estandar.",
+    "error_ejemplo": "—",
+    "observaciones": "Los mapas externos no se rechazan por medir menos de 20×20."
+  },
+  {
+    "archivo": "valid/02_sin_prueba.json",
+    "clasificacion": "valid",
+    "resultado_esperado": "ACEPTAR",
+    "campo": "—",
+    "motivo": "Campo prueba omitido: es opcional.",
+    "error_ejemplo": "—",
+    "observaciones": ""
+  },
+  {
+    "archivo": "valid/03_pantano_costo_15.json",
+    "clasificacion": "valid",
+    "resultado_esperado": "ACEPTAR",
+    "campo": "—",
+    "motivo": "Costo positivo alterado: debe respetarse el valor del JSON.",
+    "error_ejemplo": "—",
+    "observaciones": ""
+  },
+  {
+    "archivo": "valid/04_tipos_piezas.json",
+    "clasificacion": "valid",
+    "resultado_esperado": "ACEPTAR",
+    "campo": "—",
+    "motivo": "Tipos de piezas acordados; estandar sigue admitido.",
+    "error_ejemplo": "—",
+    "observaciones": ""
+  },
+  {
+    "archivo": "valid/05_reyes_explicitos.json",
+    "clasificacion": "valid",
+    "resultado_esperado": "ACEPTAR",
+    "campo": "—",
+    "motivo": "Reyes en casillas libres, dentro del mapa y sin ocupar bases.",
+    "error_ejemplo": "—",
+    "observaciones": ""
+  },
+  {
+    "archivo": "valid/06_reyes_vacios.json",
+    "clasificacion": "valid",
+    "resultado_esperado": "ACEPTAR",
+    "campo": "—",
+    "motivo": "Listas de reyes vacías; equivale a escenario sin jaques.",
+    "error_ejemplo": "—",
+    "observaciones": "Forma propuesta para reyes vacíos."
+  },
+  {
+    "archivo": "valid/07_prueba_partida.json",
+    "clasificacion": "valid",
+    "resultado_esperado": "ACEPTAR",
+    "campo": "—",
+    "motivo": "Modo de prueba partida, sin parámetros de búsqueda.",
+    "error_ejemplo": "—",
+    "observaciones": ""
+  },
+  {
+    "archivo": "valid/08_prueba_adversarial.json",
+    "clasificacion": "valid",
+    "resultado_esperado": "ACEPTAR",
+    "campo": "—",
+    "motivo": "Modo adversarial con profundidad limitada.",
+    "error_ejemplo": "—",
+    "observaciones": ""
+  },
+  {
+    "archivo": "valid/09_campos_adicionales.json",
+    "clasificacion": "valid",
+    "resultado_esperado": "ACEPTAR",
+    "campo": "—",
+    "motivo": "El formato común permite campos adicionales sin cambiar los obligatorios.",
+    "error_ejemplo": "—",
+    "observaciones": ""
+  },
+  {
+    "archivo": "valid/10_turno_B.json",
+    "clasificacion": "valid",
+    "resultado_esperado": "ACEPTAR",
+    "campo": "—",
+    "motivo": "Turno del bando B válido.",
+    "error_ejemplo": "—",
+    "observaciones": ""
+  },
+  {
+    "archivo": "valid/11_dos_unidades_total.json",
+    "clasificacion": "valid",
+    "resultado_esperado": "ACEPTAR",
+    "campo": "—",
+    "motivo": "Ejemplo de compatibilidad flexible de cantidad de unidades.",
+    "error_ejemplo": "—",
+    "observaciones": "PDF dice mínimo tres por bando pero su ejemplo tiene dos; por decisión del equipo, el importador no exige tres."
+  },
+  {
+    "archivo": "valid/12_objetivo_en_base.json",
+    "clasificacion": "valid",
+    "resultado_esperado": "ACEPTAR",
+    "campo": "—",
+    "motivo": "Objetivo de búsqueda válido aunque coincida con base.",
+    "error_ejemplo": "—",
+    "observaciones": ""
+  },
+  {
+    "archivo": "valid/13_costo_decimal_positivo.json",
+    "clasificacion": "valid",
+    "resultado_esperado": "ACEPTAR",
+    "campo": "—",
+    "motivo": "Costo real positivo; se admite un valor decimal en vez de entero.",
+    "error_ejemplo": "—",
+    "observaciones": "Si el equipo restringe costos a enteros positivos, debe justificarlo antes de rechazar este caso."
+  },
+  {
+    "archivo": "valid/14_mapa_rectangular_3x7.json",
+    "clasificacion": "valid",
+    "resultado_esperado": "ACEPTAR",
+    "campo": "—",
+    "motivo": "Matriz rectangular con filas/columnas declaradas.",
+    "error_ejemplo": "—",
+    "observaciones": ""
+  },
+  {
+    "archivo": "valid/15_desarrollo_20x20.json",
+    "clasificacion": "valid",
+    "resultado_esperado": "ACEPTAR",
+    "campo": "—",
+    "motivo": "Mapa de desarrollo >=20×20, seis piezas y pasos entre barreras.",
+    "error_ejemplo": "—",
+    "observaciones": ""
+  },
+  {
+    "archivo": "valid/16_obstaculos_sin_costo.json",
+    "clasificacion": "valid",
+    "resultado_esperado": "ACEPTAR",
+    "campo": "—",
+    "motivo": "Obstáculos sin campo costo: permitido porque no se transitan.",
+    "error_ejemplo": "—",
+    "observaciones": ""
+  }
+]
