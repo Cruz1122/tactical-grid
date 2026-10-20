@@ -44,7 +44,7 @@ Una captura ocurre cuando una unidad termina legalmente en la casilla de una uni
 - Después de cada acción se vuelve a comprobar si una unidad inactiva puede reaparecer.
 - La partida no puede tener dos unidades móviles activas ocupando la misma casilla.
 
-Si se captura al portador, la reina vuelve a su `recurso_spawn` original. **El atacante no recoge la reina automáticamente** y la reina nunca se coloca en la casilla de captura por este evento. El `spawn` de la ficha capturada conserva su posición inicial y se usa únicamente para su propia reaparición. Si la reina ya está en el suelo bajo una ficha aliada por la configuración del escenario, esa ficha puede realizar una recogida explícita que consume un turno.
+Si se captura al portador, la reina vuelve a su `recurso_spawn` original. **El atacante no recoge la reina automáticamente** y la reina nunca se coloca en la casilla de captura por este evento. El `spawn` de la ficha capturada conserva su posición inicial y se usa únicamente para su propia reaparición. Si la reina ya está en el suelo bajo una ficha aliada por la configuración del escenario, esa ficha puede realizar una recogida explícita que consume un turno. `recurso_spawn` no puede coincidir con un rey, incluso si la reina empieza transportada; sí puede coincidir con una unidad móvil, como permite la regla general de ocupación.
 
 ## Reyes y jaque
 

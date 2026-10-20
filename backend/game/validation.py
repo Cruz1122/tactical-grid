@@ -367,6 +367,8 @@ def validate_scenario(scenario: dict[str, Any]) -> None:
                         errors.append(f"{field}: un rey no puede ocupar una base")
                     if carrier_id is None and position == resource_position:
                         errors.append(f"{field}: un rey no puede ocupar la posición del recurso")
+                    if carrier_id is not None and position == resource_spawn_position:
+                        errors.append(f"{field}: un rey no puede ocupar recurso_spawn")
 
             seen_king_positions: set[tuple[int, int]] = set()
             for field, position in kings:

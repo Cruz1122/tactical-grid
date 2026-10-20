@@ -8,7 +8,7 @@ Entrada conceptual: escenario válido, `unit_id`, objetivo y parámetros de bús
 
 Los sucesores deben aplicar los patrones y costos reales de la pieza. En especial, un deslizamiento entero de torre o alfil es **un movimiento**, aunque cruce varias casillas y sume sus costos.
 
-Si una ruta hipotética pudiera capturar, hay dos posibilidades aceptables para la prueba: **excluir expresamente esas transiciones** o **simular todos sus efectos**, incluyendo reaparición, reina y ocupación. No se permite «capturar gratis» sin actualizar el estado del escenario explorado.
+Las rutas hipotéticas conservan las capturas legales y simulan todos sus efectos mediante el motor: reaparición, cambio de portador y retorno de la reina a `recurso_spawn` cuando capturan al portador. No se omiten ni se aplican «capturas gratis» sin actualizar el estado explorado; la búsqueda no alterna turnos.
 
 ### Decisión adversarial
 
@@ -44,7 +44,7 @@ La función `evaluate` todavía debe definirse. Factores posibles: posesión de 
 
 ## Métricas y verificación
 
-Para búsquedas de ruta registrar, como mínimo: éxito, camino, cantidad de movimientos, costo, estados generados, estados expandidos, máximo tamaño de frontera y tiempo de ejecución.
+Para búsquedas de ruta registrar, como mínimo: validez de entrada y motivo si es inválida, éxito, camino, cantidad de movimientos, costo, estados generados, estados expandidos, máximo tamaño de frontera y tiempo de ejecución. `states_generated` incluye el origen; `states_expanded` cuenta nodos extraídos que no eran meta; `max_frontier` incluye el tamaño inicial. El tiempo en segundos incluye preparación, exploración y reconstrucción de ruta.
 
 Para decisión adversarial registrar: acción elegida, valor obtenido, nodos generados/evaluados/podados, profundidad alcanzada y tiempo. La comparación debe usar estados iniciales, parámetros y desempates reproducibles.
 

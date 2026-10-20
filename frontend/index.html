@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#131a1d">
   <title>TacticalGrid</title>
-  <link rel="stylesheet" href="/styles.css?v=22">
+  <link rel="stylesheet" href="/styles.css?v=23">
   <script defer src="https://cdn.jsdelivr.net/npm/phaser@4.2.1/dist/phaser.min.js"></script>
-  <script defer src="/api.js?v=22"></script>
+  <script defer src="/api.js?v=23"></script>
   <script defer src="/scene.js?v=24"></script>
 </head>
 <body>
@@ -65,6 +65,59 @@
       </div>
       <button id="syncState" class="button warning" type="button" disabled>Sincronizar partida</button>
       <input id="scenarioFile" type="file" accept=".json,application/json" hidden>
+    </section>
+
+    <section class="panel-section search-section" aria-labelledby="searchTitle">
+      <div class="section-heading compact">
+        <div><span class="eyebrow">BÚSQUEDA</span><h2 id="searchTitle">Ruta sugerida</h2></div>
+        <span class="search-algorithm-badge">BFS · DFS</span>
+      </div>
+      <p class="section-copy">Explora movimientos hipotéticos desde una unidad hasta una celda objetivo.</p>
+      <div class="algorithm-toggle" role="group" aria-label="Algoritmo de búsqueda">
+        <button class="algorithm-option is-selected" type="button" data-search-algorithm="bfs" aria-pressed="true">
+          <strong>BFS</strong><span>Anchura · mínimos pasos</span>
+        </button>
+        <button class="algorithm-option" type="button" data-search-algorithm="dfs" aria-pressed="false">
+          <strong>DFS</strong><span>Profundidad · primera rama</span>
+        </button>
+      </div>
+      <label class="search-field" for="searchUnit">
+        <span>Unidad de inicio</span>
+        <select id="searchUnit"></select>
+      </label>
+      <div class="search-target">
+        <span class="field-caption">Objetivo · fila, columna</span>
+        <div class="target-row">
+          <input id="searchTargetRow" type="number" min="0" step="1" inputmode="numeric" placeholder="Fila" aria-label="Fila objetivo">
+          <input id="searchTargetCol" type="number" min="0" step="1" inputmode="numeric" placeholder="Columna" aria-label="Columna objetivo">
+          <button id="pickSearchTarget" class="button secondary target-picker" type="button" aria-pressed="false">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s7-5.4 7-11a7 7 0 1 0-14 0c0 5.6 7 11 7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg>
+            <span id="pickSearchTargetLabel">Elegir</span>
+          </button>
+        </div>
+      </div>
+      <button id="runSearch" class="button primary search-run" type="button" disabled>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V9m7 10V5m7 14v-7"/><path d="m3 19 17-13"/></svg>
+        <span id="runSearchLabel">Ejecutar búsqueda</span>
+      </button>
+      <section id="searchResult" class="search-result" hidden aria-live="polite" aria-labelledby="searchResultTitle">
+        <div class="search-result-head">
+          <div><span class="eyebrow">RESULTADO</span><h3 id="searchResultTitle">—</h3></div>
+          <button id="clearSearch" class="search-clear" type="button" aria-label="Limpiar ruta" title="Limpiar ruta">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
+          </button>
+        </div>
+        <p id="searchMessage" class="search-message"></p>
+        <div id="searchMetrics" class="search-metrics" hidden>
+          <div><small>Movimientos</small><strong id="searchMoves">—</strong></div>
+          <div><small>Costo</small><strong id="searchCost">—</strong></div>
+          <div><small>Generados</small><strong id="searchGenerated">—</strong></div>
+          <div><small>Expandidos</small><strong id="searchExpanded">—</strong></div>
+          <div><small>Frontera máx.</small><strong id="searchFrontier">—</strong></div>
+          <div><small>Tiempo</small><strong id="searchElapsed">—</strong></div>
+        </div>
+        <p id="searchPath" class="search-path" hidden></p>
+      </section>
     </section>
 
     <section class="panel-section king-section" aria-labelledby="kingsTitle">

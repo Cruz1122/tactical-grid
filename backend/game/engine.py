@@ -134,22 +134,44 @@ def _finish(state: dict[str, Any], result: str) -> None:
     state["juego"]["resultado"] = result
 
 
-def state_key(state: dict[str, Any]) -> tuple[Any, ...]:
+def _freeze_state_value(value: Any) -> Any:
+    if isinstance(value, dict):
+        return tuple(
+            sorted((key, _freeze_state_value(nested)) for key, nested in value.items())
+        )
+    if isinstance(value, (list, tuple)):
+        return tuple(_freeze_state_value(item) for item in value)
+    return value
+
+
+def static_state_key(state: dict[str, Any]) -> tuple[Any, ...]:
+    """Congela una vez los datos estáticos compartidos por la búsqueda."""
+    return _freeze_state_value(
+        {
+            key: state.get(key)
+            for key in (
+                "version",
+                "mapa",
+                "tipos_terreno",
+                "terreno",
+                "bases",
+                "recurso_spawn",
+            )
+        }
+    )
+
+
+def state_key(
+    state: dict[str, Any], *, static_key: tuple[Any, ...] | None = None
+) -> tuple[Any, ...]:
     """Produce una clave inmutable y determinista para estados equivalentes.
 
     Preconditions: el estado contiene estructuras JSON válidas y unidades con IDs.
     Postconditions: la clave considera escenario, turno, unidades/spawns, reina,
     reyes y fase/resultado; no depende de identidades Python ni del orden de claves.
-    Complexity: O(S + U log U + K log K), donde S es el tamaño del escenario.
+    `static_key`, si se entrega, debe proceder del mismo escenario inmutable.
+    Complexity: O(S + U log U + K log K), o O(U log U + K log K) con `static_key`.
     """
-
-    def freeze(value: Any) -> Any:
-        if isinstance(value, dict):
-            return tuple(sorted((key, freeze(nested)) for key, nested in value.items()))
-        if isinstance(value, (list, tuple)):
-            return tuple(freeze(item) for item in value)
-        return value
-
     units = tuple(
         sorted(
             (
@@ -159,7 +181,7 @@ def state_key(state: dict[str, Any]) -> tuple[Any, ...]:
                 unit.get("fila"),
                 unit.get("columna"),
                 unit.get("activo", True),
-                freeze(unit.get("spawn")),
+                _freeze_state_value(unit.get("spawn")),
             )
             for unit in state.get("unidades", [])
         )
@@ -183,27 +205,68 @@ def state_key(state: dict[str, Any]) -> tuple[Any, ...]:
         game.get("estado"),
         game.get("resultado"),
     ) if isinstance(game, dict) else None
-    scenario_key = freeze(
-        {
-            key: state.get(key)
-            for key in (
-                "version",
-                "mapa",
-                "tipos_terreno",
-                "terreno",
-                "bases",
-                "recurso_spawn",
-            )
-        }
-    )
+    scenario_key = static_key if static_key is not None else static_state_key(state)
     return (
         scenario_key,
         state.get("turno"),
         units,
-        freeze(state.get("recurso")),
+        _freeze_state_value(state.get("recurso")),
         game_key,
         king_positions,
     )
+
+
+def _apply_move_effects(
+    state: dict[str, Any], unit_id: str, destination: Position
+) -> None:
+    """Aplica movimiento, capturas y recogida de reina sobre una copia mutable."""
+    mover = _unit_by_id(state, unit_id)
+    if mover is None:
+        raise ValueError(f"No existe la unidad {unit_id!r}")
+
+    game = state["juego"]
+    victims = [
+        unit
+        for unit in state.get("unidades", [])
+        if unit.get("activo", True) is True
+        and unit.get("bando") != mover.get("bando")
+        and (unit.get("fila"), unit.get("columna")) == destination
+    ]
+    captured_carrier = any(
+        game.get("portador_recurso") == victim.get("id") for victim in victims
+    )
+    mover["fila"], mover["columna"] = destination
+    for victim in victims:
+        _capture_unit(state, unit_id, victim["id"], destination)
+
+    if not captured_carrier and _ground_queen(state) == destination:
+        pickup = deepcopy(state)
+        pickup["juego"]["portador_recurso"] = unit_id
+        pickup["recurso"] = None
+        if not is_in_check(pickup, mover["bando"]):
+            game["portador_recurso"] = unit_id
+            state["recurso"] = None
+
+
+def hypothetical_move(
+    state: dict[str, Any], unit_id: str, destination: dict[str, int] | Position
+) -> dict[str, Any]:
+    """Devuelve una copia tras un movimiento legal, sin consumir ni alternar turnos.
+
+    Conserva los efectos compartidos de captura, reina y reaparición; no comprueba
+    el turno activo ni resuelve el resultado de una partida hipotética.
+    """
+    target = _position(destination)
+    unit = _unit_by_id(state, unit_id)
+    if unit is None or unit.get("activo", True) is not True:
+        raise ValueError(f"No existe una unidad activa con id {unit_id!r}")
+    if _position_dict(target) not in legal_moves(state, unit_id):
+        raise ValueError(f"El destino {_position_dict(target)} no es legal para la unidad {unit_id!r}")
+
+    candidate = deepcopy(state)
+    _apply_move_effects(candidate, unit_id, target)
+    _respawn_in_place(candidate)
+    return candidate
 
 
 def transition(state: dict[str, Any], action: dict[str, Any]) -> dict[str, Any]:
@@ -236,30 +299,7 @@ def transition(state: dict[str, Any], action: dict[str, Any]) -> dict[str, Any]:
     if kind == "move":
         destination_value = action.get("destination", action.get("destino"))
         destination = _position(destination_value)
-        mover = _unit_by_id(candidate, unit_id)
-        if mover is None:
-            raise ValueError(f"No existe la unidad {unit_id!r}")
-
-        victims = [
-            unit
-            for unit in candidate.get("unidades", [])
-            if unit.get("activo", True) is True
-            and unit.get("bando") != mover.get("bando")
-            and (unit.get("fila"), unit.get("columna")) == destination
-        ]
-        captured_carrier = any(game.get("portador_recurso") == victim.get("id") for victim in victims)
-        mover["fila"], mover["columna"] = destination
-        for victim in victims:
-            _capture_unit(candidate, unit_id, victim["id"], destination)
-
-        if not captured_carrier and _ground_queen(candidate) == destination:
-            pickup = deepcopy(candidate)
-            pickup["juego"]["portador_recurso"] = unit_id
-            pickup["recurso"] = None
-            if not is_in_check(pickup, mover["bando"]):
-                candidate = pickup
-                game = candidate["juego"]
-
+        _apply_move_effects(candidate, unit_id, destination)
 
     elif kind == "collect":
         game["portador_recurso"] = unit_id

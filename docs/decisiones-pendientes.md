@@ -16,8 +16,6 @@ Esta lista evita que se confundan **reglas ya acordadas** con detalles todavía 
 
 | Tema | Por qué importa | Decisión que aún falta |
 | --- | --- | --- |
-
-| Tipos no previstos | El PDF deja abiertos detalles de unidades, sin enumerar todos los tipos. | Qué error presentar ante tipos desconocidos, sin prometer compatibilidad que el motor no puede ejecutar. |
 | Cantidad de unidades | El texto del PDF indica al menos 3 por bando, pero su ejemplo tiene 2. | Documentar formalmente la excepción para el importador; verificar interpretación con el docente si es posible. |
 | Terminación anómala | Se acordó empate por falta de jugadas. | Si se requieren otras condiciones terminales (p. ej. límite de turnos o repeticiones), definirlas antes de usarlas. |
 | Heurística adicional | Se exige A* con al menos dos heurísticas. | Fórmula y prueba/justificación de sus propiedades. |
@@ -25,7 +23,7 @@ Esta lista evita que se confundan **reglas ya acordadas** con detalles todavía 
 
 ## Decisiones implementadas en el motor de la fase 3
 
-- Se aceptan los tipos internos `knight`, `rook`, `bishop`, `estandar` y sus alias `caballo`, `torre`, `alfil`.
+- Se aceptan los tipos internos `knight`, `rook`, `bishop`, `estandar` y sus alias `caballo`, `torre`, `alfil`. Al importar escenarios, cualquier tipo de unidad presente que no esté admitido se normaliza a `estandar`, sin modificar la entrada original.
 - Reyes automáticos: celdas transitables en orden fila-columna, cantidades explícitas por bando y selección voraz determinista; puede fallar sin mutación aunque exista otra distribución.
 - Ningún rey ocupa el `spawn` de una unidad, para no impedir una reaparición futura.
 - Accesibilidad: las bases deben permanecer conectadas por celdas transitables ortogonales que no ocupen reyes.

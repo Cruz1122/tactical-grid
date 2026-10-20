@@ -40,7 +40,7 @@ La API expone esas operaciones en `POST /api/kings` con `mode: "manual"`, `"auto
 
 ## Limitaciones deliberadas de esta fase
 
-- `state_key` incluye el mapa y sus reglas para distinguir estados de escenarios distintos. Si la fase 4 necesita una clave más pequeña para navegación dentro de un mapa fijo, debe definirse por separado.
+- `state_key` incluye el mapa y sus reglas para distinguir escenarios distintos. En BFS/DFS, `static_state_key` congela esos datos una vez por búsqueda y se pasa como clave estática reutilizable; la parte dinámica sigue distinguiendo turno, unidades, reina, reyes y estado de partida.
 - `successors` conserva el contrato de esta fase: devuelve estados. Cada acción se aplica mediante `transition`; cualquier contradicción entre `legal_moves` y `transition` se propaga. No se cambia ahora a pares acción-estado ni se integra con Minimax.
 - `generate_kings` usa una selección voraz determinista por orden fila-columna. Devuelve todas las cantidades pedidas si encuentra una configuración válida; en caso contrario lanza `ValueError` sin mutar la entrada. No garantiza encontrar una solución que exista si la selección previa bloqueó las opciones restantes.
 

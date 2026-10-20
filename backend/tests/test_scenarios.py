@@ -125,6 +125,19 @@ class ScenarioValidationTests(unittest.TestCase):
         ]
         validate_scenario(scenario)
 
+    def test_unadmitted_unit_types_are_normalized_to_standard_without_mutating_input(self) -> None:
+        for unit_type in ("dragon", 42, None, ["custom"]):
+            with self.subTest(unit_type=unit_type):
+                scenario = valid_scenario()
+                scenario["unidades"][0]["tipo"] = unit_type
+                original = copy.deepcopy(scenario)
+                self.assert_invalid(scenario, "tipo de unidad desconocido")
+
+                state = prepare_scenario(scenario)
+
+                self.assertEqual(state["unidades"][0]["tipo"], "estandar")
+                self.assertEqual(scenario, original)
+
     def test_inconsistent_dimensions_are_rejected(self) -> None:
         scenario = valid_scenario()
         scenario["terreno"].pop()
@@ -205,6 +218,15 @@ class ScenarioValidationTests(unittest.TestCase):
         scenario = valid_scenario()
         scenario["recurso_spawn"] = {"fila": 0, "columna": 3}
         self.assert_invalid(scenario, "debe coincidir con la posición inicial de recurso")
+
+    def test_carried_queen_spawn_cannot_overlap_a_king(self) -> None:
+        scenario = valid_scenario()
+        scenario["juego"]["portador_recurso"] = "A1"
+        scenario["recurso"] = None
+        scenario["recurso_spawn"] = {"fila": 1, "columna": 1}
+        scenario["reyes"] = {"A": [{"id": "KA", "fila": 1, "columna": 1}], "B": []}
+
+        self.assert_invalid(scenario, "no puede ocupar recurso_spawn")
 
 
 class ScenarioApiTests(unittest.IsolatedAsyncioTestCase):

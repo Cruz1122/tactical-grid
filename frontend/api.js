@@ -34,6 +34,23 @@ function assertPresentationShape(presentation) {
   return presentation;
 }
 
+function assertSearchResultShape(result) {
+  const optionalNumbers = [
+    "moves", "cost", "states_generated", "states_expanded", "max_frontier", "elapsed_seconds"
+  ];
+  if (!isObject(result) ||
+      typeof result.found !== "boolean" ||
+      typeof result.input_valid !== "boolean" ||
+      !(result.error == null || typeof result.error === "string") ||
+      !Array.isArray(result.path) ||
+      result.path.some(step => !isObject(step) ||
+        !Number.isInteger(step.fila) || !Number.isInteger(step.columna)) ||
+      optionalNumbers.some(field => result[field] != null && typeof result[field] !== "number")) {
+    throw new Error("El servidor devolvió un resultado de búsqueda con formato inválido.");
+  }
+  return result;
+}
+
 function validateResponse(data) {
   if (!isObject(data)) throw new Error("La respuesta del servidor no es un objeto JSON.");
   if (data.state) assertStateShape(data.state);
@@ -118,6 +135,11 @@ class ApiClient {
       throw new Error("El servidor devolvió una acción legal con formato inválido.");
     }
     return data;
+  }
+
+  static async search(payload, signal) {
+    const data = await this.request("/api/search", payload, {signal});
+    return assertSearchResultShape(data.result);
   }
 }
 
@@ -233,6 +255,10 @@ class TacticalGridUI {
     this.legalController = null;
     this.lastPresentation = null;
     this.moveHistory = [];
+    this.searchAlgorithm = "bfs";
+    this.searchPending = false;
+    this.searchController = null;
+    this.searchRequestId = 0;
     const el = id => document.getElementById(id);
     this.el = el;
 
@@ -277,7 +303,345 @@ class TacticalGridUI {
         this.updateKingInputs();
       });
     }
+    for (const card of document.querySelectorAll("[data-search-algorithm]")) {
+      card.addEventListener("click", () => {
+        if (card.disabled) return;
+        this.setSearchAlgorithm(card.dataset.searchAlgorithm);
+      });
+    }
+    el("runSearch").addEventListener("click", () => this.search());
+    el("clearSearch").addEventListener("click", () => this.clearSearchResult({announce: true}));
+    el("pickSearchTarget").addEventListener("click", () => this.setTargetPicking(!this.pickingTarget));
+    el("searchUnit").addEventListener("change", () => {
+      this.setTargetPicking(false, {announce: false});
+      this.clearSearchResult();
+    });
+    for (const input of [el("searchTargetRow"), el("searchTargetCol")]) {
+      input.addEventListener("input", () => {
+        this.setTargetPicking(false, {announce: false});
+        this.clearSearchResult();
+      });
+    }
+    document.addEventListener("keydown", event => {
+      if (event.key !== "Escape" || !this.pickingTarget) return;
+      event.preventDefault();
+      this.setTargetPicking(false);
+    });
+    this.setSearchAlgorithm("bfs");
     this.updateKingInputs();
+    this.updateSearchControls();
+  }
+
+  setSearchAlgorithm(algorithm) {
+    if (!["bfs", "dfs"].includes(algorithm)) return;
+    this.searchAlgorithm = algorithm;
+    for (const card of document.querySelectorAll("[data-search-algorithm]")) {
+      const selected = card.dataset.searchAlgorithm === algorithm;
+      card.classList.toggle("is-selected", selected);
+      card.setAttribute("aria-pressed", String(selected));
+    }
+    const result = this.el("searchResult");
+    if (result && !result.hidden) this.clearSearchResult();
+  }
+
+  setTargetPicking(active, {announce = true} = {}) {
+    const wasPicking = this.pickingTarget;
+    const enabled = Boolean(active) && !this.searchPending && !this.mutationPending && !this.desynchronized;
+    this.pickingTarget = enabled;
+    const button = this.el("pickSearchTarget");
+    button.classList.toggle("is-active", enabled);
+    button.setAttribute("aria-pressed", String(enabled));
+    this.el("pickSearchTargetLabel").textContent = enabled ? "Cancelar" : "Elegir";
+    if (this.scene.game?.canvas) this.scene.game.canvas.style.cursor = enabled ? "crosshair" : "";
+    if (!announce) return;
+    if (enabled) {
+      this.setActionHint("Selecciona una celda objetivo en el tablero.", {kind: "info"});
+      this.say("Haz clic en una celda del tablero para fijar el objetivo de la búsqueda.");
+    } else {
+      this.setActionHint(this.defaultActionHint(
+        this.scene.state,
+        this.scene.state?.juego?.estado === "finalizado"
+      ));
+      if (wasPicking) this.say("Selección de objetivo cancelada.");
+    }
+  }
+
+  setTarget(row, column) {
+    if (!Number.isInteger(row) || !Number.isInteger(column) ||
+        row < 0 || column < 0 || row >= this.scene.rows || column >= this.scene.cols) {
+      return;
+    }
+    this.clearSearchResult();
+    this.el("searchTargetRow").value = String(row);
+    this.el("searchTargetCol").value = String(column);
+    this.setTargetPicking(false, {announce: false});
+    this.setActionHint(`Objetivo (${row}, ${column}) listo. Ejecuta la búsqueda.`, {kind: "info"});
+    this.say(`Objetivo de búsqueda: fila ${row}, columna ${column}.`);
+  }
+
+  updateSearchUnits(state) {
+    const select = this.el("searchUnit");
+    const previous = select.value;
+    const units = (state.unidades || []).filter(unit => unit.activo !== false);
+    select.replaceChildren();
+    if (units.length === 0) {
+      const option = new Option("Sin unidades activas", "");
+      option.disabled = true;
+      option.selected = true;
+      select.append(option);
+      return;
+    }
+    for (const unit of units) {
+      select.append(new Option(`${unit.id} · ${this.unitLabel(unit)}`, unit.id));
+    }
+    const preferred = [previous, state.prueba?.unidad_inicio]
+      .find(id => units.some(unit => unit.id === id));
+    select.value = preferred || units[0].id;
+  }
+
+  updateSearchTargetBounds(state) {
+    const rows = state?.mapa?.filas ?? this.scene.rows;
+    const columns = state?.mapa?.columnas ?? this.scene.cols;
+    const rowInput = this.el("searchTargetRow");
+    const columnInput = this.el("searchTargetCol");
+    rowInput.max = String(Math.max(0, rows - 1));
+    columnInput.max = String(Math.max(0, columns - 1));
+    const row = this.parseCoordinate(rowInput.value);
+    const column = this.parseCoordinate(columnInput.value);
+    if (row !== null && column !== null && row < rows && column < columns) return;
+    const testGoal = state?.prueba?.objetivo;
+    const queen = state?.juego?.portador_recurso == null ? state?.recurso : null;
+    const suggestion = [testGoal, queen, state?.bases?.B, state?.bases?.A].find(candidate =>
+      candidate && Number.isInteger(candidate.fila) && Number.isInteger(candidate.columna) &&
+      candidate.fila >= 0 && candidate.fila < rows &&
+      candidate.columna >= 0 && candidate.columna < columns
+    );
+    rowInput.value = suggestion ? String(suggestion.fila) : "0";
+    columnInput.value = suggestion ? String(suggestion.columna) : "0";
+  }
+
+  parseCoordinate(value) {
+    const text = String(value ?? "").trim();
+    if (!text) return null;
+    const number = Number(text);
+    return Number.isInteger(number) ? number : null;
+  }
+
+  readSearchTarget() {
+    const row = this.parseCoordinate(this.el("searchTargetRow").value);
+    const column = this.parseCoordinate(this.el("searchTargetCol").value);
+    if (row === null || column === null) {
+      return {error: "Escribe una fila y una columna enteras para el objetivo."};
+    }
+    const rows = this.scene.state?.mapa?.filas ?? 0;
+    const columns = this.scene.state?.mapa?.columnas ?? 0;
+    if (row < 0 || column < 0 || row >= rows || column >= columns) {
+      return {
+        error: `El objetivo debe estar dentro del mapa (filas 0–${Math.max(0, rows - 1)}, columnas 0–${Math.max(0, columns - 1)}).`
+      };
+    }
+    return {row, column};
+  }
+
+  updateSearchControls() {
+    const state = this.scene.state;
+    const select = this.el("searchUnit");
+    const hasUnit = Boolean(select?.value &&
+      [...select.options].some(option => option.value === select.value));
+    const locked = this.mutationPending || this.desynchronized || !state || !hasUnit;
+    const busy = this.searchPending;
+    for (const id of ["searchUnit", "searchTargetRow", "searchTargetCol", "pickSearchTarget", "runSearch"]) {
+      const control = this.el(id);
+      if (control) control.disabled = locked || busy;
+    }
+    for (const card of document.querySelectorAll("[data-search-algorithm]")) {
+      card.disabled = locked || busy;
+    }
+    const runLabel = this.el("runSearchLabel");
+    if (runLabel) runLabel.textContent = busy ? "Calculando ruta…" : "Ejecutar búsqueda";
+    const result = this.el("searchResult");
+    const clear = this.el("clearSearch");
+    if (clear) clear.disabled = locked || busy || result.hidden;
+    if (result) result.setAttribute("aria-busy", String(busy));
+  }
+
+  cancelSearch() {
+    this.searchRequestId += 1;
+    if (this.searchController) this.searchController.abort();
+    this.searchController = null;
+    this.searchPending = false;
+    this.updateSearchControls();
+  }
+
+  clearSearchResult({announce = false} = {}) {
+    const result = this.el("searchResult");
+    result.hidden = true;
+    result.removeAttribute("data-state");
+    this.el("searchResultTitle").textContent = "—";
+    this.el("searchMessage").textContent = "";
+    this.el("searchMetrics").hidden = true;
+    const path = this.el("searchPath");
+    path.hidden = true;
+    path.textContent = "";
+    path.removeAttribute("title");
+    this.scene.showSearchPath([]);
+    this.updateSearchControls();
+    if (announce) {
+      this.setActionHint(this.defaultActionHint(
+        this.scene.state,
+        this.scene.state?.juego?.estado === "finalizado"
+      ));
+      this.say("Ruta sugerida eliminada.");
+    }
+  }
+
+  formatSearchNumber(value) {
+    if (!Number.isFinite(value)) return "—";
+    return Number.isInteger(value) ? String(value) : String(Number(value.toFixed(2)));
+  }
+
+  formatSearchTime(seconds) {
+    if (!Number.isFinite(seconds)) return "—";
+    return seconds < 1 ? `${(seconds * 1000).toFixed(1)} ms` : `${seconds.toFixed(2)} s`;
+  }
+
+  renderSearchResult(result, context) {
+    const algorithm = context.algorithm.toUpperCase();
+    const target = `(${context.target.row}, ${context.target.column})`;
+    const panel = this.el("searchResult");
+    panel.hidden = false;
+    this.el("searchMetrics").hidden = !result.input_valid;
+    this.el("searchMoves").textContent = this.formatSearchNumber(result.moves);
+    this.el("searchCost").textContent = this.formatSearchNumber(result.cost);
+    this.el("searchGenerated").textContent = this.formatSearchNumber(result.states_generated);
+    this.el("searchExpanded").textContent = this.formatSearchNumber(result.states_expanded);
+    this.el("searchFrontier").textContent = this.formatSearchNumber(result.max_frontier);
+    this.el("searchElapsed").textContent = this.formatSearchTime(result.elapsed_seconds);
+    const path = this.el("searchPath");
+    path.hidden = true;
+    path.textContent = "";
+    path.removeAttribute("title");
+
+    if (!result.input_valid) {
+      panel.dataset.state = "error";
+      this.el("searchResultTitle").textContent = "Entrada no válida";
+      this.el("searchMessage").textContent = result.error || "El servidor rechazó los datos de la búsqueda.";
+      this.scene.showSearchPath([]);
+      this.say(result.error || "El servidor rechazó los datos de la búsqueda.", {
+        title: `${algorithm} no pudo iniciar`,
+        tone: "error"
+      });
+      this.updateSearchControls();
+      return;
+    }
+
+    if (!result.found) {
+      panel.dataset.state = "empty";
+      this.el("searchResultTitle").textContent = "Sin ruta";
+      this.el("searchMessage").textContent =
+        `No existe una ruta legal desde ${context.unitId} hasta ${target}.`;
+      this.scene.showSearchPath([]);
+      this.setActionHint(`${algorithm} no encontró una ruta legal hasta ${target}.`, {kind: "info"});
+      this.say(`${algorithm} exploró el estado sin encontrar una ruta hacia ${target}.`, {
+        title: "Objetivo inalcanzable",
+        tone: "info"
+      });
+      this.updateSearchControls();
+      return;
+    }
+
+    panel.dataset.state = "found";
+    this.el("searchResultTitle").textContent = `${algorithm} encontró una ruta`;
+    this.el("searchMessage").textContent = context.algorithm === "bfs"
+      ? "BFS garantiza el menor número de movimientos en este escenario."
+      : "DFS devuelve la primera ruta encontrada; puede no ser la más corta.";
+    const points = result.path.map(point => `${point.fila},${point.columna}`);
+    if (points.length) {
+      const fullPath = `Ruta: ${points.join(" → ")}`;
+      path.textContent = points.length > 24
+        ? `Ruta: ${points.slice(0, 12).join(" → ")} → … → ${points.slice(-6).join(" → ")}`
+        : fullPath;
+      path.title = fullPath;
+      path.hidden = false;
+    }
+    this.scene.showSearchPath(result.path);
+    const moves = result.moves ?? 0;
+    const moveLabel = moves === 1 ? "movimiento" : "movimientos";
+    const cost = this.formatSearchNumber(result.cost);
+    this.setActionHint(
+      `${algorithm}: ${moves} ${moveLabel} · costo ${cost}. La ruta se muestra en el tablero.`,
+      {kind: "move"}
+    );
+    this.say(`${algorithm} encontró una ruta de ${moves} ${moveLabel} hasta ${target}.`, {
+      title: "Ruta encontrada",
+      tone: "success"
+    });
+    this.updateSearchControls();
+  }
+
+  showSearchProblem(title, message) {
+    const panel = this.el("searchResult");
+    panel.hidden = false;
+    panel.dataset.state = "error";
+    this.el("searchResultTitle").textContent = title;
+    this.el("searchMessage").textContent = message;
+    this.el("searchMetrics").hidden = true;
+    const path = this.el("searchPath");
+    path.hidden = true;
+    path.textContent = "";
+    path.removeAttribute("title");
+    this.scene.showSearchPath([]);
+    this.updateSearchControls();
+    this.say(message, {title, tone: "error"});
+  }
+
+  async search() {
+    if (this.mutationPending || this.searchPending || this.desynchronized) return null;
+    const unitId = this.el("searchUnit").value;
+    if (!unitId) {
+      this.showSearchProblem("Sin unidad", "No hay una unidad activa para iniciar la búsqueda.");
+      return null;
+    }
+    const target = this.readSearchTarget();
+    if (target.error) {
+      this.showSearchProblem("Revisa el objetivo", target.error);
+      return null;
+    }
+    const algorithm = this.searchAlgorithm;
+    this.setTargetPicking(false, {announce: false});
+    this.cancelSearch();
+    this.clearSearchResult();
+    const requestId = this.searchRequestId;
+    const epoch = this.stateEpoch;
+    const controller = new AbortController();
+    this.searchController = controller;
+    this.searchPending = true;
+    this.updateSearchControls();
+    this.setActionHint(`Calculando ruta con ${algorithm.toUpperCase()}…`, {kind: "move"});
+    try {
+      const result = await ApiClient.search({
+        algorithm,
+        unit_id: unitId,
+        goal: {row: target.row, column: target.column}
+      }, controller.signal);
+      if (requestId !== this.searchRequestId || epoch !== this.stateEpoch) return null;
+      const context = {algorithm, unitId, target};
+      this.renderSearchResult(result, context);
+      return result;
+    } catch (error) {
+      if (error?.name === "AbortError" || requestId !== this.searchRequestId) return null;
+      this.showSearchProblem(
+        "Búsqueda no completada",
+        error?.message || "No se pudo ejecutar la búsqueda."
+      );
+      return null;
+    } finally {
+      if (requestId === this.searchRequestId) {
+        this.searchController = null;
+        this.searchPending = false;
+        this.updateSearchControls();
+      }
+    }
   }
 
   updateKingInputs() {
@@ -413,6 +777,7 @@ class TacticalGridUI {
       this.el("configureKings").disabled = !configurable;
     }
     this.updateSyncButton();
+    this.updateSearchControls();
     this.scene.setBusy(locked);
   }
 
@@ -637,6 +1002,9 @@ class TacticalGridUI {
 
   updateState(state, source, presentation, animate = false) {
     assertStateShape(state);
+    this.cancelSearch();
+    this.clearSearchResult();
+    this.setTargetPicking(false, {announce: false});
     const previousState = this.scene.state;
     this.stateEpoch += 1;
     this.lastPresentation = assertPresentationShape(presentation) || {
@@ -658,6 +1026,9 @@ class TacticalGridUI {
       this.clearSelection();
     }
     this.updateKingModeFromState(state);
+    this.updateSearchUnits(state);
+    this.updateSearchTargetBounds(state);
+    this.updateSearchControls();
     this.el("connection").hidden = true;
     if (animate) {
       this.recordTransition(this.lastPresentation.eventos_ultimo_turno, previousState, state);
@@ -790,7 +1161,7 @@ class TacticalGridUI {
 
   async reconcileAfterLostResponse(error) {
     this.clearSelection();
-    this.scene.showSearchPath([]);
+    this.clearSearchResult();
     this.say("No se confirmó la respuesta; consultando el estado oficial. No se repetirá la acción.");
     const reconciled = await this.reconcileOfficialState(
       "No se pudo reconciliar el estado oficial tras la respuesta perdida."
@@ -817,6 +1188,8 @@ class TacticalGridUI {
   enterDesynchronized(error, message) {
     this.desynchronized = true;
     this.cancelLegalRequest();
+    this.cancelSearch();
+    this.clearSearchResult();
     this.scene.selectedUnit = null;
     this.scene.setLegalMoves([]);
     this.scene.showSearchPath([]);
@@ -850,6 +1223,8 @@ class TacticalGridUI {
       this.say("Hay una acción en curso; espera la confirmación del servidor.");
       return null;
     }
+    this.cancelSearch();
+    this.clearSearchResult();
     this.mutationPending = true;
     this.cancelLegalRequest();
     this.setInteractive(true);

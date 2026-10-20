@@ -9,6 +9,8 @@ JSON externo
    ↓
 Lectura y análisis sintáctico
    ↓
+Copiar y normalizar tipos de unidad no admitidos a `estandar`
+   ↓
 validate_scenario   ── error ──→ informar y conservar la partida anterior
    ↓
 Construir estado candidato y obtener spawns iniciales
@@ -20,7 +22,7 @@ Sustituir el estado oficial una sola vez
 Configuración opcional de reyes, antes del primer movimiento
 ```
 
-La normalización y la validación no son lo mismo: `validate_scenario` **inspecciona**, mientras que construir el estado **deriva** datos internos. No se deben modificar los datos de entrada como efecto colateral de validar.
+La normalización y la validación no son lo mismo: `prepare_scenario` copia la entrada y convierte cualquier tipo de unidad presente que no esté admitido a `estandar`; `validate_scenario` **inspecciona** el escenario ya normalizado. No se modifica el JSON de entrada. Un campo `tipo` ausente sigue siendo inválido.
 
 ## Qué valida `validate_scenario`
 
@@ -31,8 +33,8 @@ La normalización y la validación no son lo mismo: `validate_scenario` **inspec
 - Catálogo `tipos_terreno` consistente; cada terreno usado por la matriz existe.
 - Terrenos transitables con costo numérico positivo; obstáculos no requieren ese costo.
 - Bases, recurso y unidades con coordenadas válidas dentro del tablero.
-- `recurso_spawn`, si aparece, con coordenadas válidas; sin portador debe coincidir con la posición inicial de `recurso`. Si la partida empieza con portador y `recurso` es `null`, `recurso_spawn` es obligatorio.
-- Campos `id`, `bando`, `tipo` y posición de cada unidad donde correspondan.
+- `recurso_spawn`, si aparece, con coordenadas transitables; sin portador debe coincidir con la posición inicial de `recurso`. Si la partida empieza con portador y `recurso` es `null`, `recurso_spawn` es obligatorio y no puede coincidir con un rey.
+- Campos `id`, `bando`, `tipo` y posición de cada unidad donde correspondan. Cualquier tipo de unidad presente que no esté admitido se normaliza a `estandar` durante la preparación del escenario.
 - IDs únicos; bandos y turno `A` o `B`.
 - `juego.portador_recurso` nulo o referencia a una unidad existente.
 - `prueba`, si aparece, con estructura compatible con el modo de prueba solicitado.
@@ -41,7 +43,7 @@ La normalización y la validación no son lo mismo: `validate_scenario` **inspec
 
 - Una unidad no comienza en una celda no transitable.
 - Dos unidades activas no empiezan superpuestas.
-- Los reyes, si llegan en JSON, no se solapan con elementos prohibidos ni con el `spawn` de unidades inactivas.
+- Los reyes, si llegan en JSON, no se solapan con elementos prohibidos ni con el `spawn` de unidades inactivas; tampoco pueden ocupar `recurso_spawn` cuando la reina empieza transportada.
 - Las bases son transitables y permanecen conectadas por celdas transitables ortogonales sin reyes.
 
 El PDF no obliga a rechazar un mapa externo por medir menos de 20 × 20. Tampoco obliga a que cada unidad externa incluya `spawn` o a que el escenario contenga reyes. No introducir restricciones nuevas y silenciosas sobre campos que el contrato deja abiertos.
@@ -49,7 +51,7 @@ El PDF no obliga a rechazar un mapa externo por medir menos de 20 × 20. Tampoco
 ## Qué hace la construcción del estado
 
 - Preserva el significado de los campos del contrato oficial.
-- Obtiene el `spawn` de cada unidad a partir de su posición de inicio.
+- Normaliza tipos de unidad desconocidos a `estandar` y obtiene el `spawn` de cada unidad a partir de su posición de inicio.
 - Inicializa el estado de actividad y los datos internos necesarios para el motor, sin inventar reyes ausentes.
 - Mantiene coherencia entre reina en tablero y portador del recurso.
 - Conserva `recurso_spawn` desde el `recurso` inicial; una captura posterior usa esa posición y nunca la casilla de captura.
@@ -94,6 +96,7 @@ Un mensaje útil señala el campo y el motivo: «`terreno[2][4]`: tipo desconoci
 | Terreno desconocido o costo no positivo | Se rechaza |
 | Unidad sobre obstáculo o fuera de límites | Se rechaza |
 | IDs duplicados o turno inválido | Se rechaza |
+| Tipo de unidad no admitido | Se carga como `estandar` sin modificar el JSON original |
 | Portador que no existe | Se rechaza |
 | `recurso_spawn` contradictorio con `recurso` inicial sin portador | Se rechaza |
 | Portador con `recurso: null` sin `recurso_spawn` | Se rechaza |
