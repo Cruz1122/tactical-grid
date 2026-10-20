@@ -76,6 +76,6 @@ Estos casos son criterios de diseño y aceptación, **no resultados obtenidos to
 
 ## Requisito documental de los métodos
 
-Los métodos sustantivos deben documentar `Purpose`, `Preconditions`, `Postconditions`, `Complexity`, `AI usage`, `AI intervention` y `Student validation`, con información que corresponda al código real. La entrega declara el uso de IA; la sustentación exige que cada integrante pueda explicar y modificar los métodos.
+Los métodos deben documentar su propósito, precondiciones, postcondiciones y complejidad cuando corresponda. La intervención de IA y la validación del estudiante se declaran una sola vez por alcance en la documentación técnica (ver [motor-del-juego.md](motor-del-juego.md)); no se repiten como frases de relleno en cada docstring. La validación del estudiante no debe afirmarse hasta que un integrante la haya realizado personalmente. La sustentación exige que cada integrante pueda explicar y modificar los métodos.
 
 **Referencias:** `Primer proyecto.pdf`, pp. 3–5 y 7–10; `TacticalGrid_Reglas.md`, sección 7.

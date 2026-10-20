@@ -1,6 +1,8 @@
 import math
 from typing import Any, TypeGuard
 
+from backend.game.movement import has_legal_action, is_in_check, move_cost
+
 SUPPORTED_UNIT_TYPES = {"knight", "rook", "bishop", "estandar", "caballo", "torre", "alfil"}
 
 
@@ -18,16 +20,59 @@ def _is_integer(value: Any) -> TypeGuard[int]:
     return isinstance(value, int) and not isinstance(value, bool)
 
 
-def _check_finite_json_values(value: Any, field: str, errors: list[str]) -> None:
-    """Recorre los valores JSON y registra números no finitos con su ruta."""
+def _check_json_values(value: Any, field: str, errors: list[str]) -> None:
+    """Comprueba UTF-8 y números finitos en todo el árbol JSON."""
     if isinstance(value, dict):
         for key, nested_value in value.items():
-            _check_finite_json_values(nested_value, f"{field}.{key}", errors)
+            if isinstance(key, str):
+                try:
+                    key.encode("utf-8")
+                except UnicodeEncodeError:
+                    errors.append(f"{field}: las claves deben ser compatibles con UTF-8")
+                    key_field = f"{field}[clave Unicode inválida]"
+                else:
+                    key_field = f"{field}.{key}"
+            else:
+                key_field = f"{field}[clave]"
+            _check_json_values(nested_value, key_field, errors)
     elif isinstance(value, list):
         for index, nested_value in enumerate(value):
-            _check_finite_json_values(nested_value, f"{field}[{index}]", errors)
+            _check_json_values(nested_value, f"{field}[{index}]", errors)
+    elif isinstance(value, str):
+        try:
+            value.encode("utf-8")
+        except UnicodeEncodeError:
+            errors.append(f"{field}: las cadenas deben ser compatibles con UTF-8")
     elif isinstance(value, float) and not math.isfinite(value):
         errors.append(f"{field}: los números JSON deben ser finitos")
+
+
+def validate_utf8_string(value: str, field: str) -> None:
+    """Rechaza nombres que no pueden representarse en una respuesta UTF-8."""
+    errors: list[str] = []
+    _check_json_values(value, field, errors)
+    if errors:
+        raise ScenarioValidationError(errors)
+
+
+def carrier_winner(state: dict[str, Any]) -> str | None:
+    """Devuelve el bando del portador activo situado en su propia base."""
+    game = state.get("juego", {})
+    carrier_id = game.get("portador_recurso") if isinstance(game, dict) else None
+    units = state.get("unidades", [])
+    carrier = next(
+        (unit for unit in units if isinstance(unit, dict) and unit.get("id") == carrier_id),
+        None,
+    ) if isinstance(units, list) else None
+    if carrier is None or carrier.get("activo", True) is not True:
+        return None
+    side = carrier.get("bando")
+    base = state.get("bases", {}).get(side)
+    if side in ("A", "B") and isinstance(base, dict) and (
+        carrier.get("fila"), carrier.get("columna")
+    ) == (base.get("fila"), base.get("columna")):
+        return side
+    return None
 
 
 def _check_position(
@@ -141,7 +186,7 @@ def validate_scenario(scenario: dict[str, Any]) -> None:
         raise ScenarioValidationError(["escenario: debe ser un objeto JSON"])
 
     errors: list[str] = []
-    _check_finite_json_values(scenario, "$", errors)
+    _check_json_values(scenario, "$", errors)
     required_fields = ("version", "mapa", "tipos_terreno", "terreno", "bases", "recurso", "unidades", "turno", "juego")
     for field in required_fields:
         if field not in scenario:
@@ -236,6 +281,10 @@ def validate_scenario(scenario: dict[str, Any]) -> None:
                 errors.append(f"juego.portador_recurso: unidad inexistente {carrier_id!r}")
             elif unit_by_id[carrier_id].get("activo", True) is not True:
                 errors.append("juego.portador_recurso: la unidad portadora debe estar activa")
+        if "estado" in game and game["estado"] not in ("configuracion", "en_curso", "finalizado"):
+            errors.append("juego.estado: valor desconocido")
+        if "resultado" in game and game["resultado"] not in (None, "A", "B", "empate"):
+            errors.append("juego.resultado: debe ser null, 'A', 'B' o 'empate'")
 
     resource = scenario.get("recurso")
     resource_position: tuple[int, int] | None = None
@@ -325,36 +374,252 @@ def validate_scenario(scenario: dict[str, Any]) -> None:
         raise ScenarioValidationError(errors)
 
 
-def validate_state(state: dict[str, Any]) -> None:
-    """Comprueba las invariantes del escenario y el spawn de cada unidad.
-
-    Recorre mapa, unidades, reyes y terrenos: tiempo O(R*C + U + K + T),
-    espacio auxiliar O(U + K). No mueve unidades ni usa IA; verifica candidatos antes de cargarlos.
-    """
-    validate_scenario(state)
+def _base_positions_connected(state: dict[str, Any]) -> bool:
+    """Comprueba conectividad ortogonal de las bases sin ocupar casillas de rey."""
+    bases = state.get("bases", {})
+    if not isinstance(bases, dict) or "A" not in bases or "B" not in bases:
+        return False
+    try:
+        start = (bases["A"]["fila"], bases["A"]["columna"])
+        target = (bases["B"]["fila"], bases["B"]["columna"])
+    except (KeyError, TypeError):
+        return False
     rows = state["mapa"]["filas"]
     columns = state["mapa"]["columnas"]
+    king_positions = {
+        (king["fila"], king["columna"])
+        for group in state.get("reyes", {}).values()
+        if isinstance(group, list)
+        for king in group
+        if isinstance(king, dict)
+        and type(king.get("fila")) is int
+        and type(king.get("columna")) is int
+    }
+
+    def open_cell(position: tuple[int, int]) -> bool:
+        row, column = position
+        if not (0 <= row < rows and 0 <= column < columns) or position in king_positions:
+            return False
+        terrain_id = state["terreno"][row][column]
+        definition = state["tipos_terreno"].get(terrain_id)
+        return isinstance(definition, dict) and definition.get("transitable") is True
+
+    if not open_cell(start) or not open_cell(target):
+        return False
+    reachable = {start}
+    pending = [start]
+    while pending:
+        row, column = pending.pop()
+        for neighbor in ((row - 1, column), (row + 1, column), (row, column - 1), (row, column + 1)):
+            if neighbor not in reachable and open_cell(neighbor):
+                reachable.add(neighbor)
+                pending.append(neighbor)
+    return target in reachable
+
+
+def validate_state(
+    state: dict[str, Any], *, check_connectivity: bool = True
+) -> None:
+    """Valida el estado; la conectividad se puede omitir tras validar el escenario.
+
+    `check_connectivity` debe permanecer activo al cargar/configurar reyes. Las
+    transiciones pueden omitirlo porque no cambian terreno, bases ni reyes.
+    Complexity: O(R*C + U + K); espacio O(R*C + U + K).
+    """
+    if not isinstance(state, dict):
+        raise ScenarioValidationError(["estado: debe ser un objeto JSON"])
+
     errors: list[str] = []
-    for index, unit in enumerate(state["unidades"]):
-        if "spawn" not in unit:
-            errors.append(f"unidades[{index}].spawn: posición inicial ausente")
-            continue
-        _check_position(
-            unit["spawn"],
-            f"unidades[{index}].spawn",
-            rows,
-            columns,
-            state["terreno"],
-            state["tipos_terreno"],
-            errors,
-        )
+    units = state.get("unidades")
+    if isinstance(units, list):
+        scenario_units: list[dict[str, Any]] = []
+        for index, unit in enumerate(units):
+            if not isinstance(unit, dict):
+                scenario_units.append(unit)
+                continue
+            scenario_unit = dict(unit)
+            if unit.get("activo", True) is False:
+                if (unit.get("fila"), unit.get("columna")) != (-1, -1):
+                    errors.append(f"unidades[{index}]: una unidad inactiva debe estar fuera del tablero")
+                spawn = unit.get("spawn")
+                if isinstance(spawn, dict):
+                    scenario_unit["fila"] = spawn.get("fila")
+                    scenario_unit["columna"] = spawn.get("columna")
+            scenario_units.append(scenario_unit)
+        validation_state = dict(state)
+        validation_state["unidades"] = scenario_units
+    else:
+        validation_state = state
+
+    try:
+        validate_scenario(validation_state)
+    except ScenarioValidationError as error:
+        errors.extend(error.errors)
+        if errors:
+            raise ScenarioValidationError(errors) from error
+
+    game = state.get("juego")
+    if not isinstance(game, dict):
+        errors.append("juego: debe ser un objeto")
+    else:
+        status = game.get("estado")
+        result = game.get("resultado")
+        if status not in ("configuracion", "en_curso", "finalizado"):
+            errors.append("juego.estado: debe ser 'configuracion', 'en_curso' o 'finalizado'")
+        if "resultado" not in game or result not in (None, "A", "B", "empate"):
+            errors.append("juego.resultado: debe ser null, 'A', 'B' o 'empate'")
+        if status == "finalizado" and result is None:
+            errors.append("juego.resultado: una partida finalizada requiere resultado")
+        if status != "finalizado" and result is not None:
+            errors.append("juego.resultado: solo puede existir en una partida finalizada")
+        carrier_id = game.get("portador_recurso")
+        if carrier_id is not None and state.get("recurso") is not None:
+            errors.append("recurso: debe ser null mientras la reina tenga portador")
+        winner = carrier_winner(state)
+        if status == "finalizado" and result in ("A", "B") and winner != result:
+            errors.append("juego.resultado: el ganador debe transportar la reina en su base")
+        if status != "finalizado" and winner is not None:
+            errors.append("juego.estado: una victoria por portador debe estar finalizada")
+        if status == "finalizado" and result == "empate" and winner is not None:
+            errors.append("juego.resultado: no puede haber empate con un portador en su base")
+
+    if isinstance(units, list):
+        rows = state.get("mapa", {}).get("filas")
+        columns = state.get("mapa", {}).get("columnas")
+        for index, unit in enumerate(units):
+            if not isinstance(unit, dict):
+                continue
+            spawn = unit.get("spawn")
+            if spawn is None:
+                errors.append(f"unidades[{index}].spawn: posición inicial ausente")
+                continue
+            if isinstance(rows, int) and isinstance(columns, int):
+                _check_position(
+                    spawn,
+                    f"unidades[{index}].spawn",
+                    rows,
+                    columns,
+                    state.get("terreno"),
+                    state.get("tipos_terreno"),
+                    errors,
+                )
+
+    if isinstance(units, list):
+        spawn_owners: dict[tuple[int, int], list[str]] = {}
+        for unit in units:
+            if not isinstance(unit, dict) or not isinstance(unit.get("spawn"), dict):
+                continue
+            spawn = unit["spawn"]
+            row, column = spawn.get("fila"), spawn.get("columna")
+            if type(row) is int and type(column) is int:
+                spawn_owners.setdefault((row, column), []).append(str(unit.get("id", "?")))
+        king_groups = state.get("reyes", {})
+        if isinstance(king_groups, dict):
+            for side, group in king_groups.items():
+                if not isinstance(group, list):
+                    continue
+                for index, king in enumerate(group):
+                    if not isinstance(king, dict):
+                        continue
+                    row, column = king.get("fila"), king.get("columna")
+                    if type(row) is not int or type(column) is not int:
+                        continue
+                    owners = spawn_owners.get((row, column))
+                    if owners:
+                        errors.append(
+                            f"reyes.{side}[{index}]: no puede ocupar el spawn de la unidad {owners[0]!r}"
+                        )
+
+    turn = state.get("turno")
+    if (
+        not errors
+        and isinstance(game, dict)
+        and game.get("estado") == "finalizado"
+        and game.get("resultado") == "empate"
+        and isinstance(turn, str)
+        and turn in ("A", "B")
+        and has_legal_action(state, turn)
+    ):
+        errors.append("juego.resultado: no puede haber empate mientras el bando en turno tenga acciones legales")
+
+    if check_connectivity and not errors and not _base_positions_connected(state):
+        errors.append("bases: los reyes no deben bloquear la conexión transitable entre las bases")
     if errors:
         raise ScenarioValidationError(errors)
 
 
-def validate_action(state: dict[str, Any], action: dict[str, Any]) -> None:
-    """Indica que validar acciones sigue pendiente de la fase 2.
+def _action_position(value: Any) -> dict[str, int]:
+    if isinstance(value, dict):
+        row = value.get("fila", value.get("row"))
+        column = value.get("columna", value.get("column"))
+    elif isinstance(value, (tuple, list)) and len(value) == 2:
+        row, column = value
+    else:
+        raise ValueError("El destino debe incluir fila y columna")
+    if type(row) is not int or type(column) is not int:
+        raise ValueError("Las coordenadas del destino deben ser enteros")
+    return {"fila": row, "columna": column}
 
-    Falla en O(1): no evalúa ni simula movimientos y no aprueba acciones.
+
+def validate_action(state: dict[str, Any], action: dict[str, Any]) -> None:
+    """Valida movimiento o recogida explícita sin modificar el estado.
+
+    Preconditions: estado preparado, acción JSON y bando en turno.
+    Postconditions: una acción ilegal lanza `ValueError` y una estructura/tipo
+    inválido lanza `TypeError`; el movimiento consulta `move_cost`, que exige un
+    destino incluido en `legal_moves`.
+    Complexity: O(U + K*U*max(F,C) + D), según movimiento, jaque y trayecto.
     """
-    raise NotImplementedError("validate_action sigue pendiente hasta la fase 2")
+    if not isinstance(action, dict):
+        raise TypeError("La acción debe ser un objeto")
+    kind = action.get("type", action.get("tipo", action.get("action")))
+    if kind is None:
+        kind = "move" if "destination" in action or "destino" in action else "collect"
+    if not isinstance(kind, str):
+        raise TypeError(f"El tipo de acción debe ser una cadena, no {type(kind).__name__}")
+    kind = {
+        "mover": "move",
+        "movimiento": "move",
+        "recoger": "collect",
+        "recoger_reina": "collect",
+        "collect_queen": "collect",
+    }.get(kind, kind)
+    if kind not in ("move", "collect"):
+        raise ValueError(f"Acción desconocida: {kind!r}")
+
+    game = state.get("juego")
+    if not isinstance(game, dict):
+        raise TypeError("El estado no contiene un objeto de partida válido")
+    if game.get("estado") == "finalizado" or game.get("resultado") is not None:
+        raise ValueError("La partida ha finalizado y no acepta acciones")
+    if game.get("estado") not in ("configuracion", "en_curso"):
+        raise ValueError("La partida no está disponible para jugar")
+
+    unit_id = action.get("unit_id", action.get("unidad_id"))
+    if not isinstance(unit_id, str) or not unit_id:
+        raise ValueError("La acción debe indicar una unidad")
+    unit = next((candidate for candidate in state.get("unidades", []) if candidate.get("id") == unit_id), None)
+    if unit is None:
+        raise ValueError(f"No existe la unidad {unit_id!r}")
+    if unit.get("activo", True) is not True:
+        raise ValueError(f"La unidad {unit_id!r} está inactiva")
+    if unit.get("bando") != state.get("turno"):
+        raise ValueError(f"La unidad {unit_id!r} no pertenece al bando en turno")
+
+    if kind == "move":
+        destination = _action_position(action.get("destination", action.get("destino")))
+        try:
+            move_cost(state, unit_id, destination)
+        except ValueError as error:
+            raise ValueError(
+                f"El destino {destination} no es legal para la unidad {unit_id!r}"
+            ) from error
+        return
+
+    if game.get("portador_recurso") is not None or not isinstance(state.get("recurso"), dict):
+        raise ValueError("La reina no está disponible para recoger")
+    queen = _action_position(state["recurso"])
+    if (unit.get("fila"), unit.get("columna")) != (queen["fila"], queen["columna"]):
+        raise ValueError("La unidad debe estar sobre la casilla de la reina para recogerla")
+    if is_in_check(state, unit["bando"]):
+        raise ValueError("No se puede recoger la reina mientras el propio rey está en jaque")

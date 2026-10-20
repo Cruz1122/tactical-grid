@@ -10,7 +10,8 @@ Mantener **una sola fuente de verdad para las reglas**. El motor decide qué es 
 | --- | --- | --- |
 | Escenarios | Leer JSON y preparar un estado candidato | Alterar una partida antes de validar |
 | Validación | Revisar contrato, invariantes y acciones | Corregir silenciosamente entradas inválidas |
-| Motor del juego | Generar movimientos legales, costos y sucesores; aplicar jugadas | Lógica de presentación y animaciones |
+| Motor del juego (`backend/game/engine.py`) | Coordinar transiciones, capturas, reapariciones y sucesores usando movimiento y jaque existentes | Lógica de presentación y animaciones |
+| Movimiento (`backend/game/movement.py`) | Generar movimientos, costos y amenazas de jaque | Cambiar el estado oficial |
 | Búsqueda de rutas | Explorar movimientos hipotéticos de una sola unidad | Ejecutar turnos oficiales del rival |
 | Decisión adversarial | Evaluar acciones completas de ambos bandos por turnos | Duplicar las reglas del motor |
 | API | Exponer operaciones y errores claros | Contener las reglas de ajedrez simplificado |
@@ -23,16 +24,18 @@ Mantener **una sola fuente de verdad para las reglas**. El motor decide qué es 
 - **Comunicación:** cliente y API bajo el mismo origen HTTP.
 - **Escenarios:** archivos JSON externos; sin coordenadas fijas en algoritmos.
 
-Esta es una propuesta de organización, **no un inventario confirmado de archivos existentes**.
+Estructura implementada relevante para el motor:
 
 ```text
 backend/
-  main.py             # API y configuración HTTP
-  scenarios.py        # Lectura y preparación de estados desde JSON
-  validation.py       # Validación de contrato, estado y acciones
-  game.py             # Reglas, sucesores y transiciones cuando se implementen
-  search.py           # Búsquedas de rutas cuando se implementen
-  adversarial.py      # Minimax y alfa-beta cuando se implementen
+  main.py
+  scenarios.py
+  game/
+    movement.py       # Movimientos legales, costos y jaque
+    costs.py          # Wrapper histórico de costos
+    validation.py     # Contrato, invariantes y acciones
+    engine.py         # Transiciones y sucesores de partida
+    state.py          # Reexportaciones históricas del motor
 frontend/
   index.html          # Página del juego
   styles.css          # Estilos

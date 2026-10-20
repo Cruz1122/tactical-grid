@@ -40,8 +40,8 @@ La normalización y la validación no son lo mismo: `validate_scenario` **inspec
 
 - Una unidad no comienza en una celda no transitable.
 - Dos unidades activas no empiezan superpuestas.
-- Los reyes, si llegan en JSON, no se solapan con elementos prohibidos.
-- Las bases deben ser válidas y no estar bloqueadas por reyes; verificar alcanzabilidad con un criterio definido (ver decisiones pendientes).
+- Los reyes, si llegan en JSON, no se solapan con elementos prohibidos ni con el `spawn` de unidades inactivas.
+- Las bases son transitables y permanecen conectadas por celdas transitables ortogonales sin reyes.
 
 El PDF no obliga a rechazar un mapa externo por medir menos de 20 × 20. Tampoco obliga a que cada unidad externa incluya `spawn` o a que el escenario contenga reyes. No introducir restricciones nuevas y silenciosas sobre campos que el contrato deja abiertos.
 
@@ -65,15 +65,16 @@ Examina invariantes del estado candidato o de futuros sucesores del motor:
 - Reina única: posición en tablero **o** referencia a un portador, nunca dos portadores.
 - Portador existente, activo y consistente con la representación del recurso.
 - Turno, resultado y modo de ejecución coherentes.
-- Spawns definidos y válidos.
+- Spawns definidos y válidos; los reyes no ocupan ningún `spawn`.
+- Conectividad entre bases cuando se valida carga/configuración.
 
-No se debe recalcular ni modificar el estado «para arreglarlo» dentro del validador: un estado incoherente se rechaza.
+Las transiciones vuelven a validar invariantes dinámicas, pero omiten la conectividad estática porque terreno, bases y reyes no cambian durante una partida. No se modifica el estado «para arreglarlo»: un estado incoherente se rechaza.
 
 ## `validate_action`: responsabilidad diferente
 
-Una acción pertenece a una partida **ya iniciada**. Su validación debe comprobar, cuando exista el motor de movimientos, el turno, la identidad y actividad de la unidad, el tipo de movimiento, destino, bloqueos y condiciones aplicables.
+Una acción pertenece a una partida en configuración o ya iniciada: la primera acción válida inicia la partida. Su validación comprueba el turno, la identidad y actividad de la unidad, el tipo de acción, el destino legal del movimiento o las condiciones de recogida explícita.
 
-La validación completa de una jugada depende de las reglas de movimiento reales. No presentarla como implementada ni devolver `true` incondicionalmente mientras falte. Si no existe todavía, debe fallar explícitamente cuando se invoca.
+La validación de acciones reutiliza `legal_moves`, `move_cost` e `is_in_check`; no mantiene una segunda implementación de las reglas de movimiento. Una operación inválida falla antes de modificar el estado oficial.
 
 ## Respuestas de la API
 

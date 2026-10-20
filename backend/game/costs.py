@@ -14,7 +14,6 @@ def terrain_cost(
     Postcondiciones: devuelve el costo configurado para terreno transitable y no
     modifica el estado.
     Complejidad: O(1) en tiempo y espacio.
-    IA en ejecución: no utiliza; realiza una consulta determinista al escenario.
 
     Raises:
         TypeError: si la posición no tiene coordenadas enteras.

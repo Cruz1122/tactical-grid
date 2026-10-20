@@ -1,6 +1,6 @@
 # Decisiones pendientes y contradicciones visibles
 
-Esta lista evita que se confundan **reglas ya acordadas** con detalles todavía abiertos. No son tareas organizadas por fase.
+Esta lista evita que se confundan **reglas ya acordadas** con detalles todavía abiertos. Las decisiones resueltas para el motor de la fase 3 aparecen documentadas abajo.
 
 ## Acordado
 
@@ -16,18 +16,23 @@ Esta lista evita que se confundan **reglas ya acordadas** con detalles todavía 
 
 | Tema | Por qué importa | Decisión que aún falta |
 | --- | --- | --- |
-| Alias de `tipo` | El PDF usa `estandar`; el archivo original de reglas ejemplifica `"torre"`; el diseño interno usa `rook`, `bishop`, `knight`. | Si se admiten también `torre`, `alfil`, `caballo` como alias externos y cómo se normalizan. |
+
 | Tipos no previstos | El PDF deja abiertos detalles de unidades, sin enumerar todos los tipos. | Qué error presentar ante tipos desconocidos, sin prometer compatibilidad que el motor no puede ejecutar. |
 | Cantidad de unidades | El texto del PDF indica al menos 3 por bando, pero su ejemplo tiene 2. | Documentar formalmente la excepción para el importador; verificar interpretación con el docente si es posible. |
-| Reyes automáticos | La generación es opcional y debe ser válida. | Criterio concreto de elección de celdas, cantidad por equipo y desempate determinista. |
-| Base «alcanzable» | Ser transitable no garantiza que un bando pueda llegar con sus piezas; con jaques/ocupación es más complejo. | Definir qué criterio de alcanzabilidad es exigible al cargar un escenario. |
-| Reina y captura | Cuando cae la reina bajo el atacante, el atacante no la recoge automáticamente. | Cómo se permite recogerla más tarde sin ambigüedad, especialmente si la misma unidad ocupa su casilla. |
-| Reina y jaque | Está prohibido recogerla en jaque, no mover. | Qué pasa si una unidad llega a la casilla de la reina estando su rey en jaque: posición compartida sin recogida o movimiento rechazado. |
-| Representación externa del portador | El PDF especifica `juego.portador_recurso`, pero no un ejemplo completo de recurso ya transportado. | Cómo interpretar escenarios externos con portador y `recurso` informado, respetando el contrato. |
 | Terminación anómala | Se acordó empate por falta de jugadas. | Si se requieren otras condiciones terminales (p. ej. límite de turnos o repeticiones), definirlas antes de usarlas. |
-| Orden interno de eventos | Captura, caída de reina, respawn, victoria y empate pueden coincidir. | Fijar un orden de transición que sea determinista en todos los casos borde. |
 | Heurística adicional | Se exige A* con al menos dos heurísticas. | Fórmula y prueba/justificación de sus propiedades. |
 | Evaluación Minimax | El docente no fija pesos ni fórmula. | Función de utilidad y criterio estable de desempate. |
+
+## Decisiones implementadas en el motor de la fase 3
+
+- Se aceptan los tipos internos `knight`, `rook`, `bishop`, `estandar` y sus alias `caballo`, `torre`, `alfil`.
+- Reyes automáticos: celdas transitables en orden fila-columna, cantidades explícitas por bando y selección voraz determinista; puede fallar sin mutación aunque exista otra distribución.
+- Ningún rey ocupa el `spawn` de una unidad, para no impedir una reaparición futura.
+- Accesibilidad: las bases deben permanecer conectadas por celdas transitables ortogonales que no ocupen reyes.
+- Reina tras captura del portador: queda en la casilla de captura; el atacante puede recogerla en una acción explícita posterior que consume turno.
+- Jaque: bloquea la recogida explícita y se consulta tras retirar temporalmente la reina para una recogida normal; el portador conserva la reina aunque su rey quede en jaque.
+- Estado externo con portador y `recurso` en la posición del portador: se valida y se normaliza internamente a `recurso: null`.
+- Orden por acción: movimiento/captura y caída de reina, reapariciones por ID, victoria inmediata; si no hay victoria, cambio de turno y comprobación de empate.
 
 ## Reglas del documento original modificadas por el equipo
 

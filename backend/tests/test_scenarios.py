@@ -4,6 +4,8 @@ import unittest
 from pathlib import Path
 from typing import Any
 
+from starlette.types import Message
+
 from backend import main
 from backend.game.validation import (
     ScenarioValidationError,
@@ -48,17 +50,17 @@ async def request_json(
     method: str = "POST",
     content_type: str = "application/json",
 ) -> tuple[int, dict[str, Any]]:
-    messages: list[dict[str, Any]] = []
+    messages: list[Message] = []
     delivered = False
 
-    async def receive() -> dict[str, Any]:
+    async def receive() -> Message:
         nonlocal delivered
         if delivered:
             return {"type": "http.disconnect"}
         delivered = True
         return {"type": "http.request", "body": body, "more_body": False}
 
-    async def send(message: dict[str, Any]) -> None:
+    async def send(message: Message) -> None:
         messages.append(message)
 
     headers = [(b"content-type", content_type.encode("ascii"))] if body else []

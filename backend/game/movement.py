@@ -57,7 +57,6 @@ def terrain_cost(state: dict[str, Any], position: PositionLike) -> float:
     coherentes; `position` usa coordenadas enteras dentro del mapa y es transitable.
     Postcondiciones: devuelve el costo configurado como `float` y no modifica el estado.
     Complejidad: O(1) en tiempo y espacio.
-    IA en ejecución: no utiliza; consulta datos y reglas deterministas.
 
     Raises:
         TypeError: si las coordenadas o el costo no tienen tipo válido.
@@ -234,7 +233,6 @@ def is_in_check(
     unidades originales permanecen intactos. Sin reyes, devuelve `False`.
     Complejidad: O(K * U * max(F, C)) en el peor caso, donde K es el número de
     reyes, U el de unidades, F las filas y C las columnas; espacio O(U + K).
-    IA en ejecución: no utiliza; evalúa patrones geométricos deterministas.
 
     Raises:
         TypeError: si las coordenadas del destino no son enteras.
@@ -306,7 +304,7 @@ def legal_moves(state: dict[str, Any], unit_id: str) -> list[dict[str, int]]:
     Complejidad: O(U + K + F + C) sin evaluar una recogida; si la reina es un
     destino candidato, el cálculo adicional de jaque cuesta hasta O(K * U *
     max(F, C)). Espacio O(U + K + F + C), incluida la lista de destinos.
-    IA en ejecución: no utiliza; aplica reglas deterministas del juego.
+
     """
     units = _active_units(state)
     unit = next((candidate for candidate in units if candidate.get("id") == unit_id), None)
@@ -339,7 +337,7 @@ def legal_moves(state: dict[str, Any], unit_id: str) -> list[dict[str, int]]:
         occupant = occupied.get(position)
         if occupant is not None and occupant.get("bando") == unit.get("bando"):
             return False
-        if position == queen:
+        if position == queen and occupant is None:
             if queen_pickup_allowed is None:
                 queen_pickup_allowed = not is_in_check(
                     state, side, (unit_id, position)
@@ -373,12 +371,15 @@ def legal_moves(state: dict[str, Any], unit_id: str) -> list[dict[str, int]]:
                     break
 
                 if candidate == queen:
-                    if queen_pickup_allowed is None:
-                        queen_pickup_allowed = not is_in_check(
-                            state, side, (unit_id, candidate)
-                        )
-                    if queen_pickup_allowed:
+                    if occupant is not None:
                         destinations.append(candidate)
+                    else:
+                        if queen_pickup_allowed is None:
+                            queen_pickup_allowed = not is_in_check(
+                                state, side, (unit_id, candidate)
+                            )
+                        if queen_pickup_allowed:
+                            destinations.append(candidate)
                     break
 
                 destinations.append(candidate)
@@ -387,6 +388,26 @@ def legal_moves(state: dict[str, Any], unit_id: str) -> list[dict[str, int]]:
                 candidate = (candidate[0] + row_step, candidate[1] + column_step)
 
     return [_position_dict(position) for position in destinations]
+
+
+def has_legal_action(state: dict[str, Any], side: str) -> bool:
+    """Indica si el bando tiene un movimiento o recogida explícita legales."""
+    if side not in ("A", "B"):
+        return False
+    units = _active_units(state)
+    for unit in units:
+        unit_id = unit.get("id")
+        if unit.get("bando") == side and isinstance(unit_id, str) and legal_moves(state, unit_id):
+            return True
+
+    queen = _ground_queen_position(state)
+    if queen is None or is_in_check(state, side):
+        return False
+    return any(
+        unit.get("bando") == side
+        and _position_tuple(unit) == queen
+        for unit in units
+    )
 
 
 def move_cost(
@@ -402,7 +423,7 @@ def move_cost(
     Complejidad: O(U + K + F + C + D) sin comprobar una recogida; si el destino
     es la reina, se añade hasta O(K * U * max(F, C)) para verificar el jaque
     posterior al movimiento. D es la longitud del desplazamiento.
-    IA en ejecución: no utiliza; aplica patrones y costos deterministas.
+
 
     Raises:
         TypeError: si las coordenadas no son enteras.
@@ -442,24 +463,42 @@ def move_cost(
 
 
 def apply_move(state: dict, unit_id: str, destination: dict) -> dict:
-    raise NotImplementedError
+    """Wrapper compatible con las importaciones históricas del motor."""
+    from backend.game.engine import apply_move as execute_move
+
+    return execute_move(state, unit_id, destination)
 
 
 def capture(state: dict, attacker_id: str, victim_id: str) -> dict:
-    raise NotImplementedError
+    """Wrapper compatible; las reglas de captura viven en el motor central."""
+    from backend.game.engine import capture as execute_capture
+
+    return execute_capture(state, attacker_id, victim_id)
 
 
 def respawn(state: dict) -> dict:
-    raise NotImplementedError
+    """Wrapper compatible para reapariciones deterministas."""
+    from backend.game.engine import respawn as execute_respawn
+
+    return execute_respawn(state)
 
 
 def check_status(state: dict) -> dict:
-    raise NotImplementedError
+    """Wrapper compatible para consultar jaques calculados, no almacenados."""
+    from backend.game.engine import check_status as get_status
+
+    return get_status(state)
 
 
 def collect_queen(state: dict, unit_id: str) -> dict:
-    raise NotImplementedError
+    """Wrapper compatible para la recogida explícita de la reina."""
+    from backend.game.engine import collect_queen as collect
+
+    return collect(state, unit_id)
 
 
 def check_winner(state: dict) -> str | None:
-    raise NotImplementedError
+    """Wrapper compatible para consultar el resultado de la partida."""
+    from backend.game.engine import check_winner as get_winner
+
+    return get_winner(state)

@@ -18,12 +18,12 @@ El contrato JSON del profesor no incluye `reyes` como campo obligatorio, mientra
 Una posición de rey solo es aceptable si:
 
 - Está dentro del mapa y pertenece a una celda transitable.
-- No coincide con obstáculos, otros reyes ni unidades activas.
-- No ocupa una base ni impide llegar a ella.
+- No coincide con obstáculos, otros reyes, unidades activas ni el `spawn` de ninguna unidad inactiva.
+- No ocupa una base ni desconecta las bases: debe quedar una ruta ortogonal de terreno transitable sin reyes entre ellas.
 - No se solapa con la posición de la reina presente en el suelo.
 - Está asignada inequívocamente al bando correspondiente.
 
-La generación automática debe **proponer** posiciones válidas y ser determinista: dado el mismo escenario y los mismos parámetros de generación, debe producir el mismo resultado. No se ha elegido todavía su algoritmo específico (por ejemplo, cómo priorizar casillas candidatas).
+La generación automática es determinista: considera celdas transitables en orden fila-columna y recibe la cantidad solicitada para cada bando. Usa una selección voraz; devuelve una configuración válida con las cantidades solicitadas si logra completarla, pero no garantiza encontrarla cuando existe otra combinación. Si no completa la selección, falla sin modificar el estado. Las bases deben seguir conectadas a través de celdas transitables ortogonales que no estén ocupadas por reyes.
 
 En caso de fallo, la operación de configuración debe informar la causa **sin dejar reyes colocados parcialmente**.
 

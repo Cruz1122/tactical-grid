@@ -22,6 +22,8 @@ Esto no obliga a crear clases complejas: sirve para que los algoritmos sepan qu�
 | `unidades` | Objetos con `id`, `bando`, `tipo`, `fila`, `columna` | IDs únicos, posiciones válidas, bandos `A` o `B` |
 | `turno` | Próximo bando | `A` o `B` |
 | `juego.portador_recurso` | ID del portador o `null` | Debe referirse a una unidad existente si no es nulo |
+| `juego.estado` | `configuracion`, `en_curso` o `finalizado` | Se inicializa en `configuracion` al preparar el escenario |
+| `juego.resultado` | `null`, `A`, `B` o `empate` | Solo tiene resultado cuando la partida finaliza |
 | `prueba` | Configuración de la prueba | **Opcional**, no debe confundirse con una regla de partida |
 
 En el PDF, `prueba` aparece entre los campos descritos pero se identifica expresamente como **configuración opcional**. Sus modos contemplan `busqueda`, `partida` y `adversarial`.
@@ -63,9 +65,9 @@ Este ejemplo ilustra el formato del PDF con `estandar`, sin `reyes` ni `spawn`. 
 
 ## Normalización, sin alterar el contrato
 
-Al cargar una unidad con posición `(fila, columna)`, el programa puede incorporar internamente `spawn = (fila, columna)`; el JSON externo **no tiene que traer `spawn`**. Si no llegan reyes, el escenario permanece sin reyes. No se generan de oficio durante la importación.
+Al cargar una unidad con posición `(fila, columna)`, el programa incorpora internamente `spawn = (fila, columna)`; el JSON externo **no tiene que traer `spawn`**. Las unidades inactivas preparadas se representan fuera del tablero con `fila = columna = -1`. Si no llegan reyes, el escenario permanece sin reyes. No se generan de oficio durante la importación. Se añaden `juego.estado = "configuracion"` y `juego.resultado = null` sin renombrar los campos oficiales.
 
-Los tipos previstos internamente son `knight`, `rook`, `bishop` y `estandar`. El PDF no enumera todos los valores posibles de `tipo`; el tratamiento de otros valores y alias en español debe definirse explícitamente antes de afirmar compatibilidad universal.
+Los tipos previstos internamente son `knight`, `rook`, `bishop` y `estandar`; se admiten además los alias `caballo`, `torre` y `alfil`. El PDF no enumera todos los valores posibles de `tipo`, por lo que cualquier otro nombre se rechaza con validación.
 
 ## Invariantes de estado
 
@@ -74,11 +76,11 @@ Un estado de partida es coherente si al menos se cumple lo siguiente:
 1. Turno `A` o `B` mientras la partida esté activa.
 2. Mapa y terrenos válidos; posiciones dentro de sus límites.
 3. Cada unidad tiene ID único, bando válido, `spawn` definido y actividad coherente con su posición.
-4. No hay dos unidades activas en la misma casilla; ninguna ocupa un obstáculo o rey.
+4. No hay dos unidades activas en la misma casilla; ninguna ocupa un obstáculo o rey. Un rey tampoco ocupa el `spawn` de ninguna unidad.
 5. Hay como máximo un portador y la reina está **o** en el suelo **o** transportada.
 6. Los reyes, si existen, son estáticos, pertenecen a un bando y no ocupan casillas prohibidas ni bloquean bases.
 7. El estado distingue «configuración», «partida activa» y «terminada» para impedir jugadas en momentos inválidos.
-8. Bases accesibles conforme al criterio de alcanzabilidad que se defina para el motor; no dar por probada su accesibilidad solo por ser transitables.
+8. Las bases permanecen conectadas por casillas transitables ortogonales que no estén ocupadas por reyes; las unidades pueden moverse y no se consideran bloqueos permanentes para esta validación.
 
 Un estado de búsqueda no se identifica necesariamente solo por `(fila, columna)`: durante juego adversarial importan el turno, todas las piezas, actividad y portador. Los detalles inmutables del escenario pueden compartirse como referencia sin copiarlos en cada sucesor.
 

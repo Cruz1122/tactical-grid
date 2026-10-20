@@ -19,7 +19,7 @@ Los desplazamientos deben quedar dentro de la cuadrícula. No se puede terminar 
 
 Para torre y alfil, otros actores, obstáculos y reyes bloquean las casillas intermedias. La reina en el suelo también bloquea el paso *a través* de su casilla; puede ser un destino para recogerla. Los terrenos transitables pueden tener costos diferentes; los algoritmos deben obtenerlos del escenario.
 
-Los tipos de código se expresan aquí en inglés por la convención del proyecto. `TacticalGrid_Reglas.md` todavía incluye un ejemplo con `tipo: "torre"`: la aceptación de ese alias en JSON se documenta como asunto por cerrar.
+Los tipos internos de código se expresan en inglés por convención. El validador también admite los alias `caballo`, `torre` y `alfil` en JSON y el motor aplica sus mismos patrones de movimiento.
 
 ## Turnos y acciones
 
@@ -39,12 +39,12 @@ Una acción inválida no modifica ningún dato oficial, no consume turno y no ge
 
 Una captura ocurre cuando una unidad termina legalmente en la casilla de una unidad enemiga. La unidad capturada intenta reaparecer inmediatamente en su `spawn`, que por decisión del equipo es **su posición inicial cargada del JSON**.
 
-- Si la casilla `spawn` está disponible, la unidad capturada reaparece allí.
+- Si la casilla `spawn` está transitable y libre de unidades activas, reyes y reina en el suelo, la unidad capturada reaparece allí.
 - Si no está disponible, queda inactiva fuera del tablero, conservando su `spawn`.
 - Después de cada acción se vuelve a comprobar si una unidad inactiva puede reaparecer.
 - La partida no puede tener dos unidades móviles activas ocupando la misma casilla.
 
-Si se captura al portador, la reina cae en la casilla donde ocurrió la captura. **El atacante no recoge la reina automáticamente**: hace falta una recogida posterior que cumpla las reglas. Esto permite que la reina esté en el suelo en una casilla ocupada temporalmente por el atacante; no equivale a dos unidades superpuestas.
+Si se captura al portador, la reina cae en la casilla donde ocurrió la captura. **El atacante no recoge la reina automáticamente**: hace falta una recogida posterior que cumpla las reglas. Si el atacante sigue en esa casilla, puede realizar una acción explícita de recogida que consume un turno. Esto permite que la reina esté en el suelo en una casilla ocupada temporalmente por el atacante; no equivale a dos unidades superpuestas.
 
 ## Reyes y jaque
 
@@ -64,13 +64,13 @@ El jaque **solo impide recoger la reina**. No impide mover, capturar, bloquear, 
 - Hay una sola reina y, como máximo, una unidad portadora.
 - Si no hay portador, la reina tiene una posición sobre el tablero.
 - Si existe portador, la reina no mantiene una segunda posición independiente en el estado interno.
-- Recogerla exige una llegada legal a su casilla, turno del bando y ausencia de jaque propio.
+- Recogerla exige una llegada legal a su casilla, turno del bando y ausencia de jaque propio. Si la unidad ya ocupa la casilla, puede usar una acción explícita de recogida bajo las mismas condiciones; consume un turno y no desplaza la unidad.
 - Transportarla no cambia el patrón ni costo de movimiento de su unidad.
 - Si la unidad portadora llega a la base de su equipo: victoria inmediata.
 
 ## Ausencia de movimientos y empate
 
-**Decisión del equipo:** si el bando al que corresponde actuar no tiene ningún movimiento legal con ninguna de sus unidades, la partida termina **en empate, sin ganador**. Deben considerarse las reapariciones correspondientes antes de declarar esa condición. No se deben inventar jugadas de «pasar turno».
+**Decisión del equipo:** si el bando al que corresponde actuar no tiene ninguna acción legal (movimiento ni recogida explícita) con sus unidades, la partida termina **en empate, sin ganador**. Deben considerarse las reapariciones correspondientes antes de declarar esa condición. No se deben inventar jugadas de «pasar turno».
 
 ## Reglas de ocupación
 
@@ -78,6 +78,6 @@ El jaque **solo impide recoger la reina**. No impide mover, capturar, bloquear, 
 - Ninguna unidad activa ocupa obstáculo ni casilla de rey.
 - Los reyes no pueden bloquear bases y sus ubicaciones deben ser válidas.
 - La reina y una unidad pueden compartir posición en el caso excepcional de una captura de portador sin recogida automática; el estado debe distinguir posesión de mera coincidencia espacial.
-- Una partida terminada no acepta más movimientos ordinarios.
+- Una partida terminada no acepta más acciones.
 
 **Referencias:** `TacticalGrid_Reglas.md`, secciones 1–6; `Primer proyecto.pdf`, pp. 2–3. Las normas de `estandar`, reyes opcionales y empate corresponden a decisiones posteriores del equipo.

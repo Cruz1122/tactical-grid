@@ -8,7 +8,7 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, StrictInt
 from starlette.datastructures import UploadFile
 
 from backend.algorithms.alpha_beta import alpha_beta
@@ -19,8 +19,13 @@ from backend.algorithms.dfs import dfs
 from backend.algorithms.minimax import minimax
 from backend.algorithms.ucs import ucs
 from backend.algorithms.verification import verify_decision, verify_path, verify_state
-from backend.game.movement import apply_move
-from backend.game.validation import ScenarioValidationError
+from backend.game.engine import (
+    apply_move,
+    collect_queen,
+    configure_kings,
+    generate_kings,
+)
+from backend.game.validation import ScenarioValidationError, validate_utf8_string
 from backend.scenarios import prepare_scenario
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -28,7 +33,7 @@ FRONTEND = ROOT / "frontend"
 INITIAL = ROOT / "scenarios" / "initial.json"
 
 with INITIAL.open(encoding="utf-8") as file:
-    initial_state = json.load(file)
+    initial_state = prepare_scenario(json.load(file))
 current_state = deepcopy(initial_state)
 source_name = INITIAL.name
 lock = RLock()
@@ -38,8 +43,8 @@ app.mount("/assets", StaticFiles(directory=FRONTEND / "assets"), name="assets")
 
 
 class Position(BaseModel):
-    row: int = Field(ge=0)
-    column: int = Field(ge=0)
+    row: StrictInt = Field(ge=0)
+    column: StrictInt = Field(ge=0)
 
     def as_scenario_position(self):
         """Convierte la posición de la API a las claves del JSON del escenario."""
@@ -52,17 +57,27 @@ class MoveRequest(BaseModel):
     destination: Position
 
 
+class CollectRequest(BaseModel):
+    unit_id: str = Field(min_length=1)
+
+
+class KingConfigurationRequest(BaseModel):
+    mode: Literal["manual", "automatic", "none"]
+    kings: dict[str, list[Position]] | None = None
+    counts: dict[str, StrictInt] | None = None
+
+
 class SearchRequest(BaseModel):
     algorithm: Literal["bfs", "dfs", "ucs", "astar", "beam"]
     unit_id: str = Field(min_length=1)
     goal: Position
     heuristic: Literal["manhattan", "second"] = "manhattan"
-    k: int = Field(default=2, ge=1)
+    k: StrictInt = Field(default=2, ge=1)
 
 
 class AdversarialRequest(BaseModel):
     algorithm: Literal["minimax", "alpha_beta"]
-    depth: int | None = Field(default=None, ge=0)
+    depth: StrictInt | None = Field(default=None, ge=0)
     action_order: Literal["normal", "reverse"] = "normal"
 
 
@@ -74,8 +89,8 @@ class VerifyRequest(BaseModel):
 class TestRequest(BaseModel):
     algorithm: Literal["bfs", "dfs", "ucs", "astar", "beam", "minimax", "alpha_beta"] = "bfs"
     heuristic: Literal["manhattan", "second"] = "manhattan"
-    k: int = Field(default=2, ge=1)
-    depth: int | None = Field(default=None, ge=0)
+    k: StrictInt = Field(default=2, ge=1)
+    depth: StrictInt | None = Field(default=None, ge=0)
     action_order: Literal["normal", "reverse"] = "normal"
 
 
@@ -170,8 +185,8 @@ async def load_scenario(request: Request):
     """Valida un escenario JSON o adjunto antes de sustituir el estado oficial.
 
     Acepta JSON directo o un archivo multipart en el campo «file» y conserva
-    el formato envuelto del cliente. La validación es O(n), no usa IA y, si
-    falla, responde HTTP 422 sin modificar la partida.
+    el formato envuelto del cliente. La validación es O(n); si falla, responde
+    HTTP 422 sin modificar la partida.
     """
     global initial_state, current_state, source_name
     content_type = request.headers.get("content-type", "").split(";", 1)[0].strip().lower()
@@ -180,7 +195,7 @@ async def load_scenario(request: Request):
     if content_type == "application/json":
         try:
             body = json.loads(await request.body())
-        except (json.JSONDecodeError, UnicodeDecodeError) as error:
+        except ValueError as error:
             raise HTTPException(
                 status_code=422,
                 detail="El cuerpo de la solicitud no contiene JSON válido.",
@@ -196,7 +211,7 @@ async def load_scenario(request: Request):
                 )
             try:
                 body = json.loads(await uploaded_file.read())
-            except (json.JSONDecodeError, UnicodeDecodeError) as error:
+            except ValueError as error:
                 raise HTTPException(
                     status_code=422,
                     detail="El archivo adjunto no contiene JSON válido.",
@@ -218,20 +233,30 @@ async def load_scenario(request: Request):
             candidate_source = filename
 
     try:
+        validate_utf8_string(candidate_source, "filename")
         candidate = prepare_scenario(scenario)
     except ScenarioValidationError as error:
         raise HTTPException(status_code=422, detail=error.errors) from error
 
     with lock:
-        initial_state = deepcopy(candidate)
-        current_state = deepcopy(candidate)
-        source_name = candidate_source
-        return {
+        response_content = {
             "ok": True,
             "message": "Escenario cargado correctamente",
-            "state": deepcopy(current_state),
-            "source": source_name,
+            "state": deepcopy(candidate),
+            "source": candidate_source,
         }
+        try:
+            response = JSONResponse(content=response_content)
+        except (TypeError, ValueError, UnicodeEncodeError) as error:
+            raise HTTPException(
+                status_code=422,
+                detail="El estado del escenario no se puede serializar como JSON UTF-8.",
+            ) from error
+
+        initial_state = candidate
+        current_state = deepcopy(candidate)
+        source_name = candidate_source
+        return response
 
 
 @app.post("/api/reset")
@@ -245,13 +270,59 @@ def reset():
 
 @app.post("/api/move")
 def move(body: MoveRequest):
-    """Solicita un movimiento al motor y publica su estado resultante."""
+    """Ejecuta un movimiento legal y publica el resultado solo al completarse."""
     global current_state
     with lock:
-        candidate = apply_move(deepcopy(current_state), body.unit_id, body.destination.as_scenario_position())
-        if not isinstance(candidate, dict):
-            raise HTTPException(status_code=500, detail="El motor de movimientos no devolvió un estado válido")
-        current_state = deepcopy(candidate)
+        try:
+            candidate = apply_move(current_state, body.unit_id, body.destination.as_scenario_position())
+        except ScenarioValidationError as error:
+            raise HTTPException(status_code=422, detail=error.errors) from error
+        except (ValueError, TypeError) as error:
+            raise HTTPException(status_code=422, detail=str(error)) from error
+        current_state = candidate
+        return {"state": deepcopy(current_state)}
+
+
+@app.post("/api/collect")
+def collect(body: CollectRequest):
+    """Recoge explícitamente la reina sin desplazar a la unidad."""
+    global current_state
+    with lock:
+        try:
+            candidate = collect_queen(current_state, body.unit_id)
+        except ScenarioValidationError as error:
+            raise HTTPException(status_code=422, detail=error.errors) from error
+        except (ValueError, TypeError) as error:
+            raise HTTPException(status_code=422, detail=str(error)) from error
+        current_state = candidate
+        return {"state": deepcopy(current_state)}
+
+
+@app.post("/api/kings")
+def set_kings(body: KingConfigurationRequest):
+    """Configura reyes manuales, automáticos o inicia sin ellos."""
+    global current_state
+    with lock:
+        try:
+            if body.mode == "manual":
+                if body.kings is None or set(body.kings) != {"A", "B"}:
+                    raise ValueError("El modo manual requiere posiciones para A y B")
+                kings = {
+                    side: [position.as_scenario_position() for position in body.kings[side]]
+                    for side in ("A", "B")
+                }
+                candidate = configure_kings(current_state, kings)
+            elif body.mode == "automatic":
+                if body.counts is None:
+                    raise ValueError("El modo automático requiere cantidades para A y B")
+                candidate = generate_kings(current_state, body.counts)
+            else:
+                candidate = configure_kings(current_state, {"A": [], "B": []})
+        except ScenarioValidationError as error:
+            raise HTTPException(status_code=422, detail=error.errors) from error
+        except (ValueError, TypeError) as error:
+            raise HTTPException(status_code=422, detail=str(error)) from error
+        current_state = candidate
         return {"state": deepcopy(current_state)}
 
 

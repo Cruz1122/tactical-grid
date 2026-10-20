@@ -14,6 +14,7 @@ Estos documentos describen el **comportamiento esperado**, no funcionalidades co
 | [configuracion-de-reyes.md](configuracion-de-reyes.md) | Reyes opcionales, colocación manual o automática y bloqueo de la configuración. |
 | [carga-y-validacion.md](carga-y-validacion.md) | Validaciones, normalización y carga atómica de escenarios. |
 | [arquitectura.md](arquitectura.md) | Separación de responsabilidades y comunicación entre backend, API e interfaz. |
+| [motor-del-juego.md](motor-del-juego.md) | Contratos de transición, acciones, resultados y configuración de reyes implementados. |
 | [busqueda-y-decision.md](busqueda-y-decision.md) | Diferencia entre planificar una ruta y escoger una jugada; métricas y verificaciones. |
 | [decisiones-pendientes.md](decisiones-pendientes.md) | Ambigüedades y contradicciones aún no resueltas; no fingir que hay reglas acordadas. |
 
@@ -30,6 +31,6 @@ Estos documentos describen el **comportamiento esperado**, no funcionalidades co
 
 1. `Primer proyecto.pdf`: requisitos del profesor y contrato de interoperabilidad.
 2. `TacticalGrid_Reglas.md`: definición original de mecánicas propias.
-3. Decisiones acordadas para este proyecto: `estandar` ortogonal de un paso; `spawn` inicial; reyes opcionales, configurables antes del primer movimiento; empate sin jugadas legales.
+3. Decisiones acordadas para este proyecto: `estandar` ortogonal de un paso; `spawn` inicial; reyes opcionales, configurables antes del primer movimiento; empate si no hay movimiento ni recogida explícita legal.
 
-Cuando una decisión propia parece entrar en tensión con el PDF, se deja visible en [decisiones-pendientes.md](decisiones-pendientes.md), en vez de afirmar que está resuelta. Los documentos no acreditan implementación, pruebas aprobadas ni revisión del repositorio.
+Cuando una decisión propia parece entrar en tensión con el PDF, se deja visible en [decisiones-pendientes.md](decisiones-pendientes.md), en vez de afirmar que está resuelta. El estado de implementación y las pruebas automatizadas se documentan en [motor-del-juego.md](motor-del-juego.md); la validación personal del estudiante se declara por separado.
