@@ -452,11 +452,20 @@ def search(body: SearchRequest):
 
 
 def evaluate_state(state: dict, body: AdversarialRequest):
-    """Evalúa el estado con Minimax o alfa-beta y la profundidad configurada."""
-    depth = body.depth if body.depth is not None else state.get("juego", {}).get("profundidad_maxima_minimax", 4)
+    """Recomienda una acción sin aplicarla al estado de la partida."""
+    game = state.get("juego", {})
+    configured_depth = game.get("profundidad_maxima_minimax", 4) if isinstance(game, dict) else 4
+    depth = body.depth if body.depth is not None else configured_depth
+    if type(depth) is not int or depth < 0:
+        raise HTTPException(
+            status_code=422,
+            detail="La profundidad configurada debe ser un entero mayor o igual que cero",
+        )
     if body.algorithm == "minimax":
         return minimax(state, depth, body.action_order)
-    return alpha_beta(state, depth, body.action_order)
+    if body.algorithm == "alpha_beta":
+        return alpha_beta(state, depth, body.action_order)
+    raise HTTPException(status_code=422, detail="El algoritmo adversarial no es válido")
 
 
 @app.post("/api/adversarial")
@@ -508,7 +517,15 @@ def test(body: TestRequest):
             raise HTTPException(status_code=422, detail="La configuración de la prueba de búsqueda no es válida") from error
         return {"mode": mode, "result": search_state(state, request)}
     if mode == "adversarial":
-        method = body.algorithm if body.algorithm in ("minimax", "alpha_beta") else "minimax"
+        if body.algorithm in ("minimax", "alpha_beta"):
+            method = body.algorithm
+        elif "algorithm" not in body.model_fields_set:
+            method = "minimax"
+        else:
+            raise HTTPException(
+                status_code=422,
+                detail="Se requiere minimax o alpha_beta para esta prueba adversarial",
+            )
         request = AdversarialRequest(algorithm=method, depth=body.depth, action_order=body.action_order)
         return {"mode": mode, "result": evaluate_state(state, request)}
     raise HTTPException(status_code=422, detail="El modo de prueba no es válido")

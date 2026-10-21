@@ -40,7 +40,7 @@ La segunda heurística la propone el equipo; todavía **no hay una fórmula acor
 
 Minimax alterna MAX y MIN sobre el **mismo motor y el mismo conjunto de reglas**. MAX intenta maximizar utilidad desde una perspectiva elegida; MIN la minimiza porque compite por su propio objetivo, no porque tenga reglas peores.
 
-La función `evaluate` todavía debe definirse. Factores posibles: posesión de reina, proximidad a base/reina, jaques, capturas, unidades activas, peligro del portador y control territorial. Los pesos no pueden darse por medidos o validados antes de experimentar.
+`backend/algorithms/evaluation.py` implementa `evaluate(state, side)` con puntuación terminal, posesión, proximidad normalizada a base/reina, piezas activas, jaque con reina libre y seguridad inmediata del portador. Los pesos son valores iniciales configurables en constantes; no se presentan como optimizados.
 
 ## Métricas y verificación
 
@@ -72,7 +72,7 @@ El PDF requiere demostrar diez situaciones reproducibles, no solo ejecutar algor
 9. Efecto del orden de generación de acciones sobre la poda.
 10. Efecto de cambiar la profundidad en decisión, nodos y tiempo.
 
-Estos casos son criterios de diseño y aceptación, **no resultados obtenidos todavía**.
+Los casos 7–10 tienen estados pequeños reproducibles y resultados medidos en [experimentos-adversariales.md](experimentos-adversariales.md); no se afirma que sus datos reproduzcan una posición exacta del PDF que no está disponible en el árbol local.
 
 ## Requisito documental de los métodos
 

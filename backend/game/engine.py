@@ -465,14 +465,15 @@ def check_winner(state: dict[str, Any]) -> str | None:
     return None
 
 
-def successors(state: dict[str, Any]) -> list[dict[str, Any]]:
-    """Genera estados sucesores con la transición única del motor.
+def action_successors(
+    state: dict[str, Any],
+) -> list[tuple[dict[str, Any], dict[str, Any]]]:
+    """Genera pares acción/estado usando las reglas y transiciones existentes.
 
     Preconditions: estado configurado o en curso y con unidades identificadas.
-    Postconditions: cada estado corresponde a una acción legal del bando activo;
-    el original permanece intacto e incluye recogida explícita si es posible.
-    Complexity: O(A*T), con A acciones candidatas y T el costo de `transition`;
-    espacio O(A*S) por los estados devueltos. Devuelve estados, no pares acción-estado.
+    Postconditions: cada par corresponde a una acción legal del bando activo;
+    el estado de entrada no cambia y se incluye la recogida explícita si procede.
+    Complexity: O(A*T), con A acciones candidatas y T el costo de `transition`.
     """
     game = state.get("juego", {})
     if not isinstance(game, dict) or game.get("estado") == "finalizado":
@@ -498,7 +499,12 @@ def successors(state: dict[str, Any]) -> list[dict[str, Any]]:
             ):
                 actions.append({"type": "collect", "unit_id": unit.get("id")})
 
-    return [transition(state, action) for action in actions]
+    return [(action, transition(state, action)) for action in actions]
+
+
+def successors(state: dict[str, Any]) -> list[dict[str, Any]]:
+    """Compatibilidad histórica: devuelve solo los estados sucesores."""
+    return [next_state for _, next_state in action_successors(state)]
 
 
 def is_goal(state: dict[str, Any], goal: str | dict[str, Any]) -> bool:

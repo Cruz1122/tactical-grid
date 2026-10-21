@@ -62,6 +62,7 @@ class TacticalGridScene extends Phaser.Scene {
     this.legalMoves = [];
     this.userSetTarget = false;
     this.path = [];
+    this.adversarialAction = null;
     this.busy = false;
     this.boardSignature = null;
     this.terrainStyles = {};
@@ -87,6 +88,7 @@ class TacticalGridScene extends Phaser.Scene {
     this.stateLayer = this.add.graphics().setDepth(1);
     this.indicatorLayer = this.add.graphics().setDepth(2);
     this.pathLayer = this.add.graphics().setDepth(3);
+    this.adversarialLayer = this.add.graphics().setDepth(4.8);
     this.actionLayer = this.add.graphics().setDepth(7);
     this.input.on("pointerdown", pointer => this.selectCell(pointer));
     this.ui = new TacticalGridUI(this);
@@ -149,6 +151,7 @@ class TacticalGridScene extends Phaser.Scene {
   }
 
   applyState(state, presentation, animate = false) {
+    this.clearAdversarialAction();
     if (!state?.mapa || !Array.isArray(state.terreno)) {
       this.ui.reportError(new Error("El servidor no devolvió un escenario con mapa y terreno."));
       return;
@@ -578,6 +581,50 @@ class TacticalGridScene extends Phaser.Scene {
   showSearchPath(path) {
     this.path = Array.isArray(path) ? path : [];
     this.drawHighlights();
+  }
+
+  clearAdversarialAction() {
+    this.adversarialAction = null;
+    this.adversarialLayer?.clear();
+  }
+
+  showAdversarialAction(option) {
+    this.adversarialAction = option || null;
+    if (!this.adversarialLayer) return;
+    this.adversarialLayer.clear();
+    if (!option) return;
+    const origin = this.coordinate(option.origin);
+    const destination = this.coordinate(option.destination);
+    if (!origin || !destination) return;
+    const originX = this.boardX + origin.columna * this.cell;
+    const originY = this.boardY + origin.fila * this.cell;
+    const target = this.center(destination.fila, destination.columna);
+    const collect = option.kind === "collect";
+    const capture = option.kind === "capture";
+    const color = collect ? 0xd0a83c : capture ? 0xb9504d : 0x28766e;
+    this.adversarialLayer.lineStyle(Math.max(2.5, this.cell * .08), 0x276d78, .98);
+    this.adversarialLayer.strokeRoundedRect(originX + 2, originY + 2, this.cell - 4, this.cell - 4, 5);
+    if (origin.fila === destination.fila && origin.columna === destination.columna) {
+      this.adversarialLayer.lineStyle(Math.max(3, this.cell * .09), color, .98);
+      this.adversarialLayer.strokeCircle(target.x, target.y, this.cell * .34);
+      return;
+    }
+    this.adversarialLayer.fillStyle(color, .22);
+    this.adversarialLayer.fillRoundedRect(
+      this.boardX + destination.columna * this.cell + 3,
+      this.boardY + destination.fila * this.cell + 3,
+      this.cell - 6,
+      this.cell - 6,
+      5
+    );
+    this.adversarialLayer.lineStyle(Math.max(2.5, this.cell * .08), color, .98);
+    this.adversarialLayer.strokeRoundedRect(
+      this.boardX + destination.columna * this.cell + 3,
+      this.boardY + destination.fila * this.cell + 3,
+      this.cell - 6,
+      this.cell - 6,
+      5
+    );
   }
 
   setLegalMoves(moves) {

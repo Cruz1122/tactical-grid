@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#131a1d">
   <title>TacticalGrid</title>
-  <link rel="stylesheet" href="/styles.css?v=24">
+  <link rel="stylesheet" href="/styles.css?v=26">
   <script defer src="https://cdn.jsdelivr.net/npm/phaser@4.2.1/dist/phaser.min.js"></script>
-  <script defer src="/api.js?v=25"></script>
-  <script defer src="/scene.js?v=24"></script>
+  <script defer src="/api.js?v=27"></script>
+  <script defer src="/scene.js?v=25"></script>
 </head>
 <body>
   <header class="topbar">
@@ -143,6 +143,72 @@
           <div><small>Tiempo</small><strong id="searchElapsed">—</strong></div>
         </div>
         <p id="searchPath" class="search-path" hidden></p>
+      </section>
+    </section>
+
+    <section class="panel-section adversarial-section" aria-labelledby="adversarialTitle">
+      <div class="section-heading compact">
+        <div><span class="eyebrow">DECISIÓN ADVERSARIAL</span><h2 id="adversarialTitle">Minimax y alfa-beta</h2></div>
+        <span class="search-algorithm-badge">A vs. B</span>
+      </div>
+      <p class="section-copy">Analiza una jugada o deja que ambos bandos jueguen automáticamente. El autojuego sí ejecuta cada recomendación en la partida.</p>
+      <label class="search-field" for="adversarialAlgorithm">
+        <span>Algoritmo</span>
+        <select id="adversarialAlgorithm">
+          <option value="minimax">Minimax</option>
+          <option value="alpha_beta" selected>Alfa-beta</option>
+        </select>
+      </label>
+      <div class="adversarial-parameters">
+        <label class="search-field" for="adversarialDepth">
+          <span>Profundidad</span>
+          <input id="adversarialDepth" type="number" min="0" step="1" value="2" inputmode="numeric" aria-describedby="adversarialDepthHelp">
+        </label>
+        <label class="search-field" for="adversarialOrder">
+          <span>Orden de acciones</span>
+          <select id="adversarialOrder">
+            <option value="normal" selected>Normal</option>
+            <option value="reverse">Inverso</option>
+          </select>
+        </label>
+      </div>
+      <p id="adversarialDepthHelp" class="search-parameter-note">Cada nivel representa una acción completa de un jugador. Profundidad 2 incluye la respuesta rival.</p>
+      <button id="runAdversarial" class="button primary search-run" type="button">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h5l3-8 4 16 3-8h1"/></svg>
+        <span id="runAdversarialLabel">Analizar posición</span>
+      </button>
+      <button id="autoPlayToggle" class="button secondary adversarial-autoplay" type="button" aria-pressed="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 5 12 7-12 7V5Z"/></svg>
+        <span id="autoPlayLabel">Autojugar ambos bandos</span>
+      </button>
+      <p id="autoPlayStatus" class="adversarial-autoplay-status" hidden aria-live="polite"></p>
+      <section id="adversarialResult" class="adversarial-result" hidden aria-live="polite" aria-labelledby="adversarialResultTitle">
+        <div class="search-result-head">
+          <div><span class="eyebrow">ANÁLISIS</span><h3 id="adversarialResultTitle">Resultado</h3></div>
+          <button id="clearAdversarial" class="search-clear" type="button" aria-label="Limpiar análisis adversarial" title="Limpiar análisis">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
+          </button>
+        </div>
+        <p id="adversarialStatus" class="search-message"></p>
+        <p id="adversarialActionSummary" class="adversarial-action-summary"></p>
+        <button id="applyAdversarial" class="button primary adversarial-apply" type="button" disabled>Ejecutar jugada recomendada</button>
+        <div id="adversarialMetrics" class="search-metrics adversarial-metrics" hidden>
+          <div><small id="adversarialValueLabel">Valor</small><strong id="adversarialValue">—</strong></div>
+          <div><small>Profundidad pedida / alcanzada</small><strong><span id="adversarialDepthRequested">—</span> / <span id="adversarialDepthReached">—</span></strong></div>
+          <div><small>Generados</small><strong id="adversarialGenerated">—</strong></div>
+          <div><small>Visitados</small><strong id="adversarialVisited">—</strong></div>
+          <div><small>Evaluados</small><strong id="adversarialEvaluated">—</strong></div>
+          <div><small>Podados</small><strong id="adversarialPruned">—</strong></div>
+          <div><small>Tiempo</small><strong id="adversarialElapsed">—</strong></div>
+        </div>
+        <p class="adversarial-options-note">Generados cuenta sucesores materializados (sin la raíz); visitados incluye la raíz; evaluados son hojas; podados cuenta solo sucesores inmediatos omitidos por alfa-beta.</p>
+        <div class="adversarial-stepper" aria-label="Recorrido de opciones legales">
+          <button id="adversarialPrevious" class="button secondary" type="button" aria-label="Acción legal anterior">Anterior</button>
+          <span id="adversarialPosition" aria-live="polite">0 / 0</span>
+          <button id="adversarialNext" class="button secondary" type="button" aria-label="Siguiente acción legal">Siguiente</button>
+        </div>
+        <p class="adversarial-options-note">Recorrido visual de las opciones legales del turno. El tablero solo marca origen y destino; no muestra una secuencia interna de ramas del algoritmo.</p>
+        <ol id="adversarialOptions" class="adversarial-options" aria-label="Acciones legales disponibles"></ol>
       </section>
     </section>
 

@@ -52,6 +52,28 @@ function assertSearchResultShape(result) {
   return result;
 }
 
+function assertAdversarialResultShape(result) {
+  const metricFields = [
+    "requested_depth", "depth_reached", "nodes_generated", "nodes_visited",
+    "nodes_evaluated", "nodes_pruned"
+  ];
+  if (!isObject(result) || !("action" in result) || !["minimax", "alpha_beta"].includes(result.algorithm) ||
+      !["normal", "reverse"].includes(result.action_order) ||
+      !Number.isFinite(result.value) || !Number.isFinite(result.elapsed_seconds) ||
+      result.elapsed_seconds < 0 ||
+      metricFields.some(field => !Number.isSafeInteger(result[field]) || result[field] < 0)) {
+    throw new Error("El servidor devolvió un resultado adversarial con formato inválido.");
+  }
+  const action = result.action;
+  if (action != null && (!isObject(action) || !["move", "collect"].includes(action.type) ||
+      typeof action.unit_id !== "string" ||
+      (action.type === "move" && (!isObject(action.destination) ||
+        !Number.isInteger(action.destination.fila) || !Number.isInteger(action.destination.columna))))) {
+    throw new Error("El servidor devolvió una acción adversarial con formato inválido.");
+  }
+  return result;
+}
+
 function validateResponse(data) {
   if (!isObject(data)) throw new Error("La respuesta del servidor no es un objeto JSON.");
   if (data.state) assertStateShape(data.state);
@@ -141,6 +163,11 @@ class ApiClient {
   static async search(payload, signal) {
     const data = await this.request("/api/search", payload, {signal});
     return assertSearchResultShape(data.result);
+  }
+
+  static async adversarial(payload, signal) {
+    const data = await this.request("/api/adversarial", payload, {signal});
+    return assertAdversarialResultShape(data.result);
   }
 }
 
@@ -260,6 +287,16 @@ class TacticalGridUI {
     this.searchPending = false;
     this.searchController = null;
     this.searchRequestId = 0;
+    this.adversarialPending = false;
+    this.adversarialController = null;
+    this.adversarialRequestId = 0;
+    this.adversarialOptions = [];
+    this.adversarialIndex = -1;
+    this.adversarialRecommendation = null;
+    this.autoPlayActive = false;
+    this.autoPlayRunId = 0;
+    this.autoPlayTimer = null;
+    this.autoPlayWaitResolve = null;
     const el = id => document.getElementById(id);
     this.el = el;
 
@@ -312,6 +349,26 @@ class TacticalGridUI {
     }
     el("runSearch").addEventListener("click", () => this.search());
     el("clearSearch").addEventListener("click", () => this.clearSearchResult({announce: true}));
+    el("runAdversarial").addEventListener("click", () => this.adversarial());
+    el("applyAdversarial").addEventListener("click", () => this.applyAdversarialRecommendation());
+    el("autoPlayToggle").addEventListener("click", () => this.toggleAutoPlay());
+    el("clearAdversarial").addEventListener("click", () => this.clearAdversarialResult({announce: true}));
+    el("adversarialPrevious").addEventListener("click", () => this.showAdversarialOption(this.adversarialIndex - 1));
+    el("adversarialNext").addEventListener("click", () => this.showAdversarialOption(this.adversarialIndex + 1));
+    el("adversarialOptions").addEventListener("click", event => {
+      const option = event.target.closest("[data-adversarial-index]");
+      if (option && this.el("adversarialOptions").contains(option)) {
+        this.showAdversarialOption(Number(option.dataset.adversarialIndex));
+      }
+    });
+    el("adversarialAlgorithm").addEventListener("change", () => {
+      this.updateAdversarialControls();
+      this.clearAdversarialResult();
+    });
+    for (const input of [el("adversarialDepth"), el("adversarialOrder")]) {
+      input.addEventListener("input", () => this.clearAdversarialResult());
+      input.addEventListener("change", () => this.clearAdversarialResult());
+    }
     el("pickSearchTarget").addEventListener("click", () => this.setTargetPicking(!this.pickingTarget));
     el("searchUnit").addEventListener("change", () => {
       this.setTargetPicking(false, {announce: false});
@@ -334,6 +391,7 @@ class TacticalGridUI {
     this.setSearchAlgorithm("bfs");
     this.updateKingInputs();
     this.updateSearchControls();
+    this.updateAdversarialControls();
   }
 
   setSearchAlgorithm(algorithm) {
@@ -624,6 +682,7 @@ class TacticalGridUI {
   }
 
   async search() {
+    if (this.autoPlayActive) this.stopAutoPlay({message: "Autojuego pausado para ejecutar otra búsqueda."});
     if (this.mutationPending || this.searchPending || this.desynchronized) return null;
     const unitId = this.el("searchUnit").value;
     if (!unitId) {
@@ -643,6 +702,7 @@ class TacticalGridUI {
       return null;
     }
     this.setTargetPicking(false, {announce: false});
+    this.cancelAdversarial({clearResult: true});
     this.cancelSearch();
     this.clearSearchResult();
     const requestId = this.searchRequestId;
@@ -677,6 +737,405 @@ class TacticalGridUI {
         this.searchController = null;
         this.searchPending = false;
         this.updateSearchControls();
+      }
+    }
+  }
+
+  updateAdversarialControls() {
+    const state = this.scene.state;
+    const locked = this.mutationPending || this.desynchronized || !state || this.adversarialPending || this.autoPlayActive;
+    for (const id of ["adversarialAlgorithm", "adversarialDepth", "adversarialOrder", "runAdversarial"]) {
+      const control = this.el(id);
+      if (control) control.disabled = locked;
+    }
+    this.el("adversarialOrder").disabled = locked || this.el("adversarialAlgorithm").value !== "alpha_beta";
+    this.el("runAdversarialLabel").textContent = this.adversarialPending ? "Analizando…" : "Analizar posición";
+    const hasOptions = this.adversarialOptions.length > 0;
+    this.el("adversarialPrevious").disabled = locked || !hasOptions || this.adversarialIndex <= 0;
+    this.el("adversarialNext").disabled = locked || !hasOptions || this.adversarialIndex >= this.adversarialOptions.length - 1;
+    this.el("applyAdversarial").disabled = locked || !this.adversarialRecommendation;
+    this.el("clearAdversarial").disabled = locked || this.el("adversarialResult").hidden;
+    const autoPlay = this.el("autoPlayToggle");
+    this.el("autoPlayLabel").textContent = this.autoPlayActive
+      ? "Pausar autojuego"
+      : "Autojugar ambos bandos";
+    autoPlay.setAttribute("aria-pressed", String(this.autoPlayActive));
+    autoPlay.disabled = this.desynchronized || !state ||
+      (this.mutationPending && !this.autoPlayActive) ||
+      (this.adversarialPending && !this.autoPlayActive) ||
+      (!this.autoPlayActive && state.juego?.estado !== "en_curso");
+    this.el("autoPlayStatus").hidden = !this.el("autoPlayStatus").textContent;
+    this.el("adversarialResult").setAttribute("aria-busy", String(this.adversarialPending));
+  }
+
+  setAutoPlayStatus(message) {
+    const status = this.el("autoPlayStatus");
+    status.textContent = message;
+    status.hidden = !message;
+  }
+
+  resetAdversarialView() {
+    this.adversarialOptions = [];
+    this.adversarialIndex = -1;
+    this.adversarialRecommendation = null;
+    this.scene.clearAdversarialAction();
+    this.el("adversarialResult").hidden = true;
+    this.el("adversarialResult").removeAttribute("data-state");
+    this.el("adversarialStatus").textContent = "";
+    this.el("adversarialActionSummary").textContent = "";
+    this.el("adversarialMetrics").hidden = true;
+    this.el("adversarialOptions").replaceChildren();
+    this.el("adversarialPosition").textContent = "0 / 0";
+  }
+
+  cancelAdversarial({clearResult = false} = {}) {
+    this.adversarialRequestId += 1;
+    if (this.adversarialController) this.adversarialController.abort();
+    this.adversarialController = null;
+    this.adversarialPending = false;
+    if (clearResult) this.resetAdversarialView();
+    this.updateAdversarialControls();
+  }
+
+  clearAdversarialResult({announce = false} = {}) {
+    this.cancelAdversarial();
+    this.resetAdversarialView();
+    this.updateAdversarialControls();
+    if (announce) this.say("Análisis adversarial eliminado.");
+  }
+
+  async loadAdversarialOptions(state, signal) {
+    const units = state.unidades.filter(unit =>
+      unit.activo !== false && unit.bando === state.turno
+    );
+    const responses = await Promise.all(units.map(unit => ApiClient.legalMoves(unit.id, signal)));
+    const options = [];
+    for (let index = 0; index < units.length; index++) {
+      const unit = units[index];
+      const response = responses[index];
+      for (const destination of response.destinations) {
+        const position = {fila: destination.row, columna: destination.column};
+        const collect = destination.kind === "collect";
+        options.push({
+          action: collect
+            ? {type: "collect", unit_id: unit.id}
+            : {type: "move", unit_id: unit.id, destination: position},
+          kind: destination.kind,
+          unit,
+          origin: {fila: unit.fila, columna: unit.columna},
+          destination: position
+        });
+      }
+    }
+    options.sort((left, right) => {
+      if (left.action.unit_id !== right.action.unit_id) {
+        return left.action.unit_id < right.action.unit_id ? -1 : 1;
+      }
+      if (left.action.type !== right.action.type) return left.action.type === "collect" ? 1 : -1;
+      return left.destination.fila - right.destination.fila ||
+        left.destination.columna - right.destination.columna;
+    });
+    return {options, responses};
+  }
+
+  matchesAdversarialAction(option, action) {
+    if (!option || !action || option.action.unit_id !== action.unit_id || option.action.type !== action.type) {
+      return false;
+    }
+    return action.type === "collect" ||
+      (option.action.destination.fila === action.destination.fila &&
+       option.action.destination.columna === action.destination.columna);
+  }
+
+  formatAdversarialAction(action) {
+    const unit = this.scene.state?.unidades?.find(candidate => candidate.id === action.unit_id);
+    const label = `${action.unit_id}${unit ? ` · ${this.unitLabel(unit)}` : ""}`;
+    if (action.type === "collect") return `${label}: recoger reina`;
+    const origin = unit && Number.isInteger(unit.fila) && Number.isInteger(unit.columna)
+      ? `(${unit.fila}, ${unit.columna}) → `
+      : "";
+    return `${label}: ${origin}(${action.destination.fila}, ${action.destination.columna})`;
+  }
+
+  renderAdversarialResult(result, options) {
+    this.adversarialOptions = options;
+    const panel = this.el("adversarialResult");
+    panel.hidden = false;
+    panel.dataset.state = result.action ? "found" : "empty";
+    this.el("adversarialStatus").textContent = result.action
+      ? `Recomendación de ${result.algorithm === "minimax" ? "Minimax" : "alfa-beta"}. Las opciones de abajo son acciones legales del turno, no ramas internas de búsqueda.`
+      : "No hay recomendación: la posición es terminal o la profundidad solicitada es 0.";
+    this.el("adversarialActionSummary").textContent = result.action
+      ? this.formatAdversarialAction(result.action)
+      : "Sin acción recomendada";
+    this.el("adversarialValueLabel").textContent = `Valor · ${teamLabel(this.scene.state.turno)}`;
+    this.el("adversarialValue").textContent = String(result.value);
+    this.el("adversarialDepthRequested").textContent = String(result.requested_depth);
+    this.el("adversarialDepthReached").textContent = String(result.depth_reached);
+    this.el("adversarialGenerated").textContent = String(result.nodes_generated);
+    this.el("adversarialVisited").textContent = String(result.nodes_visited);
+    this.el("adversarialEvaluated").textContent = String(result.nodes_evaluated);
+    this.el("adversarialPruned").textContent = String(result.nodes_pruned);
+    this.el("adversarialElapsed").textContent = `${(result.elapsed_seconds * 1000).toFixed(2)} ms`;
+    this.el("adversarialMetrics").hidden = false;
+
+    const recommendedIndex = result.action
+      ? options.findIndex(option => this.matchesAdversarialAction(option, result.action))
+      : -1;
+    this.adversarialRecommendation = recommendedIndex >= 0 ? options[recommendedIndex] : null;
+    const list = this.el("adversarialOptions");
+    list.replaceChildren();
+    options.forEach((option, index) => {
+      const item = document.createElement("li");
+      const button = document.createElement("button");
+      const actionType = option.kind === "capture" ? "capturar" :
+        option.kind === "collect" ? "recoger reina" : "mover";
+      const origin = `(${option.origin.fila}, ${option.origin.columna})`;
+      const destination = `(${option.destination.fila}, ${option.destination.columna})`;
+      button.type = "button";
+      button.dataset.adversarialIndex = String(index);
+      button.className = "adversarial-option";
+      if (index === recommendedIndex) button.classList.add("is-recommended");
+      button.setAttribute("aria-label", `${this.formatAdversarialAction(option.action)}; ${actionType}${index === recommendedIndex ? "; recomendada" : ""}`);
+      const title = document.createElement("strong");
+      title.textContent = `${option.unit.id} · ${this.unitLabel(option.unit)}`;
+      const detail = document.createElement("span");
+      detail.textContent = option.kind === "collect"
+        ? `${origin} · Recoger reina`
+        : `${origin} → ${destination} · ${actionType}`;
+      button.append(title, detail);
+      if (index === recommendedIndex) {
+        const badge = document.createElement("em");
+        badge.textContent = "Recomendada";
+        button.append(badge);
+      }
+      item.append(button);
+      list.append(item);
+    });
+
+    this.adversarialIndex = recommendedIndex;
+    if (recommendedIndex >= 0) this.showAdversarialOption(recommendedIndex);
+    else {
+      this.scene.clearAdversarialAction();
+      this.el("adversarialPosition").textContent = options.length ? `0 / ${options.length}` : "0 / 0";
+    }
+    if (result.action && recommendedIndex < 0) {
+      this.el("adversarialStatus").textContent += " La recomendación no coincide con la lista legal consultada; no se resaltó como opción válida.";
+    }
+    this.updateAdversarialControls();
+  }
+
+  showAdversarialOption(index) {
+    if (!Number.isInteger(index) || index < 0 || index >= this.adversarialOptions.length) return;
+    this.adversarialIndex = index;
+    const option = this.adversarialOptions[index];
+    this.scene.showAdversarialAction(option);
+    this.el("adversarialPosition").textContent = `${index + 1} / ${this.adversarialOptions.length}`;
+    for (const button of this.el("adversarialOptions").querySelectorAll("[data-adversarial-index]")) {
+      const selected = Number(button.dataset.adversarialIndex) === index;
+      button.classList.toggle("is-current", selected);
+      button.setAttribute("aria-current", String(selected));
+    }
+    this.updateAdversarialControls();
+  }
+
+  async applyAdversarialRecommendation() {
+    if (!this.adversarialRecommendation || this.mutationPending || this.autoPlayActive) return null;
+    return this.executeAdversarialAction(this.adversarialRecommendation);
+  }
+
+  async executeAdversarialAction(option, {preserveAutoPlay = false, quiet = false} = {}) {
+    if (!option) return null;
+    if (option.action.type === "collect") {
+      return this.collectQueen(option.action.unit_id, {preserveAutoPlay, quiet});
+    }
+    return this.move(
+      option.action.unit_id,
+      option.action.destination.fila,
+      option.action.destination.columna,
+      {preserveAutoPlay, quiet}
+    );
+  }
+
+  toggleAutoPlay() {
+    if (this.autoPlayActive) {
+      this.stopAutoPlay({message: "Autojuego pausado por el usuario.", announce: true});
+      return;
+    }
+    this.startAutoPlay();
+  }
+
+  startAutoPlay() {
+    const state = this.scene.state;
+    if (this.mutationPending || this.adversarialPending || this.desynchronized ||
+        !state || state.juego?.estado !== "en_curso") {
+      this.setAutoPlayStatus("El autojuego requiere una partida en curso.");
+      return;
+    }
+    this.autoPlayActive = true;
+    const runId = ++this.autoPlayRunId;
+    this.setAutoPlayStatus("Autopartida activa: ambos bandos analizarán y ejecutarán una jugada por turno.");
+    this.updateAdversarialControls();
+    this.say("Autopartida iniciada. Ambos bandos jugarán con el algoritmo y la profundidad seleccionados.", {
+      title: "Autojuego iniciado", tone: "success"
+    });
+    this.runAutoPlay(runId);
+  }
+
+  stopAutoPlay({message = "Autojuego detenido.", announce = false} = {}) {
+    if (!this.autoPlayActive) return false;
+    this.autoPlayActive = false;
+    this.autoPlayRunId += 1;
+    if (this.autoPlayTimer !== null) window.clearTimeout(this.autoPlayTimer);
+    this.autoPlayTimer = null;
+    const resolveWait = this.autoPlayWaitResolve;
+    this.autoPlayWaitResolve = null;
+    if (resolveWait) resolveWait(false);
+    if (this.adversarialPending) this.cancelAdversarial({clearResult: true});
+    this.setAutoPlayStatus(message);
+    this.updateAdversarialControls();
+    if (announce) this.say(message, {title: "Autojuego pausado", tone: "info"});
+    return true;
+  }
+
+  waitForAutoPlay(ms, runId) {
+    if (!this.autoPlayActive || runId !== this.autoPlayRunId) return Promise.resolve(false);
+    return new Promise(resolve => {
+      this.autoPlayWaitResolve = resolve;
+      this.autoPlayTimer = window.setTimeout(() => {
+        this.autoPlayTimer = null;
+        this.autoPlayWaitResolve = null;
+        resolve(this.autoPlayActive && runId === this.autoPlayRunId);
+      }, ms);
+    });
+  }
+
+  async runAutoPlay(runId) {
+    const isCurrent = () => this.autoPlayActive && runId === this.autoPlayRunId;
+    try {
+      while (isCurrent()) {
+        const state = this.scene.state;
+        if (!state || state.juego?.estado !== "en_curso") {
+          this.stopAutoPlay({message: "La partida terminó. Autojuego detenido."});
+          return;
+        }
+        const side = state.turno;
+        this.setAutoPlayStatus(`Turno de ${teamLabel(side)}: calculando la jugada…`);
+        const result = await this.adversarial();
+        if (!isCurrent()) return;
+        if (!result) {
+          this.stopAutoPlay({message: "Autojuego detenido: no se pudo obtener una recomendación."});
+          return;
+        }
+        if (!result.action) {
+          this.stopAutoPlay({message: "Autojuego detenido: el algoritmo no recomendó una acción legal."});
+          return;
+        }
+        const option = this.adversarialOptions.find(candidate =>
+          this.matchesAdversarialAction(candidate, result.action)
+        );
+        if (!option) {
+          this.stopAutoPlay({message: "Autojuego detenido: la recomendación no coincide con las acciones legales actuales."});
+          return;
+        }
+        const description = this.formatAdversarialAction(result.action);
+        this.setAutoPlayStatus(`${teamLabel(side)}: ${description}. Ejecutando en un momento…`);
+        if (!await this.waitForAutoPlay(750, runId)) return;
+        const data = await this.executeAdversarialAction(option, {preserveAutoPlay: true, quiet: true});
+        if (!isCurrent()) return;
+        if (!data) {
+          this.stopAutoPlay({message: "Autojuego detenido: el servidor no confirmó la jugada."});
+          return;
+        }
+        const nextState = this.scene.state;
+        if (nextState?.juego?.estado === "finalizado") {
+          this.stopAutoPlay({message: `Partida finalizada tras ${description}.`});
+          return;
+        }
+        this.setAutoPlayStatus(`${teamLabel(side)} jugó ${description}. Turno de ${teamLabel(nextState?.turno)}.`);
+        if (!await this.waitForAutoPlay(500, runId)) return;
+      }
+    } catch (error) {
+      if (isCurrent()) this.stopAutoPlay({message: `Autojuego detenido: ${error?.message || "error inesperado"}.`});
+    }
+  }
+
+  async adversarial() {
+    if (this.mutationPending || this.adversarialPending || this.desynchronized || !this.scene.state) return null;
+    const depthText = this.el("adversarialDepth").value.trim();
+    const depth = Number(depthText);
+    if (!depthText || !Number.isSafeInteger(depth) || depth < 0) {
+      this.el("adversarialResult").hidden = false;
+      this.el("adversarialResult").dataset.state = "error";
+      this.el("adversarialStatus").textContent = "La profundidad debe ser un entero mayor o igual que cero.";
+      this.el("adversarialMetrics").hidden = true;
+      this.updateAdversarialControls();
+      return null;
+    }
+    const algorithm = this.el("adversarialAlgorithm").value;
+    const actionOrder = this.el("adversarialOrder").value;
+    if (!["minimax", "alpha_beta"].includes(algorithm) ||
+        (algorithm === "alpha_beta" && !["normal", "reverse"].includes(actionOrder))) {
+      this.el("adversarialResult").hidden = false;
+      this.el("adversarialResult").dataset.state = "error";
+      this.el("adversarialStatus").textContent = "Selecciona un algoritmo y un orden de acciones válidos.";
+      this.el("adversarialMetrics").hidden = true;
+      this.updateAdversarialControls();
+      return null;
+    }
+
+    this.setTargetPicking(false, {announce: false});
+    this.cancelSearch();
+    this.clearSearchResult();
+    this.clearAdversarialResult();
+    const state = this.scene.state;
+    const requestId = this.adversarialRequestId;
+    const epoch = this.stateEpoch;
+    const controller = new AbortController();
+    this.adversarialController = controller;
+    this.adversarialPending = true;
+    this.el("adversarialResult").hidden = false;
+    this.el("adversarialResult").dataset.state = "loading";
+    this.el("adversarialStatus").textContent = "Consultando Minimax y las acciones legales del turno…";
+    this.updateAdversarialControls();
+    try {
+      const [result, legal] = await Promise.all([
+        ApiClient.adversarial({
+          algorithm,
+          depth,
+          action_order: algorithm === "alpha_beta" ? actionOrder : "normal"
+        }, controller.signal),
+        this.loadAdversarialOptions(state, controller.signal)
+      ]);
+      if (requestId !== this.adversarialRequestId || epoch !== this.stateEpoch) return null;
+      const revisions = legal.responses
+        .map(response => response.presentation?.revision)
+        .filter(revision => typeof revision === "string");
+      const knownRevision = this.lastPresentation?.revision;
+      if ((knownRevision && revisions.some(revision => revision !== knownRevision)) ||
+          new Set(revisions).size > 1) {
+        const error = new Error("La partida cambió durante el análisis; se consultará el estado oficial.");
+        error.stateChanged = true;
+        throw error;
+      }
+      this.renderAdversarialResult(result, legal.options);
+      return result;
+    } catch (error) {
+      if (error?.name === "AbortError" || requestId !== this.adversarialRequestId) return null;
+      if (error?.stateChanged) {
+        await this.reconcileOfficialState(error.message);
+        return null;
+      }
+      this.resetAdversarialView();
+      this.el("adversarialResult").hidden = false;
+      this.el("adversarialResult").dataset.state = "error";
+      this.el("adversarialStatus").textContent = error?.message || "No se pudo completar el análisis adversarial.";
+      return null;
+    } finally {
+      if (requestId === this.adversarialRequestId) {
+        this.adversarialController = null;
+        this.adversarialPending = false;
+        this.updateAdversarialControls();
       }
     }
   }
@@ -805,7 +1264,7 @@ class TacticalGridUI {
   setInteractive(disabled) {
     const locked = disabled || this.desynchronized;
     for (const control of this.el("uiPanel").querySelectorAll("button, select, input")) {
-      if (control.id !== "syncState") control.disabled = locked;
+      if (control.id !== "syncState" && control.id !== "autoPlayToggle") control.disabled = locked;
     }
     if (!disabled && !this.desynchronized) {
       this.updateKingInputs();
@@ -815,6 +1274,7 @@ class TacticalGridUI {
     }
     this.updateSyncButton();
     this.updateSearchControls();
+    this.updateAdversarialControls();
     this.scene.setBusy(locked);
   }
 
@@ -1041,6 +1501,7 @@ class TacticalGridUI {
     assertStateShape(state);
     this.cancelSearch();
     this.clearSearchResult();
+    this.cancelAdversarial({clearResult: true});
     this.setTargetPicking(false, {announce: false});
     const previousState = this.scene.state;
     this.stateEpoch += 1;
@@ -1223,9 +1684,11 @@ class TacticalGridUI {
   }
 
   enterDesynchronized(error, message) {
+    if (this.autoPlayActive) this.stopAutoPlay({message: "Autojuego detenido: estado sin sincronizar."});
     this.desynchronized = true;
     this.cancelLegalRequest();
     this.cancelSearch();
+    this.cancelAdversarial({clearResult: true});
     this.clearSearchResult();
     this.scene.selectedUnit = null;
     this.scene.setLegalMoves([]);
@@ -1241,6 +1704,8 @@ class TacticalGridUI {
 
   async synchronizeState() {
     if (this.mutationPending) return null;
+    if (this.autoPlayActive) this.stopAutoPlay({message: "Autojuego detenido para sincronizar la partida."});
+    this.cancelAdversarial({clearResult: true});
     this.mutationPending = true;
     this.setInteractive(true);
     const synchronizedState = await this.reconcileOfficialState(
@@ -1251,7 +1716,10 @@ class TacticalGridUI {
     return synchronizedState;
   }
 
-  async runMutation(path, payload, expected = "result") {
+  async runMutation(path, payload, expected = "result", {preserveAutoPlay = false, quiet = false} = {}) {
+    if (!preserveAutoPlay && this.autoPlayActive) {
+      this.stopAutoPlay({message: "Autojuego pausado por una acción manual."});
+    }
     if (this.desynchronized) {
       this.say("La interfaz está desincronizada; sincroniza el estado antes de continuar.");
       return null;
@@ -1262,6 +1730,7 @@ class TacticalGridUI {
     }
     this.cancelSearch();
     this.clearSearchResult();
+    this.cancelAdversarial({clearResult: true});
     this.mutationPending = true;
     this.cancelLegalRequest();
     this.setInteractive(true);
@@ -1274,7 +1743,7 @@ class TacticalGridUI {
       if (data.state) {
         this.updateState(data.state, data.source, data.presentation, path === "/api/move" || path === "/api/collect");
       }
-      this.report(data.result ?? data.state ?? data);
+      if (!quiet) this.report(data.result ?? data.state ?? data);
       return data;
     } catch (error) {
       if (error?.status === 409) {
@@ -1313,15 +1782,15 @@ class TacticalGridUI {
     if (data) this.hideResultScreen();
   }
 
-  async move(unitId, row, column) {
+  async move(unitId, row, column, options = {}) {
     return this.runMutation("/api/move", {
       unit_id: unitId,
       destination: {row, column},
       revision: this.lastPresentation?.revision || null
-    }, "state");
+    }, "state", options);
   }
 
-  async collectQueen(unitId = this.scene.selectedUnit) {
+  async collectQueen(unitId = this.scene.selectedUnit, options = {}) {
     if (!unitId || !this.lastPresentation?.recogida_autorizada?.[unitId]) {
       this.setActionHint("Selecciona una ficha situada sobre la reina.");
       return null;
@@ -1329,7 +1798,7 @@ class TacticalGridUI {
     return this.runMutation("/api/collect", {
       unit_id: unitId,
       revision: this.lastPresentation?.revision || null
-    }, "state");
+    }, "state", options);
   }
 
   parseManualKings(value, side) {
