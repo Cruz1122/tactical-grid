@@ -22,6 +22,15 @@ def beam_search(
     `states_generated` cuenta claves de estado únicas vistas, incluso las descartadas;
     `max_frontier` mide solo estados conservados en el haz, nunca candidatos temporales.
     Beam Search no garantiza solución ni optimalidad de movimientos o costo.
+    
+
+    Purpose: Restringir a k candidatos por nivel de búsqueda heurística.
+    Preconditions: k entero positivo; meta, ficha y estado válidos.
+    Postconditions: Devuelve ruta encontrada o fallo sin completitud ni optimalidad garantizadas.
+    Complexity: Tiempo O(D*k*b*log(k*b)) más generación; memoria O(k*b+Vvisitados).
+    AI usage: Yes.
+    AI intervention: apoyo de IA en diseño, revisión, documentación o pruebas; verificar el alcance preciso en el informe.
+    Student validation: hay pruebas automatizadas; la comprobación y defensa personal de los integrantes sigue pendiente.
     """
     started_at = perf_counter()  # Mide toda la llamada, incluida la validación y la reconstrucción.
     if type(k) is not int or k < 1:  # Rechaza anchos nulos, negativos y booleanos no enteros.

@@ -61,6 +61,15 @@ def terrain_cost(state: dict[str, Any], position: PositionLike) -> float:
     Raises:
         TypeError: si las coordenadas o el costo no tienen tipo válido.
         ValueError: si la posición está fuera del mapa o no es transitable.
+    
+
+    Purpose: Consultar costo de una celda transitable del JSON.
+    Preconditions: Posición dentro del tablero y tipo de terreno existente.
+    Postconditions: Devuelve costo positivo o error ante terreno inválido.
+    Complexity: O(1) tiempo y espacio.
+    AI usage: Yes.
+    AI intervention: apoyo de IA en diseño, revisión, documentación o pruebas; verificar el alcance preciso en el informe.
+    Student validation: hay pruebas automatizadas; la comprobación y defensa personal de los integrantes sigue pendiente.
     """
     row, column = _position_tuple(position)
     coordinate = (row, column)
@@ -305,6 +314,15 @@ def legal_moves(state: dict[str, Any], unit_id: str) -> list[dict[str, int]]:
     destino candidato, el cálculo adicional de jaque cuesta hasta O(K * U *
     max(F, C)). Espacio O(U + K + F + C), incluida la lista de destinos.
 
+    
+
+    Purpose: Enumerar destinos legales de una unidad según su tipo y el tablero.
+    Preconditions: Escenario preparado y unit_id existente o reconocible.
+    Postconditions: Devuelve destinos válidos sin modificar estado.
+    Complexity: O(U+K+F+C), más costo de comprobar jaque cuando procede.
+    AI usage: Yes.
+    AI intervention: apoyo de IA en diseño, revisión, documentación o pruebas; verificar el alcance preciso en el informe.
+    Student validation: hay pruebas automatizadas; la comprobación y defensa personal de los integrantes sigue pendiente.
     """
     units = _active_units(state)
     unit = next((candidate for candidate in units if candidate.get("id") == unit_id), None)
@@ -428,6 +446,15 @@ def move_cost(
     Raises:
         TypeError: si las coordenadas no son enteras.
         ValueError: si la unidad no está activa o el destino no es legal.
+    
+
+    Purpose: Calcular el costo real de un desplazamiento completo.
+    Preconditions: Movimiento legal y costos positivos definidos en tipos_terreno.
+    Postconditions: Devuelve costo positivo de destino o casillas atravesadas, excluyendo origen.
+    Complexity: O(max(F,C)) para deslizantes; O(1) para saltos o estándar.
+    AI usage: Yes.
+    AI intervention: apoyo de IA en diseño, revisión, documentación o pruebas; verificar el alcance preciso en el informe.
+    Student validation: hay pruebas automatizadas; la comprobación y defensa personal de los integrantes sigue pendiente.
     """
     target = _position_tuple(destination)
     unit = next(

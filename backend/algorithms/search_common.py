@@ -13,7 +13,16 @@ StateKey = tuple[Any, ...]
 def prepare_search(
     state: dict[str, Any], unit_id: str, goal: dict[str, Any]
 ) -> tuple[Position | None, str | None]:
-    """Valida la entrada y separa errores de entrada de metas inalcanzables."""
+    """Valida la entrada y separa errores de entrada de metas inalcanzables.
+
+    Purpose: Validar unidad, objetivo y condiciones iniciales de búsqueda.
+    Preconditions: Escenario JSON preparado.
+    Postconditions: Devuelve objetivo normalizado o diagnóstico sin mutar entrada.
+    Complexity: Tiempo O(U+F*C) como máximo según validación.
+    AI usage: Yes.
+    AI intervention: apoyo de IA en diseño, revisión, documentación o pruebas; verificar el alcance preciso en el informe.
+    Student validation: hay pruebas automatizadas; la comprobación y defensa personal de los integrantes sigue pendiente.
+    """
     if isinstance(goal, dict):
         row = goal.get("fila", goal.get("row"))
         column = goal.get("columna", goal.get("column"))
@@ -63,7 +72,16 @@ def unit_position(state: dict[str, Any], unit_id: str) -> Position:
 def unit_successors(
     state: dict[str, Any], unit_id: str
 ) -> list[tuple[dict[str, Any], float]]:
-    """Genera los movimientos legales de una unidad en el orden del motor."""
+    """Genera los movimientos legales de una unidad en el orden del motor.
+
+    Purpose: Generar desplazamientos hipotéticos de una sola unidad.
+    Preconditions: Unidad activa y estado coherente.
+    Postconditions: Devuelve sucesores con efectos y costos reales sin alternar turnos enemigos.
+    Complexity: O(b*T) tiempo y O(b*S) memoria, b destinos legales y T transición hipotética.
+    AI usage: Yes.
+    AI intervention: apoyo de IA en diseño, revisión, documentación o pruebas; verificar el alcance preciso en el informe.
+    Student validation: hay pruebas automatizadas; la comprobación y defensa personal de los integrantes sigue pendiente.
+    """
     successors = []
     for destination in legal_moves(state, unit_id):
         cost = move_cost(state, unit_id, destination)
@@ -89,6 +107,15 @@ def search_result(
     `generated` incluye el origen; `expanded` cuenta nodos extraídos que no eran
     meta; `max_frontier` incluye el tamaño inicial; el tiempo incluye la búsqueda
     y reconstrucción de ruta y se mide en segundos con `perf_counter`.
+    
+
+    Purpose: Reconstruir una ruta y publicar métricas comunes de búsqueda.
+    Preconditions: Padres, estados y costos procedentes de un algoritmo válido.
+    Postconditions: Entrega estructura reproducible, sin alterar estados originales.
+    Complexity: O(P+V) tiempo/espacio en la reconstrucción, P longitud de ruta, V estados indexados.
+    AI usage: Yes.
+    AI intervention: apoyo de IA en diseño, revisión, documentación o pruebas; verificar el alcance preciso en el informe.
+    Student validation: hay pruebas automatizadas; la comprobación y defensa personal de los integrantes sigue pendiente.
     """
     path: list[dict[str, int]] = []
     total_cost: float | None = None

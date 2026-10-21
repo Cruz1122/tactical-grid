@@ -18,14 +18,23 @@ _UNIT_TYPES = {
 
 
 def manhattan(position: Position, goal: Position) -> int:
-    """Return Manhattan distance; this is not admissible for every unit/cost map."""
+    """Calcula Manhattan, que no es admisible para todas las piezas o costos.
+
+    Purpose: Calcular distancia ortogonal geométrica para orientar A*.
+    Preconditions: Posición, objetivo y ficha de entrada válidos.
+    Postconditions: Devuelve número no negativo; no se presume admisible para todas las piezas.
+    Complexity: O(1) tiempo y espacio.
+    AI usage: Yes.
+    AI intervention: apoyo de IA en diseño, revisión, documentación o pruebas; verificar el alcance preciso en el informe.
+    Student validation: hay pruebas automatizadas; la comprobación y defensa personal de los integrantes sigue pendiente.
+    """
     return abs(position[0] - goal[0]) + abs(position[1] - goal[1])
 
 
 def _terrain_minima(
     state: dict[str, Any],
 ) -> tuple[float, list[float], list[float]]:
-    """Precompute global, per-row, and per-column minimum traversable costs."""
+    """Precalcula costos mínimos transitables globales, por fila y por columna."""
     rows = state["mapa"]["filas"]
     columns = state["mapa"]["columnas"]
     row_minima = [inf] * rows
@@ -56,7 +65,16 @@ def second_heuristic(
     unit_type: str,
     terrain_minima: tuple[float, list[float], list[float]] | None = None,
 ) -> float:
-    """Estimate remaining cost using movement geometry and terrain minima."""
+    """Estima el costo restante según geometría y mínimos de terreno.
+
+    Purpose: Estimar una cota inferior del costo restante de acuerdo con la geometría de la pieza.
+    Preconditions: Mapa válido y costos positivos procedentes del JSON.
+    Postconditions: Devuelve estimación no negativa y nula en objetivo.
+    Complexity: O(F*C) si calcula mínimos del mapa; O(1) con mínimos precalculados.
+    AI usage: Yes.
+    AI intervention: apoyo de IA en diseño, revisión, documentación o pruebas; verificar el alcance preciso en el informe.
+    Student validation: hay pruebas automatizadas; la comprobación y defensa personal de los integrantes sigue pendiente.
+    """
     min_cost, row_minima, column_minima = terrain_minima or _terrain_minima(state)
     dr = abs(position[0] - goal[0])
     dc = abs(position[1] - goal[1])

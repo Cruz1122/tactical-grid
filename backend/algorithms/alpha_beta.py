@@ -22,6 +22,15 @@ def alpha_beta(
     La raíz pasa alpha a cada respuesta y vuelve a buscar con ventana completa
     una cota empatada que podría ganar el desempate canónico. En los subárboles,
     alpha >= beta omite ramas; `nodes_pruned` cuenta esos sucesores inmediatos.
+    
+
+    Purpose: Calcular la misma decisión minimax mediante límites alfa y beta.
+    Preconditions: Misma utilidad, profundidad y desempate que Minimax.
+    Postconditions: Devuelve acción y valor minimax; reduce visitas cuando se producen podas válidas.
+    Complexity: Peor caso O(b^d*T); orden favorable reduce exploración; memoria O(b*d*S).
+    AI usage: Yes.
+    AI intervention: apoyo de IA en diseño, revisión, documentación o pruebas; verificar el alcance preciso en el informe.
+    Student validation: hay pruebas automatizadas; la comprobación y defensa personal de los integrantes sigue pendiente.
     """
     started_at = perf_counter()  # Mide desde antes de validar hasta construir la respuesta.
     validate_search(state, depth, action_order)  # Rechaza profundidad, turno y orden inválidos.

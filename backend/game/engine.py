@@ -172,6 +172,15 @@ def state_key(
     de claves.
     `static_key`, si se entrega, debe proceder del mismo escenario inmutable.
     Complexity: O(S + U log U + K log K), o O(U log U + K log K) con `static_key`.
+    
+
+    Purpose: Identificar estados compuestos equivalentes para deduplicación.
+    Preconditions: Estado con unidades identificadas y JSON preparado.
+    Postconditions: Retorna clave determinista que incluye turno, recurso, actividad y posiciones.
+    Complexity: O(S+U log U+K log K), o sin componente estática si ya está calculada.
+    AI usage: Yes.
+    AI intervention: apoyo de IA en diseño, revisión, documentación o pruebas; verificar el alcance preciso en el informe.
+    Student validation: hay pruebas automatizadas; la comprobación y defensa personal de los integrantes sigue pendiente.
     """
     units = tuple(
         sorted(
@@ -300,6 +309,15 @@ def hypothetical_move(
 
     Conserva los efectos compartidos de captura, reina y reaparición; no comprueba
     el turno activo ni resuelve el resultado de una partida hipotética.
+    
+
+    Purpose: Simular un movimiento de una ficha para algoritmos de ruta.
+    Preconditions: Destino legal, ficha activa y estado coherente.
+    Postconditions: Devuelve copia sin alternar turno ni afectar partida oficial.
+    Complexity: O(T) tiempo y O(S) memoria, T costo de efectos y validación parcial.
+    AI usage: Yes.
+    AI intervention: apoyo de IA en diseño, revisión, documentación o pruebas; verificar el alcance preciso en el informe.
+    Student validation: hay pruebas automatizadas; la comprobación y defensa personal de los integrantes sigue pendiente.
     """
     target = _position(destination)
     unit = _unit_by_id(state, unit_id)
@@ -324,6 +342,15 @@ def transition(state: dict[str, Any], action: dict[str, Any]) -> dict[str, Any]:
     Complexity: O(U + K*U*max(F,C) + R*C) por turno, dominada por movimiento,
     jaque y validación; espacio O(S + U + K) por la copia independiente.
 
+    
+
+    Purpose: Aplicar acciones legales y todos sus efectos con alternancia real de turno.
+    Preconditions: Estado válido y acción aprobada por validate_action.
+    Postconditions: Devuelve copia validada con capturas, reina, reaparición, resultado y turno.
+    Complexity: O(T) tiempo, O(S) espacio por deepcopy y verificaciones.
+    AI usage: Yes.
+    AI intervention: apoyo de IA en diseño, revisión, documentación o pruebas; verificar el alcance preciso en el informe.
+    Student validation: hay pruebas automatizadas; la comprobación y defensa personal de los integrantes sigue pendiente.
     """
     validate_action(state, action)
     kind = action.get("type", action.get("tipo", action.get("action")))
@@ -424,6 +451,15 @@ def collect_queen(state: dict[str, Any], unit_id: str) -> dict[str, Any]:
     su rey no está en jaque.
     Postconditions: devuelve una copia con la unidad como portadora, sin desplazarla.
     Complexity: la misma que `transition`.
+    
+
+    Purpose: Recoger explícitamente la reina consumiendo un turno.
+    Preconditions: Unidad activa sobre recurso y rey propio sin jaque.
+    Postconditions: Devuelve transición legal conservando spawn original.
+    Complexity: Misma complejidad que transition.
+    AI usage: Yes.
+    AI intervention: apoyo de IA en diseño, revisión, documentación o pruebas; verificar el alcance preciso en el informe.
+    Student validation: hay pruebas automatizadas; la comprobación y defensa personal de los integrantes sigue pendiente.
     """
     return transition(state, {"type": "collect", "unit_id": unit_id})
 
@@ -445,6 +481,15 @@ def check_winner(state: dict[str, Any]) -> str | None:
     Postconditions: no modifica el estado; detecta portador en su base y empate
     cuando el bando inicial o activo carece de movimiento y recogida legales.
     Complexity: O(U*(U+K*max(F,C))) en el peor caso.
+    
+
+    Purpose: Identificar victoria por entrega o empate por falta de jugadas.
+    Preconditions: Estado preparado.
+    Postconditions: Retorna bando ganador, empate o None sin mutación.
+    Complexity: O(U*(U+K*max(F,C))) en peor caso.
+    AI usage: Yes.
+    AI intervention: apoyo de IA en diseño, revisión, documentación o pruebas; verificar el alcance preciso en el informe.
+    Student validation: hay pruebas automatizadas; la comprobación y defensa personal de los integrantes sigue pendiente.
     """
     game = state.get("juego", {})
     if not isinstance(game, dict):
@@ -474,6 +519,15 @@ def action_successors(
     Postconditions: cada par corresponde a una acción legal del bando activo;
     el estado de entrada no cambia y se incluye la recogida explícita si procede.
     Complexity: O(A*T), con A acciones candidatas y T el costo de `transition`.
+    
+
+    Purpose: Enumerar acciones y estados sucesores completos para adversarios.
+    Preconditions: Estado no terminal y bando activo válido.
+    Postconditions: Devuelve pares acción/estado sin mutar el estado de entrada.
+    Complexity: O(b*T) tiempo y O(b*S) espacio.
+    AI usage: Yes.
+    AI intervention: apoyo de IA en diseño, revisión, documentación o pruebas; verificar el alcance preciso en el informe.
+    Student validation: hay pruebas automatizadas; la comprobación y defensa personal de los integrantes sigue pendiente.
     """
     game = state.get("juego", {})
     if not isinstance(game, dict) or game.get("estado") == "finalizado":
@@ -560,6 +614,15 @@ def generate_kings(
     sin mutar la entrada. No garantiza encontrar una solución existente.
     Complexity: O(K*(R*C)^2) en el peor caso por las pruebas de configuración;
     espacio O(R*C + U + K).
+    
+
+    Purpose: Configurar reyes automáticamente bajo reglas deterministas.
+    Preconditions: Configuración inicial, cantidades válidas por bando.
+    Postconditions: Devuelve disposición legal o error sin cambiar el estado original.
+    Complexity: O(F*C*(U+K)) aproximadamente según candidatos examinados.
+    AI usage: Yes.
+    AI intervention: apoyo de IA en diseño, revisión, documentación o pruebas; verificar el alcance preciso en el informe.
+    Student validation: hay pruebas automatizadas; la comprobación y defensa personal de los integrantes sigue pendiente.
     """
     game = state.get("juego", {})
     if not isinstance(game, dict) or game.get("estado") != "configuracion":

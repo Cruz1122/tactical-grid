@@ -34,13 +34,13 @@ Valores mínimos de Beam para comparar: `k = 1, 2, 4, 8`. En Minimax/alfa-beta, 
 
 A* usa costo acumulado `g(n)` y estimación restante `h(n)`. Deben existir al menos **dos** heurísticas: Manhattan puede ser una de ellas, pero **no se debe asumir que sea admisible** para caballo, torre o alfil. Estas piezas pueden alcanzar posiciones lejanas con pocos movimientos y costos que no respetan una estimación basada en pasos ortogonales.
 
-La segunda heurística la propone el equipo; todavía **no hay una fórmula acordada**. Para cada una se debe justificar qué estima, qué datos usa, su complejidad, si es admisible y en qué mapas puede orientar mal.
+La segunda heurística **ya está implementada**: mínimos de terreno por filas y columnas para `estandar`, y cotas geométricas escaladas por el costo mínimo para caballo, torre y alfil. Su definición y justificación están en [documento-tecnico.md](documento-tecnico.md).
 
 ## Evaluación adversarial
 
 Minimax alterna MAX y MIN sobre el **mismo motor y el mismo conjunto de reglas**. MAX intenta maximizar utilidad desde una perspectiva elegida; MIN la minimiza porque compite por su propio objetivo, no porque tenga reglas peores.
 
-`backend/algorithms/evaluation.py` implementa `evaluate(state, side)` con puntuación terminal, posesión, proximidad normalizada a base/reina, piezas activas, jaque con reina libre y seguridad inmediata del portador. Los pesos son valores iniciales configurables en constantes; no se presentan como optimizados.
+`backend/algorithms/evaluation.py` implementa `evaluate(state, side)` con puntuación terminal, posesión, proximidad normalizada a base/reina, piezas activas, jaque con reina libre y seguridad inmediata del portador. Además utiliza distancias topológicas estáticas, coordinación de perseguidores e interceptación del portador. Los pesos son valores manuales experimentales: no se afirman optimizados globalmente.
 
 ## Métricas y verificación
 
@@ -76,6 +76,6 @@ Los casos 7–10 tienen estados pequeños reproducibles y resultados medidos en 
 
 ## Requisito documental de los métodos
 
-Los métodos deben documentar su propósito, precondiciones, postcondiciones y complejidad cuando corresponda. La intervención de IA y la validación del estudiante se declaran una sola vez por alcance en la documentación técnica (ver [motor-del-juego.md](motor-del-juego.md)); no se repiten como frases de relleno en cada docstring. La validación del estudiante no debe afirmarse hasta que un integrante la haya realizado personalmente. La sustentación exige que cada integrante pueda explicar y modificar los métodos.
+Los métodos relevantes contienen los siete elementos del PDF dentro de sus docstrings: `Purpose`, `Preconditions`, `Postconditions`, `Complexity`, `AI usage`, `AI intervention` y `Student validation`. La redacción explicativa está en español y la validación personal del estudiante sigue pendiente hasta que cada integrante la realice. Véase [uso-de-ia.md](uso-de-ia.md).
 
 **Referencias:** `Primer proyecto.pdf`, pp. 3–5 y 7–10; `TacticalGrid_Reglas.md`, sección 7.

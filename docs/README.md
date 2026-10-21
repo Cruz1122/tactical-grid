@@ -2,12 +2,15 @@
 
 TacticalGrid es un juego táctico 2D por turnos y un banco de pruebas para algoritmos de búsqueda y toma de decisiones. **El juego proporciona los estados y las reglas; lo que se estudia es cómo decide el sistema inteligente.**
 
-Estos documentos describen el **comportamiento esperado**, no funcionalidades comprobadas en el código. No organizan el proyecto por fases: cada archivo responde a una cuestión de diseño.
+Estos documentos explican reglas, arquitectura y evidencia de la versión preparada. Las verificaciones efectivas y sus límites figuran en el informe de verificación; no se atribuyen resultados no ejecutados. No organizan el proyecto por fases: cada archivo responde a una cuestión de diseño.
 
 ## Guía de lectura
 
 | Documento | Qué explica |
 | --- | --- |
+| [documento-tecnico.md](documento-tecnico.md) | Modelado, algoritmos, complejidad, utilidad y metodología de la entrega. |
+| [manual-usuario.md](manual-usuario.md) | Instalación, modos, juego, API y diagnóstico para usuarios. |
+| [uso-de-ia.md](uso-de-ia.md) | Intervención de IA generativa y validación personal pendiente. |
 | [contexto.md](contexto.md) | Problema académico, alcance, restricciones y propósito de los experimentos. |
 | [reglas-del-juego.md](reglas-del-juego.md) | Unidades, movimientos, costos, turnos, capturas, jaque, reina, victoria y empate. |
 | [estado-y-json.md](estado-y-json.md) | Estado completo, invariantes, contrato JSON y ejemplo compatible. |

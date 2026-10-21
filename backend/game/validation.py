@@ -199,6 +199,15 @@ def validate_scenario(scenario: dict[str, Any]) -> None:
     Recorre el árbol JSON, el mapa, las unidades, los reyes y los terrenos:
     tiempo O(N + R*C + U + K + T), espacio auxiliar O(U + K + E).
     No modifica el escenario ni usa IA; las búsquedas pueden confiar en sus invariantes.
+    
+
+    Purpose: Rechazar escenarios externos que incumplan el contrato del profesor.
+    Preconditions: JSON externo suministrado.
+    Postconditions: Acepta o falla sin mutar un juego ya cargado.
+    Complexity: O(F*C+U+K) más comprobaciones de conectividad.
+    AI usage: Yes.
+    AI intervention: apoyo de IA en diseño, revisión, documentación o pruebas; verificar el alcance preciso en el informe.
+    Student validation: hay pruebas automatizadas; la comprobación y defensa personal de los integrantes sigue pendiente.
     """
     if not isinstance(scenario, dict):
         raise ScenarioValidationError(["escenario: debe ser un objeto JSON"])
@@ -480,6 +489,15 @@ def validate_state(
     `check_connectivity` debe permanecer activo al cargar/configurar reyes. Las
     transiciones pueden omitirlo porque no cambian terreno, bases ni reyes.
     Complexity: O(R*C + U + K); espacio O(R*C + U + K).
+    
+
+    Purpose: Comprobar invariantes de partida para motor y API.
+    Preconditions: Estado ya cargado o candidato a transición.
+    Postconditions: Acepta coherencia completa o informa errores.
+    Complexity: O(F*C+U+K) y verificaciones de accesibilidad opcionales.
+    AI usage: Yes.
+    AI intervention: apoyo de IA en diseño, revisión, documentación o pruebas; verificar el alcance preciso en el informe.
+    Student validation: hay pruebas automatizadas; la comprobación y defensa personal de los integrantes sigue pendiente.
     """
     if not isinstance(state, dict):
         raise ScenarioValidationError(["estado: debe ser un objeto JSON"])
@@ -624,6 +642,15 @@ def validate_action(state: dict[str, Any], action: dict[str, Any]) -> None:
     inválido lanza `TypeError`; el movimiento consulta `move_cost`, que exige un
     destino incluido en `legal_moves`.
     Complexity: O(U + K*U*max(F,C) + D), según movimiento, jaque y trayecto.
+    
+
+    Purpose: Validar una acción completa contra el estado vigente.
+    Preconditions: Estado coherente y acción solicitada.
+    Postconditions: Autoriza transición legal o falla antes de modificar el estado.
+    Complexity: O(U+K+F+C) según patrón y jaque.
+    AI usage: Yes.
+    AI intervention: apoyo de IA en diseño, revisión, documentación o pruebas; verificar el alcance preciso en el informe.
+    Student validation: hay pruebas automatizadas; la comprobación y defensa personal de los integrantes sigue pendiente.
     """
     if not isinstance(action, dict):
         raise TypeError("La acción debe ser un objeto")

@@ -21,6 +21,15 @@ def minimax(
 
     Una profundidad es una acción completa; la raíz cuenta como profundidad cero.
     `nodes_pruned` vale cero: Minimax visita todos los sucesores legales.
+    
+
+    Purpose: Elegir acción racional para MAX modelando respuestas MIN.
+    Preconditions: Estado válido, profundidad no negativa y orden determinista.
+    Postconditions: Recomienda acción legal y utilidad, sin ejecutar la acción.
+    Complexity: Tiempo O(b^d*T), espacio O(b*d*S) por materialización de sucesores; b ramificación, d profundidad, T transición, S estado.
+    AI usage: Yes.
+    AI intervention: apoyo de IA en diseño, revisión, documentación o pruebas; verificar el alcance preciso en el informe.
+    Student validation: hay pruebas automatizadas; la comprobación y defensa personal de los integrantes sigue pendiente.
     """
     started_at = perf_counter()  # Inicia el cronómetro antes de validar y buscar.
     validate_search(state, depth, action_order)  # Rechaza profundidad, turno u orden inválidos.

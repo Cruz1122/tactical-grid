@@ -15,6 +15,15 @@ def prepare_scenario(scenario: dict[str, Any]) -> dict[str, Any]:
     Copia el escenario, mapea nombres genéricos de pieza a `estandar`, asigna el
     spawn inicial y activa las unidades que no declaran actividad.
     Recorre el escenario en O(n) tiempo y espacio.
+    
+
+    Purpose: Preparar JSON externo conservando contrato y normalizando estado interno.
+    Preconditions: JSON externo sin cambios todavía aplicados.
+    Postconditions: Devuelve escenario validado y copiado sin alterar su argumento.
+    Complexity: O(F*C+U+K) más validación y conectividad.
+    AI usage: Yes.
+    AI intervention: apoyo de IA en diseño, revisión, documentación o pruebas; verificar el alcance preciso en el informe.
+    Student validation: hay pruebas automatizadas; la comprobación y defensa personal de los integrantes sigue pendiente.
     """
     state = deepcopy(scenario)
     units = state.get("unidades") if isinstance(state, dict) else None

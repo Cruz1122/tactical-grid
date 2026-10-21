@@ -17,6 +17,15 @@ def bfs(state: dict[str, Any], unit_id: str, goal: dict[str, Any]) -> dict[str, 
 
     Los estados generados incluyen el origen; los expandidos no cuentan la meta;
     la frontera máxima incluye su tamaño inicial y el tiempo incluye reconstrucción.
+    
+
+    Purpose: Explorar rutas por niveles para una sola ficha.
+    Preconditions: Estado válido, ficha activa y objetivo dentro del mapa.
+    Postconditions: Devuelve ruta mínima en número de movimientos o fallo explícito sin mutar el estado.
+    Complexity: Tiempo O(V+E) más costo de generar sucesores; espacio O(V+E).
+    AI usage: Yes.
+    AI intervention: apoyo de IA en diseño, revisión, documentación o pruebas; verificar el alcance preciso en el informe.
+    Student validation: hay pruebas automatizadas; la comprobación y defensa personal de los integrantes sigue pendiente.
     """
     started_at = perf_counter()  # Inicia la medición antes de preparar la búsqueda.
     target, error = prepare_search(state, unit_id, goal)  # Valida los datos antes de explorar.

@@ -1,0 +1,190 @@
+{
+  "case_7_decision": {
+    "depth_1_approach": {
+      "action": {
+        "type": "move",
+        "unit_id": "A1",
+        "destination": {
+          "fila": 3,
+          "columna": 3
+        }
+      },
+      "value": 362.0,
+      "requested_depth": 1,
+      "depth_reached": 1,
+      "nodes_generated": 12,
+      "nodes_visited": 13,
+      "nodes_evaluated": 12,
+      "nodes_pruned": 0,
+      "elapsed_seconds": 0.0035096000001431094
+    },
+    "depth_2_intercept": {
+      "action": {
+        "type": "move",
+        "unit_id": "A2",
+        "destination": {
+          "fila": 3,
+          "columna": 1
+        }
+      },
+      "value": 315.0,
+      "requested_depth": 2,
+      "depth_reached": 2,
+      "nodes_generated": 104,
+      "nodes_visited": 105,
+      "nodes_evaluated": 92,
+      "nodes_pruned": 0,
+      "elapsed_seconds": 0.026374267999926815
+    }
+  },
+  "case_8_minimax_vs_alpha_beta": {
+    "minimax": {
+      "action": {
+        "type": "move",
+        "unit_id": "A2",
+        "destination": {
+          "fila": 3,
+          "columna": 1
+        }
+      },
+      "value": 845.0,
+      "requested_depth": 3,
+      "depth_reached": 3,
+      "nodes_generated": 1198,
+      "nodes_visited": 1199,
+      "nodes_evaluated": 1094,
+      "nodes_pruned": 0,
+      "elapsed_seconds": 0.26513697499990485
+    },
+    "alpha_beta": {
+      "action": {
+        "type": "move",
+        "unit_id": "A2",
+        "destination": {
+          "fila": 3,
+          "columna": 1
+        }
+      },
+      "value": 845.0,
+      "requested_depth": 3,
+      "depth_reached": 3,
+      "nodes_generated": 706,
+      "nodes_visited": 393,
+      "nodes_evaluated": 328,
+      "nodes_pruned": 314,
+      "elapsed_seconds": 0.1261805449998974
+    }
+  },
+  "case_9_action_order": {
+    "normal": {
+      "action": {
+        "type": "move",
+        "unit_id": "A2",
+        "destination": {
+          "fila": 3,
+          "columna": 1
+        }
+      },
+      "value": 845.0,
+      "requested_depth": 3,
+      "depth_reached": 3,
+      "nodes_generated": 706,
+      "nodes_visited": 393,
+      "nodes_evaluated": 328,
+      "nodes_pruned": 314,
+      "elapsed_seconds": 0.1273629570000594
+    },
+    "reverse": {
+      "action": {
+        "type": "move",
+        "unit_id": "A2",
+        "destination": {
+          "fila": 3,
+          "columna": 1
+        }
+      },
+      "value": 845.0,
+      "requested_depth": 3,
+      "depth_reached": 3,
+      "nodes_generated": 385,
+      "nodes_visited": 241,
+      "nodes_evaluated": 204,
+      "nodes_pruned": 146,
+      "elapsed_seconds": 0.06718596399991839
+    }
+  },
+  "case_10_depth": {
+    "1": {
+      "action": {
+        "type": "move",
+        "unit_id": "A1",
+        "destination": {
+          "fila": 3,
+          "columna": 3
+        }
+      },
+      "value": 362.0,
+      "requested_depth": 1,
+      "depth_reached": 1,
+      "nodes_generated": 12,
+      "nodes_visited": 13,
+      "nodes_evaluated": 12,
+      "nodes_pruned": 0,
+      "elapsed_seconds": 0.002559858000040549
+    },
+    "2": {
+      "action": {
+        "type": "move",
+        "unit_id": "A2",
+        "destination": {
+          "fila": 3,
+          "columna": 1
+        }
+      },
+      "value": 315.0,
+      "requested_depth": 2,
+      "depth_reached": 2,
+      "nodes_generated": 104,
+      "nodes_visited": 105,
+      "nodes_evaluated": 92,
+      "nodes_pruned": 0,
+      "elapsed_seconds": 0.021675276999985726
+    },
+    "3": {
+      "action": {
+        "type": "move",
+        "unit_id": "A2",
+        "destination": {
+          "fila": 3,
+          "columna": 1
+        }
+      },
+      "value": 845.0,
+      "requested_depth": 3,
+      "depth_reached": 3,
+      "nodes_generated": 1198,
+      "nodes_visited": 1199,
+      "nodes_evaluated": 1094,
+      "nodes_pruned": 0,
+      "elapsed_seconds": 0.27200264099997185
+    },
+    "4": {
+      "action": {
+        "type": "move",
+        "unit_id": "A2",
+        "destination": {
+          "fila": 3,
+          "columna": 1
+        }
+      },
+      "value": 820.0,
+      "requested_depth": 4,
+      "depth_reached": 4,
+      "nodes_generated": 12313,
+      "nodes_visited": 12314,
+      "nodes_evaluated": 11115,
+      "nodes_pruned": 0,
+      "elapsed_seconds": 2.6885427649999656
+    }
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "version": "1.0",
+  "mapa": {
+    "filas": 6,
+    "columnas": 6
+  },
+  "tipos_terreno": {
+    "camino": {"costo": 1, "transitable": true},
+    "muro": {"transitable": false}
+  },
+  "terreno": [
+    ["camino", "camino", "camino", "camino", "camino", "camino"],
+    ["camino", "muro",   "muro",   "muro",   "muro",   "camino"],
+    ["camino", "camino", "camino", "camino", "camino", "camino"],
+    ["camino", "camino", "camino", "camino", "camino", "camino"],
+    ["camino", "muro",   "muro",   "muro",   "muro",   "camino"],
+    ["camino", "camino", "camino", "camino", "camino", "camino"]
+  ],
+  "bases": {
+    "A": {"fila": 0, "columna": 0},
+    "B": {"fila": 5, "columna": 5}
+  },
+  "recurso": {"fila": 2, "columna": 3},
+  "unidades": [
+    {"id": "A1", "bando": "A", "tipo": "estandar", "fila": 0, "columna": 1},
+    {"id": "B1", "bando": "B", "tipo": "estandar", "fila": 5, "columna": 4}
+  ],
+  "turno": "A",
+  "juego": {
+    "portador_recurso": null,
+    "profundidad_maxima_minimax": 3
+  },
+  "prueba": {
+    "modo": "partida"
+  }
+}

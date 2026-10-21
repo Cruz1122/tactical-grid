@@ -23,7 +23,16 @@ def astar(
     goal: dict[str, Any],
     heuristic: str = "manhattan",
 ) -> dict[str, Any]:
-    """Busca una ruta con prioridad f(n) = g(n) + h(n), sin mutar el estado."""
+    """Busca una ruta con prioridad f(n) = g(n) + h(n), sin mutar el estado.
+
+    Purpose: Priorizar estados con f=g+h y relajar costos.
+    Preconditions: Estado y meta válidos; heurística seleccionada entre las implementadas.
+    Postconditions: Devuelve ruta; la optimalidad exige una heurística adecuada como la propia consistente.
+    Complexity: Tiempo peor caso exponencial respecto de la longitud óptima; memoria proporcional a estados guardados.
+    AI usage: Yes.
+    AI intervention: apoyo de IA en diseño, revisión, documentación o pruebas; verificar el alcance preciso en el informe.
+    Student validation: hay pruebas automatizadas; la comprobación y defensa personal de los integrantes sigue pendiente.
+    """
     # Inicia el cronómetro antes de validar para incluir toda la búsqueda.
     started_at = perf_counter()
     # Valida el origen, la unidad y la casilla objetivo usando el contrato común.

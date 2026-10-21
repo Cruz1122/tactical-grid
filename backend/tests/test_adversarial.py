@@ -142,7 +142,7 @@ class AdversarialEvaluationTests(unittest.TestCase):
         )
 
         self.assertEqual(evaluate(state, "A"), -evaluate(state, "B"))
-        self.assertAlmostEqual(evaluate(state, "A"), 80.0)
+        self.assertAlmostEqual(evaluate(state, "A"), 360.0)
 
     def test_check_is_valued_only_while_the_queen_is_free(self) -> None:
         checking = make_state(
@@ -171,8 +171,8 @@ class AdversarialEvaluationTests(unittest.TestCase):
         threatened["unidades"][1]["fila"] = 1
         threatened["unidades"][1]["columna"] = 5
 
-        self.assertEqual(evaluate(safe, "A"), 1_330)
-        self.assertEqual(evaluate(safe, "A") - evaluate(threatened, "A"), 300)
+        self.assertEqual(evaluate(safe, "A"), 1_060)
+        self.assertEqual(evaluate(safe, "A") - evaluate(threatened, "A"), 325)
         self.assertEqual(evaluate(safe, "A"), -evaluate(safe, "B"))
 
     def test_active_and_inactive_units_are_counted_and_only_active_units_move(self) -> None:

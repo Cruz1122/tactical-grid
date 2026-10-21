@@ -45,6 +45,15 @@ def verify_path(scenario: dict[str, Any], result: dict[str, Any]) -> dict[str, A
     La verificación prueba legalidad y coherencia de un testigo positivo. Un
     resultado ``found=false`` no constituye por sí solo una prueba de
     inalcanzabilidad, por lo que se informa esa limitación explícitamente.
+    
+
+    Purpose: Reproducir y comprobar cada movimiento de una ruta calculada.
+    Preconditions: Ruta, unidad y escenario suministrados.
+    Postconditions: Confirma legalidad, costo y objetivo o informa la discrepancia.
+    Complexity: O(P*T), P pasos y T costo de transición hipotética.
+    AI usage: Yes.
+    AI intervention: apoyo de IA en diseño, revisión, documentación o pruebas; verificar el alcance preciso en el informe.
+    Student validation: hay pruebas automatizadas; la comprobación y defensa personal de los integrantes sigue pendiente.
     """
     errors: list[str] = []
     checks: dict[str, bool] = {}
@@ -146,7 +155,16 @@ def verify_path(scenario: dict[str, Any], result: dict[str, Any]) -> dict[str, A
 
 
 def verify_state(state: dict[str, Any]) -> dict[str, Any]:
-    """Valida todas las invariantes estructurales del estado sin modificarlo."""
+    """Valida todas las invariantes estructurales del estado sin modificarlo.
+
+    Purpose: Verificar coherencia de un estado mediante las invariantes del motor.
+    Preconditions: Estado serializable y preparado o diagnosticable.
+    Postconditions: Retorna informe de validación sin modificar entrada.
+    Complexity: Dominada por validación del estado; típicamente O(F*C+U+K).
+    AI usage: Yes.
+    AI intervention: apoyo de IA en diseño, revisión, documentación o pruebas; verificar el alcance preciso en el informe.
+    Student validation: hay pruebas automatizadas; la comprobación y defensa personal de los integrantes sigue pendiente.
+    """
     original = deepcopy(state)
     errors: list[str] = []
     try:

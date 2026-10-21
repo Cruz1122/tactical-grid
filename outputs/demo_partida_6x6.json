@@ -1,0 +1,476 @@
+{
+  "scenario": "mapa_partida_presentacion.json",
+  "algorithm": "alpha_beta",
+  "depth": 2,
+  "turns": 24,
+  "stop_reason": "terminal",
+  "winner": "B",
+  "elapsed_seconds": 0.03734074499993767,
+  "total_nodes": 233,
+  "trace": [
+    {
+      "turn": 1,
+      "side": "A",
+      "action": {
+        "type": "move",
+        "unit_id": "A1",
+        "destination": {
+          "fila": 0,
+          "columna": 0
+        }
+      },
+      "value": 0.0,
+      "nodes_visited": 6,
+      "elapsed_seconds": 0.0010066199999982928,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 2,
+        "columna": 3
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 2,
+      "side": "B",
+      "action": {
+        "type": "move",
+        "unit_id": "B1",
+        "destination": {
+          "fila": 5,
+          "columna": 5
+        }
+      },
+      "value": -45.0,
+      "nodes_visited": 7,
+      "elapsed_seconds": 0.0008558740000808029,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 2,
+        "columna": 3
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 3,
+      "side": "A",
+      "action": {
+        "type": "move",
+        "unit_id": "A1",
+        "destination": {
+          "fila": 1,
+          "columna": 0
+        }
+      },
+      "value": 0.0,
+      "nodes_visited": 7,
+      "elapsed_seconds": 0.0008442170001217164,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 2,
+        "columna": 3
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 4,
+      "side": "B",
+      "action": {
+        "type": "move",
+        "unit_id": "B1",
+        "destination": {
+          "fila": 4,
+          "columna": 5
+        }
+      },
+      "value": -45.0,
+      "nodes_visited": 7,
+      "elapsed_seconds": 0.0008450180000636465,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 2,
+        "columna": 3
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 5,
+      "side": "A",
+      "action": {
+        "type": "move",
+        "unit_id": "A1",
+        "destination": {
+          "fila": 2,
+          "columna": 0
+        }
+      },
+      "value": 0.0,
+      "nodes_visited": 7,
+      "elapsed_seconds": 0.0010371460000442312,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 2,
+        "columna": 3
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 6,
+      "side": "B",
+      "action": {
+        "type": "move",
+        "unit_id": "B1",
+        "destination": {
+          "fila": 3,
+          "columna": 5
+        }
+      },
+      "value": -45.0,
+      "nodes_visited": 7,
+      "elapsed_seconds": 0.0010370360000706569,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 2,
+        "columna": 3
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 7,
+      "side": "A",
+      "action": {
+        "type": "move",
+        "unit_id": "A1",
+        "destination": {
+          "fila": 2,
+          "columna": 1
+        }
+      },
+      "value": 0.0,
+      "nodes_visited": 11,
+      "elapsed_seconds": 0.0017165250001198729,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 2,
+        "columna": 3
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 8,
+      "side": "B",
+      "action": {
+        "type": "move",
+        "unit_id": "B1",
+        "destination": {
+          "fila": 2,
+          "columna": 5
+        }
+      },
+      "value": -45.0,
+      "nodes_visited": 10,
+      "elapsed_seconds": 0.001608934000159934,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 2,
+        "columna": 3
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 9,
+      "side": "A",
+      "action": {
+        "type": "move",
+        "unit_id": "A1",
+        "destination": {
+          "fila": 2,
+          "columna": 2
+        }
+      },
+      "value": 0.0,
+      "nodes_visited": 11,
+      "elapsed_seconds": 0.0016448380001747864,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 2,
+        "columna": 3
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 10,
+      "side": "B",
+      "action": {
+        "type": "move",
+        "unit_id": "B1",
+        "destination": {
+          "fila": 2,
+          "columna": 4
+        }
+      },
+      "value": -475.0,
+      "nodes_visited": 12,
+      "elapsed_seconds": 0.002335753999886947,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 2,
+        "columna": 3
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 11,
+      "side": "A",
+      "action": {
+        "type": "move",
+        "unit_id": "A1",
+        "destination": {
+          "fila": 2,
+          "columna": 3
+        }
+      },
+      "value": -250.0,
+      "nodes_visited": 11,
+      "elapsed_seconds": 0.001993220000031215,
+      "queen_carrier_after": "A1",
+      "queen_after": null,
+      "winner_after": null
+    },
+    {
+      "turn": 12,
+      "side": "B",
+      "action": {
+        "type": "move",
+        "unit_id": "B1",
+        "destination": {
+          "fila": 2,
+          "columna": 3
+        }
+      },
+      "value": 225.0,
+      "nodes_visited": 8,
+      "elapsed_seconds": 0.0014398700000128883,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 2,
+        "columna": 3
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 13,
+      "side": "A",
+      "action": {
+        "type": "move",
+        "unit_id": "A1",
+        "destination": {
+          "fila": 0,
+          "columna": 0
+        }
+      },
+      "value": -875.0,
+      "nodes_visited": 11,
+      "elapsed_seconds": 0.0015941009999096423,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 2,
+        "columna": 3
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 14,
+      "side": "B",
+      "action": {
+        "type": "collect",
+        "unit_id": "B1"
+      },
+      "value": 850.0,
+      "nodes_visited": 13,
+      "elapsed_seconds": 0.001906810000036785,
+      "queen_carrier_after": "B1",
+      "queen_after": null,
+      "winner_after": null
+    },
+    {
+      "turn": 15,
+      "side": "A",
+      "action": {
+        "type": "move",
+        "unit_id": "A1",
+        "destination": {
+          "fila": 1,
+          "columna": 0
+        }
+      },
+      "value": -940.0,
+      "nodes_visited": 9,
+      "elapsed_seconds": 0.0011867599998822698,
+      "queen_carrier_after": "B1",
+      "queen_after": null,
+      "winner_after": null
+    },
+    {
+      "turn": 16,
+      "side": "B",
+      "action": {
+        "type": "move",
+        "unit_id": "B1",
+        "destination": {
+          "fila": 2,
+          "columna": 4
+        }
+      },
+      "value": 915.0,
+      "nodes_visited": 10,
+      "elapsed_seconds": 0.0011706669999966834,
+      "queen_carrier_after": "B1",
+      "queen_after": null,
+      "winner_after": null
+    },
+    {
+      "turn": 17,
+      "side": "A",
+      "action": {
+        "type": "move",
+        "unit_id": "A1",
+        "destination": {
+          "fila": 2,
+          "columna": 0
+        }
+      },
+      "value": -1005.0,
+      "nodes_visited": 9,
+      "elapsed_seconds": 0.001062723999893933,
+      "queen_carrier_after": "B1",
+      "queen_after": null,
+      "winner_after": null
+    },
+    {
+      "turn": 18,
+      "side": "B",
+      "action": {
+        "type": "move",
+        "unit_id": "B1",
+        "destination": {
+          "fila": 2,
+          "columna": 5
+        }
+      },
+      "value": 980.0,
+      "nodes_visited": 12,
+      "elapsed_seconds": 0.0015580869999212155,
+      "queen_carrier_after": "B1",
+      "queen_after": null,
+      "winner_after": null
+    },
+    {
+      "turn": 19,
+      "side": "A",
+      "action": {
+        "type": "move",
+        "unit_id": "A1",
+        "destination": {
+          "fila": 2,
+          "columna": 1
+        }
+      },
+      "value": -1070.0,
+      "nodes_visited": 13,
+      "elapsed_seconds": 0.0015777569999499974,
+      "queen_carrier_after": "B1",
+      "queen_after": null,
+      "winner_after": null
+    },
+    {
+      "turn": 20,
+      "side": "B",
+      "action": {
+        "type": "move",
+        "unit_id": "B1",
+        "destination": {
+          "fila": 3,
+          "columna": 5
+        }
+      },
+      "value": 1045.0,
+      "nodes_visited": 11,
+      "elapsed_seconds": 0.0017527899999549845,
+      "queen_carrier_after": "B1",
+      "queen_after": null,
+      "winner_after": null
+    },
+    {
+      "turn": 21,
+      "side": "A",
+      "action": {
+        "type": "move",
+        "unit_id": "A1",
+        "destination": {
+          "fila": 2,
+          "columna": 2
+        }
+      },
+      "value": -1135.0,
+      "nodes_visited": 13,
+      "elapsed_seconds": 0.001740180999831864,
+      "queen_carrier_after": "B1",
+      "queen_after": null,
+      "winner_after": null
+    },
+    {
+      "turn": 22,
+      "side": "B",
+      "action": {
+        "type": "move",
+        "unit_id": "B1",
+        "destination": {
+          "fila": 4,
+          "columna": 5
+        }
+      },
+      "value": 1110.0,
+      "nodes_visited": 12,
+      "elapsed_seconds": 0.001719718999993347,
+      "queen_carrier_after": "B1",
+      "queen_after": null,
+      "winner_after": null
+    },
+    {
+      "turn": 23,
+      "side": "A",
+      "action": {
+        "type": "move",
+        "unit_id": "A1",
+        "destination": {
+          "fila": 2,
+          "columna": 1
+        }
+      },
+      "value": -100000.0,
+      "nodes_visited": 10,
+      "elapsed_seconds": 0.0012318579999828216,
+      "queen_carrier_after": "B1",
+      "queen_after": null,
+      "winner_after": null
+    },
+    {
+      "turn": 24,
+      "side": "B",
+      "action": {
+        "type": "move",
+        "unit_id": "B1",
+        "destination": {
+          "fila": 5,
+          "columna": 5
+        }
+      },
+      "value": 100000.0,
+      "nodes_visited": 6,
+      "elapsed_seconds": 0.0006260489999476704,
+      "queen_carrier_after": "B1",
+      "queen_after": null,
+      "winner_after": "B"
+    }
+  ]
+}

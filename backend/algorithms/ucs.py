@@ -22,6 +22,15 @@ def ucs(state: dict[str, Any], unit_id: str, goal: dict[str, Any]) -> dict[str, 
     `states_generated` cuenta claves únicas (incluido el origen); `states_expanded`
     cuenta extracciones vigentes que no son meta; `max_frontier` incluye entradas
     obsoletas. El tiempo incluye validación y reconstrucción del camino.
+    
+
+    Purpose: Encontrar la ruta de menor costo con una cola de prioridad.
+    Preconditions: Costos de transición positivos y entrada válida.
+    Postconditions: Devuelve una ruta de costo mínimo o fallo explícito sin mutar el estado.
+    Complexity: Tiempo O((V+E) log V) más generación; espacio O(V+E), en modelo de grafo explícito.
+    AI usage: Yes.
+    AI intervention: apoyo de IA en diseño, revisión, documentación o pruebas; verificar el alcance preciso en el informe.
+    Student validation: hay pruebas automatizadas; la comprobación y defensa personal de los integrantes sigue pendiente.
     """
     started_at = perf_counter()  # Mide desde la validación hasta la reconstrucción del camino.
     target, error = prepare_search(state, unit_id, goal)  # Valida unidad, origen y destino antes de explorar.
