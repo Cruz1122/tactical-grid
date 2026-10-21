@@ -8,8 +8,10 @@ from starlette.types import Message
 
 from backend import main
 from backend.algorithms.astar import astar, manhattan, second_heuristic
+from backend.algorithms.beam import beam_search
 from backend.algorithms.bfs import bfs
 from backend.algorithms.dfs import dfs
+from backend.algorithms.ucs import ucs
 from backend.game import engine as game_engine
 from backend.game.engine import (
     hypothetical_move,
@@ -391,6 +393,357 @@ class SearchTests(unittest.TestCase):
         self.assertEqual(state["turno"], "B")
 
 
+class UniformCostSearchTests(unittest.TestCase):
+    def test_origin_goal_unreachable_and_invalid_unit(self) -> None:
+        state = make_state(start=(2, 2))
+        result = ucs(state, "A1", {"fila": 2, "columna": 2})
+
+        self.assertTrue(result["found"])
+        self.assertEqual(result["path"], [{"fila": 2, "columna": 2}])
+        self.assertEqual(result["moves"], 0)
+        self.assertEqual(result["cost"], 0.0)
+        self.assertEqual(result["states_generated"], 1)
+        self.assertEqual(result["states_expanded"], 0)
+
+        barrier = {(row, 3) for row in range(7)}
+        blocked = make_state(
+            start=(3, 1), walls=barrier,
+            bases={"A": (0, 0), "B": (6, 0)}, queen_spawn=(0, 4),
+        )
+        unreachable = ucs(blocked, "A1", {"fila": 3, "columna": 5})
+        self.assertTrue(unreachable["input_valid"])
+        self.assertIsNone(unreachable["error"])
+        self.assertFalse(unreachable["found"])
+        self.assertEqual(unreachable["path"], [])
+        self.assertIsNone(unreachable["moves"])
+        self.assertIsNone(unreachable["cost"])
+
+        invalid = ucs(state, "missing", {"fila": 2, "columna": 3})
+        self.assertFalse(invalid["input_valid"])
+        self.assertFalse(invalid["found"])
+        self.assertIsNotNone(invalid["error"])
+
+    def test_bfs_prefers_fewer_moves_while_ucs_prefers_lower_terrain_cost(self) -> None:
+        state = make_state(
+            "estandar", (3, 0),
+            special_terrain={(3, 1): "bosque", (3, 2): "bosque", (3, 3): "bosque"},
+        )
+        goal = {"fila": 3, "columna": 4}
+        breadth = bfs(state, "A1", goal)
+        uniform = ucs(state, "A1", goal)
+        informed = astar(state, "A1", goal, "second")
+        replayed, replay_cost = replay_path(state, "A1", uniform["path"])
+
+        self.assertEqual(breadth["moves"], 4)
+        self.assertEqual(breadth["cost"], 10.0)
+        self.assertEqual(uniform["moves"], 6)
+        self.assertEqual(uniform["cost"], 6.0)
+        self.assertEqual(informed["cost"], uniform["cost"])
+        self.assertEqual(replay_cost, uniform["cost"])
+        self.assertEqual(uniform["path"][0], {"fila": 3, "columna": 0})
+        self.assertEqual(uniform["path"][-1], goal)
+        self.assertEqual((replayed["unidades"][0]["fila"], replayed["unidades"][0]["columna"]), (3, 4))
+
+    def test_all_unit_types_and_long_slides_use_real_terrain_costs(self) -> None:
+        cases = (
+            ("knight", (2, 2), (4, 3), {}, set(), 1.0),
+            ("estandar", (3, 3), (3, 4), {}, set(), 1.0),
+            (
+                "rook", (3, 1), (3, 5),
+                {(3, 2): "bosque", (3, 3): "pantano"},
+                {(row, column) for row in (2, 4) for column in range(1, 6)}, 7.0,
+            ),
+        )
+        for unit_type, start, destination, terrain, walls, expected_cost in cases:
+            with self.subTest(unit_type=unit_type):
+                state = make_state(
+                    unit_type, start, special_terrain=terrain, walls=walls
+                )
+                result = ucs(
+                    state, "A1",
+                    {"fila": destination[0], "columna": destination[1]},
+                )
+                replayed, replay_cost = replay_path(state, "A1", result["path"])
+
+                self.assertTrue(result["found"])
+                self.assertEqual(result["moves"], 1)
+                self.assertEqual(result["cost"], expected_cost)
+                self.assertEqual(replay_cost, expected_cost)
+                self.assertEqual(replayed["unidades"][0]["fila"], destination[0])
+
+        bishop_open = {(index, index) for index in range(7)}
+        bishop_open.update((0, column) for column in range(7))
+        bishop_open.update((row, 6) for row in range(7))
+        bishop_open.add((6, 0))
+        bishop_walls = {
+            (row, column)
+            for row in range(7)
+            for column in range(7)
+            if (row, column) not in bishop_open
+        }
+        bishop_state = make_state(
+            "bishop", (1, 1), walls=bishop_walls,
+            special_terrain={(2, 2): "bosque", (3, 3): "pantano", (4, 4): "bosque"},
+            queen_spawn=(6, 0), bases={"A": (0, 0), "B": (6, 6)},
+        )
+        bishop = ucs(bishop_state, "A1", {"fila": 5, "columna": 5})
+        bishop_replayed, bishop_cost = replay_path(bishop_state, "A1", bishop["path"])
+        self.assertTrue(bishop["found"])
+        self.assertEqual(bishop["moves"], 1)
+        self.assertEqual(bishop["cost"], 9.0)
+        self.assertEqual(bishop_cost, 9.0)
+        self.assertEqual(bishop_replayed["unidades"][0]["columna"], 5)
+
+    def test_positive_decimal_transition_cost_is_preserved(self) -> None:
+        state = make_state("knight", (1, 1))
+        state["tipos_terreno"]["barato"] = {"costo": 0.25, "transitable": True}
+        state["terreno"][3][2] = "barato"
+
+        result = ucs(state, "A1", {"fila": 3, "columna": 2})
+
+        self.assertTrue(result["found"])
+        self.assertEqual(result["moves"], 1)
+        self.assertEqual(result["cost"], 0.25)
+
+    def test_cost_improvements_discard_stale_heap_entries_and_cycles(self) -> None:
+        state = make_state(start=(2, 2))
+        graph = {
+            (2, 2): [((2, 3), 5.0), ((3, 2), 1.0)],
+            (3, 2): [((2, 3), 1.0), ((2, 2), 0.5)],
+            (2, 3): [((2, 4), 10.0)],
+        }
+
+        def move_to(current: dict[str, Any], position: tuple[int, int]) -> dict[str, Any]:
+            next_state = copy.deepcopy(current)
+            unit = next(item for item in next_state["unidades"] if item["id"] == "A1")
+            unit["fila"], unit["columna"] = position
+            return next_state
+
+        def graph_successors(current: dict[str, Any], _unit_id: str):
+            position = (current["unidades"][0]["fila"], current["unidades"][0]["columna"])
+            return [
+                (move_to(current, destination), cost)
+                for destination, cost in graph.get(position, [])
+            ]
+
+        with patch("backend.algorithms.ucs.unit_successors", side_effect=graph_successors) as successors:
+            result = ucs(state, "A1", {"fila": 2, "columna": 4})
+
+        self.assertTrue(result["found"])
+        self.assertEqual(result["cost"], 12.0)
+        self.assertEqual(
+            result["path"],
+            [
+                {"fila": 2, "columna": 2}, {"fila": 3, "columna": 2},
+                {"fila": 2, "columna": 3}, {"fila": 2, "columna": 4},
+            ],
+        )
+        self.assertEqual(result["states_generated"], 4)
+        self.assertEqual(result["states_expanded"], 3)
+        self.assertEqual(successors.call_count, 3)
+
+    def test_capture_respawn_and_queen_spawn_are_hypothetical(self) -> None:
+        state = make_state(
+            "rook", (2, 0),
+            enemies=[{"id": "B1", "bando": "B", "tipo": "estandar", "fila": 2, "columna": 3}],
+            carrier="B1", queen_spawn=(0, 6),
+        )
+        state["unidades"][1]["spawn"] = {"fila": 4, "columna": 3}
+        state["turno"] = "B"
+        original = copy.deepcopy(state)
+        result = ucs(state, "A1", {"fila": 2, "columna": 3})
+        captured_state, replay_cost = replay_path(state, "A1", result["path"])
+        victim = next(unit for unit in captured_state["unidades"] if unit["id"] == "B1")
+
+        self.assertTrue(result["found"])
+        self.assertEqual(replay_cost, result["cost"])
+        self.assertEqual(captured_state["juego"]["portador_recurso"], None)
+        self.assertEqual(captured_state["recurso"], {"fila": 0, "columna": 6})
+        self.assertEqual(captured_state["recurso_spawn"], {"fila": 0, "columna": 6})
+        self.assertTrue(victim["activo"])
+        self.assertEqual((victim["fila"], victim["columna"]), (4, 3))
+        self.assertEqual(state, original)
+
+    def test_deterministic_metrics_and_official_state_isolation(self) -> None:
+        state = make_state(start=(3, 3), walls={(2, 3), (4, 3)})
+        state["turno"] = "B"
+        original = copy.deepcopy(state)
+        goal = {"fila": 3, "columna": 5}
+        first = ucs(state, "A1", goal)
+        second = ucs(state, "A1", goal)
+
+        for field in (
+            "found", "path", "moves", "cost", "states_generated",
+            "states_expanded", "max_frontier",
+        ):
+            self.assertEqual(first[field], second[field])
+        self.assertGreaterEqual(first["states_generated"], first["states_expanded"] + 1)
+        self.assertGreaterEqual(first["max_frontier"], 1)
+        self.assertGreaterEqual(first["elapsed_seconds"], 0)
+        self.assertGreaterEqual(second["elapsed_seconds"], 0)
+        self.assertEqual(state, original)
+
+
+class BeamSearchTests(unittest.TestCase):
+    def test_origin_goal_and_invalid_widths(self) -> None:
+        state = make_state(start=(2, 2))
+        original = copy.deepcopy(state)
+        result = beam_search(state, "A1", {"fila": 2, "columna": 2}, 1)
+
+        self.assertTrue(result["found"])
+        self.assertEqual(result["path"], [{"fila": 2, "columna": 2}])
+        self.assertEqual(result["moves"], 0)
+        self.assertEqual(result["cost"], 0.0)
+        self.assertEqual(result["max_frontier"], 1)
+        self.assertEqual(result["candidates_discarded"], 0)
+        self.assertEqual(state, original)
+        for invalid_width in (0, -1, -4):
+            with self.subTest(k=invalid_width):
+                invalid_result = beam_search(
+                    state, "A1", {"fila": 2, "columna": 3}, invalid_width
+                )
+                self.assertFalse(invalid_result["input_valid"])
+                self.assertFalse(invalid_result["found"])
+                self.assertTrue(invalid_result["error"])
+                self.assertEqual(invalid_result["path"], [])
+                self.assertEqual(invalid_result["candidates_discarded"], 0)
+        self.assertEqual(state, original)
+
+    def test_widths_find_routes_and_frontier_never_exceeds_k(self) -> None:
+        state = make_state(start=(3, 3))
+        target = {"fila": 3, "columna": 5}
+        for width in (1, 2, 4, 8):
+            with self.subTest(k=width):
+                result = beam_search(state, "A1", target, width)
+                self.assertTrue(result["found"])
+                self.assertEqual(result["path"][-1], target)
+                self.assertLessEqual(result["max_frontier"], width)
+                replayed, cost = replay_path(state, "A1", result["path"])
+                self.assertEqual(cost, result["cost"])
+                self.assertEqual((replayed["unidades"][0]["fila"], replayed["unidades"][0]["columna"]), (3, 5))
+
+    def test_unreachable_goal_returns_explicit_failure(self) -> None:
+        barrier = {(row, 3) for row in range(7)}
+        state = make_state(
+            start=(3, 1), walls=barrier,
+            bases={"A": (0, 0), "B": (6, 0)}, queen_spawn=(0, 4),
+        )
+        result = beam_search(state, "A1", {"fila": 3, "columna": 5}, 8)
+
+        self.assertTrue(result["input_valid"])
+        self.assertFalse(result["found"])
+        self.assertIsNone(result["error"])
+        self.assertEqual(result["path"], [])
+        self.assertIsNone(result["moves"])
+        self.assertIsNone(result["cost"])
+        self.assertGreater(result["states_generated"], 0)
+        self.assertGreaterEqual(result["candidates_discarded"], 0)
+
+    def test_larger_width_than_candidate_count_discards_nothing(self) -> None:
+        state = make_state(start=(3, 3))
+        result = beam_search(state, "A1", {"fila": 2, "columna": 3}, 8)
+
+        self.assertTrue(result["found"])
+        self.assertEqual(result["candidates_discarded"], 0)
+        self.assertLessEqual(result["max_frontier"], 4)
+
+    def test_ties_are_deterministic_and_follow_real_successor_order(self) -> None:
+        state = make_state(start=(3, 3))
+        goal = {"fila": 1, "columna": 2}
+        first = beam_search(state, "A1", goal, 1)
+        second = beam_search(state, "A1", goal, 1)
+
+        self.assertEqual(first["path"], second["path"])
+        self.assertEqual(first["path"][1], {"fila": 2, "columna": 3})
+
+    def test_cycles_and_duplicate_states_are_not_reexpanded(self) -> None:
+        state = make_state(
+            start=(2, 2), rows=5, columns=5,
+            enemies=[{"id": "A2", "bando": "A", "tipo": "estandar", "fila": 2, "columna": 3}],
+        )
+        result = beam_search(state, "A1", {"fila": 2, "columna": 3}, 100)
+
+        self.assertFalse(result["found"])
+        self.assertGreater(result["states_generated"], 1)
+        self.assertLessEqual(result["states_generated"], 2 * 5 * 5)
+        self.assertEqual(result["states_expanded"], result["states_generated"])
+        self.assertLessEqual(result["max_frontier"], 100)
+
+    def test_weighted_route_cost_and_input_state_are_preserved(self) -> None:
+        state = make_state(
+            "rook", (3, 1),
+            special_terrain={(3, 2): "bosque", (3, 4): "pantano"},
+        )
+        original = copy.deepcopy(state)
+        result = beam_search(state, "A1", {"fila": 3, "columna": 4}, 8)
+        replayed, cost = replay_path(state, "A1", result["path"])
+
+        self.assertTrue(result["found"])
+        self.assertEqual(result["moves"], 1)
+        self.assertEqual(cost, 6.0)
+        self.assertEqual(result["cost"], cost)
+        self.assertEqual(replayed["unidades"][0]["columna"], 4)
+        self.assertEqual(state, original)
+
+    def test_hypothetical_capture_resets_queen_to_original_spawn(self) -> None:
+        state = make_state(
+            "rook", (2, 0),
+            enemies=[{"id": "B1", "bando": "B", "tipo": "estandar", "fila": 2, "columna": 3}],
+            carrier="B1", queen_spawn=(0, 6),
+        )
+        state["unidades"][1]["spawn"] = {"fila": 4, "columna": 3}
+        original = copy.deepcopy(state)
+        result = beam_search(state, "A1", {"fila": 2, "columna": 3}, 4)
+        captured_state, cost = replay_path(state, "A1", result["path"])
+        victim = next(unit for unit in captured_state["unidades"] if unit["id"] == "B1")
+
+        self.assertTrue(result["found"])
+        self.assertEqual(cost, result["cost"])
+        self.assertEqual(captured_state["recurso"], {"fila": 0, "columna": 6})
+        self.assertEqual(captured_state["recurso_spawn"], {"fila": 0, "columna": 6})
+        self.assertTrue(victim["activo"])
+        self.assertEqual((victim["fila"], victim["columna"]), (4, 3))
+        self.assertEqual(state, original)
+
+    def test_queen_pickup_uses_hypothetical_state_without_moving_spawn(self) -> None:
+        state = make_state("estandar", (2, 1), queen_spawn=(2, 3))
+        original = copy.deepcopy(state)
+        spawn = copy.deepcopy(state["recurso_spawn"])
+        result = beam_search(state, "A1", {"fila": 2, "columna": 4}, 100)
+        final_state, cost = replay_path(state, "A1", result["path"])
+
+        self.assertTrue(result["found"])
+        self.assertEqual(result["cost"], cost)
+        self.assertEqual(final_state["juego"]["portador_recurso"], "A1")
+        self.assertIsNone(final_state["recurso"])
+        self.assertEqual(final_state["recurso_spawn"], spawn)
+        self.assertEqual(state, original)
+
+    def test_narrow_beam_can_discard_a_solution_that_bfs_finds(self) -> None:
+        walls = {
+            (1, 0), (1, 2), (2, 1), (3, 0), (3, 3),
+            (4, 1), (4, 2), (4, 3),
+        }
+        state = make_state(
+            start=(2, 2), rows=5, columns=5, walls=walls,
+            queen_spawn=(4, 0), bases={"A": (0, 0), "B": (4, 4)},
+        )
+        goal = {"fila": 4, "columna": 4}
+        breadth_result = bfs(state, "A1", goal)
+        results = {width: beam_search(state, "A1", goal, width) for width in (1, 2, 4, 8)}
+
+        self.assertTrue(breadth_result["found"])
+        self.assertFalse(results[1]["found"])
+        self.assertGreater(results[1]["candidates_discarded"], 0)
+        for width in (2, 4, 8):
+            with self.subTest(k=width):
+                self.assertTrue(results[width]["found"])
+                self.assertLessEqual(results[width]["max_frontier"], width)
+                replayed, cost = replay_path(state, "A1", results[width]["path"])
+                self.assertEqual(results[width]["cost"], cost)
+                self.assertEqual((replayed["unidades"][0]["fila"], replayed["unidades"][0]["columna"]), (4, 4))
+
+
 class AStarTests(unittest.TestCase):
     def test_start_equal_to_goal_and_unreachable_goal(self) -> None:
         state = make_state(start=(2, 2))
@@ -624,6 +977,31 @@ class SearchApiTests(unittest.IsolatedAsyncioTestCase):
                 self.assertEqual(main.current_state, original)
         self.assertEqual(main.current_state, original)
 
+    async def test_ucs_is_available_on_search_and_search_test_endpoints(self) -> None:
+        state = make_state("estandar", (3, 3))
+        state["prueba"] = {
+            "modo": "busqueda",
+            "unidad_inicio": "A1",
+            "objetivo": {"fila": 3, "columna": 5},
+        }
+        with main.lock:
+            main.current_state = copy.deepcopy(state)
+        original = copy.deepcopy(main.current_state)
+
+        status, response = await post_json(
+            "/api/search",
+            {"algorithm": "ucs", "unit_id": "A1", "goal": {"row": 3, "column": 5}},
+        )
+        self.assertEqual(status, 200)
+        self.assertTrue(response["result"]["found"])
+        self.assertEqual(response["result"]["path"][-1], {"fila": 3, "columna": 5})
+
+        test_status, test_response = await post_json("/api/test", {"algorithm": "ucs"})
+        self.assertEqual(test_status, 200)
+        self.assertEqual(test_response["mode"], "busqueda")
+        self.assertTrue(test_response["result"]["found"])
+        self.assertEqual(main.current_state, original)
+
     async def test_astar_heuristics_are_available_on_search_and_test_endpoints(self) -> None:
         state = make_state("estandar", (0, 0), rows=3, columns=3)
         state["prueba"] = {
@@ -676,4 +1054,44 @@ class SearchApiTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(status, 200)
         self.assertEqual(response["mode"], "busqueda")
         self.assertTrue(response["result"]["found"])
+        self.assertEqual(main.current_state, original)
+
+    async def test_beam_search_and_test_endpoints_use_k_without_mutation(self) -> None:
+        state = make_state("estandar", (3, 3))
+        state["prueba"] = {
+            "modo": "busqueda",
+            "unidad_inicio": "A1",
+            "objetivo": {"fila": 3, "columna": 5},
+        }
+        with main.lock:
+            main.current_state = copy.deepcopy(state)
+        original = copy.deepcopy(main.current_state)
+
+        status, response = await post_json(
+            "/api/search",
+            {
+                "algorithm": "beam", "unit_id": "A1",
+                "goal": {"row": 3, "column": 5}, "k": 4,
+            },
+        )
+        self.assertEqual(status, 200)
+        self.assertTrue(response["result"]["found"])
+        self.assertLessEqual(response["result"]["max_frontier"], 4)
+        self.assertIn("candidates_discarded", response["result"])
+
+        test_status, test_response = await post_json(
+            "/api/test", {"algorithm": "beam", "k": 4}
+        )
+        self.assertEqual(test_status, 200)
+        self.assertEqual(test_response["mode"], "busqueda")
+        self.assertTrue(test_response["result"]["found"])
+
+        invalid_status, _ = await post_json(
+            "/api/search",
+            {
+                "algorithm": "beam", "unit_id": "A1",
+                "goal": {"row": 3, "column": 5}, "k": 0,
+            },
+        )
+        self.assertEqual(invalid_status, 422)
         self.assertEqual(main.current_state, original)

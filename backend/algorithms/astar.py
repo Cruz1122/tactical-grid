@@ -6,6 +6,7 @@ from math import inf
 from time import perf_counter
 from typing import Any
 
+from backend.algorithms.heuristics import _terrain_minima, manhattan, second_heuristic
 from backend.algorithms.search_common import (
     StateKey,
     prepare_search,
@@ -14,98 +15,6 @@ from backend.algorithms.search_common import (
     unit_successors,
 )
 from backend.game.engine import state_key, static_state_key
-from backend.game.movement import terrain_cost
-
-Position = tuple[int, int]
-_UNIT_TYPES = {
-    "knight": "knight",
-    "caballo": "knight",
-    "rook": "rook",
-    "torre": "rook",
-    "bishop": "bishop",
-    "alfil": "bishop",
-    "estandar": "estandar",
-}
-
-
-def manhattan(position: Position, goal: Position) -> int:
-    """Devuelve la distancia Manhattan clásica, sin ajustes por tipo de unidad."""
-    # Esta referencia puede sobreestimar para caballo, torre y alfil, y con costos inferiores a uno.
-    return abs(position[0] - goal[0]) + abs(position[1] - goal[1])
-
-
-def _terrain_minima(
-    state: dict[str, Any],
-) -> tuple[float, list[float], list[float]]:
-    """Precalcula el menor costo transitable global, por fila y por columna."""
-    # Lee las dimensiones una vez para dimensionar los mínimos del mapa.
-    rows = state["mapa"]["filas"]
-    columns = state["mapa"]["columnas"]
-    # Inf permite reemplazar cada mínimo al encontrar terreno transitable.
-    row_minima = [inf] * rows
-    column_minima = [inf] * columns
-    min_cost = inf
-    # Recorre cada casilla para considerar solo terrenos transitables.
-    for row in range(rows):
-        for column in range(columns):
-            try:
-                cost = terrain_cost(state, (row, column))
-            except (TypeError, ValueError):
-                # Obstáculos y casillas mal definidas no aportan costos a la cota.
-                continue
-            if cost <= 0:
-                # Excluye costos no positivos para mantener las cotas conservadoras.
-                continue
-            row_minima[row] = min(row_minima[row], cost)
-            column_minima[column] = min(column_minima[column], cost)
-            min_cost = min(min_cost, cost)
-    # Una fila o columna sin paso transitable aporta cero para no sobreestimar.
-    row_minima = [0.0 if value == inf else value for value in row_minima]
-    column_minima = [0.0 if value == inf else value for value in column_minima]
-    # Si el mapa no tiene costos positivos, cero es la cota conservadora.
-    return (0.0 if min_cost == inf else min_cost), row_minima, column_minima
-
-
-def second_heuristic(
-    state: dict[str, Any],
-    position: Position,
-    goal: Position,
-    unit_type: str,
-    terrain_minima: tuple[float, list[float], list[float]] | None = None,
-) -> float:
-    """Estima el costo restante según la geometría y el tipo de unidad."""
-    # Reutiliza los mínimos precalculados por A* o los calcula para una llamada aislada.
-    min_cost, row_minima, column_minima = terrain_minima or _terrain_minima(state)
-    # Las distancias absolutas evitan depender de la dirección del desplazamiento.
-    dr = abs(position[0] - goal[0])
-    dc = abs(position[1] - goal[1])
-    # Canoniza los nombres alternativos para aplicar la geometría del motor.
-    kind = _UNIT_TYPES.get(unit_type, "estandar")
-    if kind == "rook":
-        # La torre recorre cada casilla, así que hacen falta al menos dr + dc pasos de terreno.
-        return min_cost * (dr + dc)
-    if kind == "bishop":
-        # Cada paso diagonal cambia como máximo una fila y una columna.
-        return min_cost * max(dr, dc)
-    if kind == "knight":
-        # Cada salto cambia Manhattan como máximo tres y un eje como máximo dos.
-        return min_cost * max((dr + dc + 2) // 3, (max(dr, dc) + 1) // 2)
-
-    # Los movimientos estándar son ortogonales: cada fila y columna nueva exige otro paso.
-    row_step = 1 if goal[0] > position[0] else -1
-    column_step = 1 if goal[1] > position[1] else -1
-    # Omite la fila inicial y suma mínimos de todas las filas alcanzadas hasta la meta.
-    rows_cost = sum(
-        row_minima[row]
-        for row in range(position[0] + row_step, goal[0] + row_step, row_step)
-    )
-    # Omite la columna inicial y suma mínimos de todas las columnas alcanzadas hasta la meta.
-    columns_cost = sum(
-        column_minima[column]
-        for column in range(position[1] + column_step, goal[1] + column_step, column_step)
-    )
-    # Las entradas de fila y columna son movimientos distintos para una unidad ortogonal.
-    return rows_cost + columns_cost
 
 
 def astar(

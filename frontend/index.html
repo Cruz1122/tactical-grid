@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#131a1d">
   <title>TacticalGrid</title>
-  <link rel="stylesheet" href="/styles.css?v=23">
+  <link rel="stylesheet" href="/styles.css?v=24">
   <script defer src="https://cdn.jsdelivr.net/npm/phaser@4.2.1/dist/phaser.min.js"></script>
-  <script defer src="/api.js?v=23"></script>
+  <script defer src="/api.js?v=25"></script>
   <script defer src="/scene.js?v=24"></script>
 </head>
 <body>
@@ -70,7 +70,7 @@
     <section class="panel-section search-section" aria-labelledby="searchTitle">
       <div class="section-heading compact">
         <div><span class="eyebrow">BÚSQUEDA</span><h2 id="searchTitle">Ruta sugerida</h2></div>
-        <span class="search-algorithm-badge">BFS · DFS</span>
+        <span class="search-algorithm-badge">BFS · DFS · UCS · A* · BEAM</span>
       </div>
       <p class="section-copy">Explora movimientos hipotéticos desde una unidad hasta una celda objetivo.</p>
       <div class="algorithm-toggle" role="group" aria-label="Algoritmo de búsqueda">
@@ -80,6 +80,31 @@
         <button class="algorithm-option" type="button" data-search-algorithm="dfs" aria-pressed="false">
           <strong>DFS</strong><span>Profundidad · primera rama</span>
         </button>
+        <button class="algorithm-option" type="button" data-search-algorithm="ucs" aria-pressed="false">
+          <strong>UCS</strong><span>Costo mínimo · sin heurística</span>
+        </button>
+        <button class="algorithm-option" type="button" data-search-algorithm="astar" aria-pressed="false">
+          <strong>A*</strong><span>Costo acumulado + heurística</span>
+        </button>
+        <button class="algorithm-option" type="button" data-search-algorithm="beam" aria-pressed="false">
+          <strong>Beam</strong><span>Haz limitado · heurística</span>
+        </button>
+      </div>
+      <div id="astarSearchOptions" class="search-algorithm-options" hidden>
+        <label class="search-field" for="searchHeuristic">
+          <span>Heurística de A*</span>
+          <select id="searchHeuristic">
+            <option value="second" selected>Estimación de costo restante</option>
+            <option value="manhattan">Distancia Manhattan</option>
+          </select>
+        </label>
+      </div>
+      <div id="beamSearchOptions" class="search-algorithm-options" hidden>
+        <label class="search-field" for="searchBeamWidth">
+          <span>Ancho del haz · k</span>
+          <input id="searchBeamWidth" type="number" min="1" step="1" value="4" inputmode="numeric" aria-describedby="beamWidthHelp">
+        </label>
+        <p id="beamWidthHelp" class="search-parameter-note">Conserva hasta k estados por nivel. Ordena por la heurística de costo restante.</p>
       </div>
       <label class="search-field" for="searchUnit">
         <span>Unidad de inicio</span>
@@ -114,6 +139,7 @@
           <div><small>Generados</small><strong id="searchGenerated">—</strong></div>
           <div><small>Expandidos</small><strong id="searchExpanded">—</strong></div>
           <div><small>Frontera máx.</small><strong id="searchFrontier">—</strong></div>
+          <div id="searchDiscardedMetric" hidden><small>Candidatos descartados</small><strong id="searchDiscarded">—</strong></div>
           <div><small>Tiempo</small><strong id="searchElapsed">—</strong></div>
         </div>
         <p id="searchPath" class="search-path" hidden></p>

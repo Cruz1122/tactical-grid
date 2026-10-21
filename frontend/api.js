@@ -36,7 +36,8 @@ function assertPresentationShape(presentation) {
 
 function assertSearchResultShape(result) {
   const optionalNumbers = [
-    "moves", "cost", "states_generated", "states_expanded", "max_frontier", "elapsed_seconds"
+    "moves", "cost", "states_generated", "states_expanded", "max_frontier",
+    "elapsed_seconds", "candidates_discarded"
   ];
   if (!isObject(result) ||
       typeof result.found !== "boolean" ||
@@ -322,6 +323,9 @@ class TacticalGridUI {
         this.clearSearchResult();
       });
     }
+    for (const input of [el("searchHeuristic"), el("searchBeamWidth")]) {
+      input.addEventListener("input", () => this.clearSearchResult());
+    }
     document.addEventListener("keydown", event => {
       if (event.key !== "Escape" || !this.pickingTarget) return;
       event.preventDefault();
@@ -333,13 +337,15 @@ class TacticalGridUI {
   }
 
   setSearchAlgorithm(algorithm) {
-    if (!["bfs", "dfs"].includes(algorithm)) return;
+    if (!["bfs", "dfs", "ucs", "astar", "beam"].includes(algorithm)) return;
     this.searchAlgorithm = algorithm;
     for (const card of document.querySelectorAll("[data-search-algorithm]")) {
       const selected = card.dataset.searchAlgorithm === algorithm;
       card.classList.toggle("is-selected", selected);
       card.setAttribute("aria-pressed", String(selected));
     }
+    this.el("astarSearchOptions").hidden = algorithm !== "astar";
+    this.el("beamSearchOptions").hidden = algorithm !== "beam";
     const result = this.el("searchResult");
     if (result && !result.hidden) this.clearSearchResult();
   }
@@ -450,7 +456,10 @@ class TacticalGridUI {
       [...select.options].some(option => option.value === select.value));
     const locked = this.mutationPending || this.desynchronized || !state || !hasUnit;
     const busy = this.searchPending;
-    for (const id of ["searchUnit", "searchTargetRow", "searchTargetCol", "pickSearchTarget", "runSearch"]) {
+    for (const id of [
+      "searchUnit", "searchTargetRow", "searchTargetCol", "searchHeuristic",
+      "searchBeamWidth", "pickSearchTarget", "runSearch"
+    ]) {
       const control = this.el(id);
       if (control) control.disabled = locked || busy;
     }
@@ -480,6 +489,8 @@ class TacticalGridUI {
     this.el("searchResultTitle").textContent = "—";
     this.el("searchMessage").textContent = "";
     this.el("searchMetrics").hidden = true;
+    this.el("searchDiscardedMetric").hidden = true;
+    this.el("searchDiscarded").textContent = "—";
     const path = this.el("searchPath");
     path.hidden = true;
     path.textContent = "";
@@ -517,6 +528,9 @@ class TacticalGridUI {
     this.el("searchExpanded").textContent = this.formatSearchNumber(result.states_expanded);
     this.el("searchFrontier").textContent = this.formatSearchNumber(result.max_frontier);
     this.el("searchElapsed").textContent = this.formatSearchTime(result.elapsed_seconds);
+    const discardedMetric = this.el("searchDiscardedMetric");
+    discardedMetric.hidden = context.algorithm !== "beam" || !Number.isFinite(result.candidates_discarded);
+    this.el("searchDiscarded").textContent = this.formatSearchNumber(result.candidates_discarded);
     const path = this.el("searchPath");
     path.hidden = true;
     path.textContent = "";
@@ -537,13 +551,15 @@ class TacticalGridUI {
 
     if (!result.found) {
       panel.dataset.state = "empty";
-      this.el("searchResultTitle").textContent = "Sin ruta";
-      this.el("searchMessage").textContent =
-        `No existe una ruta legal desde ${context.unitId} hasta ${target}.`;
+      this.el("searchResultTitle").textContent = "Sin ruta encontrada";
+      const noRouteMessage = context.algorithm === "beam"
+        ? `Beam agotó el haz sin conservar una ruta hasta ${target}; pudo descartar candidatos necesarios.`
+        : `No existe una ruta legal desde ${context.unitId} hasta ${target}.`;
+      this.el("searchMessage").textContent = noRouteMessage;
       this.scene.showSearchPath([]);
-      this.setActionHint(`${algorithm} no encontró una ruta legal hasta ${target}.`, {kind: "info"});
-      this.say(`${algorithm} exploró el estado sin encontrar una ruta hacia ${target}.`, {
-        title: "Objetivo inalcanzable",
+      this.setActionHint(noRouteMessage, {kind: "info"});
+      this.say(noRouteMessage, {
+        title: context.algorithm === "beam" ? "Haz agotado" : "Objetivo inalcanzable",
         tone: "info"
       });
       this.updateSearchControls();
@@ -552,9 +568,21 @@ class TacticalGridUI {
 
     panel.dataset.state = "found";
     this.el("searchResultTitle").textContent = `${algorithm} encontró una ruta`;
-    this.el("searchMessage").textContent = context.algorithm === "bfs"
-      ? "BFS garantiza el menor número de movimientos en este escenario."
-      : "DFS devuelve la primera ruta encontrada; puede no ser la más corta.";
+    if (context.algorithm === "bfs") {
+      this.el("searchMessage").textContent = "BFS garantiza el menor número de movimientos en este escenario.";
+    } else if (context.algorithm === "dfs") {
+      this.el("searchMessage").textContent = "DFS devuelve la primera ruta encontrada; puede no ser la más corta.";
+    } else if (context.algorithm === "ucs") {
+      this.el("searchMessage").textContent =
+        "Con costos de movimiento positivos, UCS prioriza el menor costo acumulado y garantiza una ruta de costo mínimo, sin heurística.";
+    } else if (context.algorithm === "astar") {
+      const heuristicName = context.heuristic === "second" ? "costo restante" : "Manhattan";
+      this.el("searchMessage").textContent =
+        `A* prioriza costo acumulado + heurística (${heuristicName}); la ruta depende de la heurística elegida.`;
+    } else {
+      this.el("searchMessage").textContent =
+        `Beam conservó hasta ${context.k} estados por nivel. No garantiza una ruta ni la optimalidad.`;
+    }
     const points = result.path.map(point => `${point.fila},${point.columna}`);
     if (points.length) {
       const fullPath = `Ruta: ${points.join(" → ")}`;
@@ -608,6 +636,12 @@ class TacticalGridUI {
       return null;
     }
     const algorithm = this.searchAlgorithm;
+    const heuristic = this.el("searchHeuristic").value;
+    const k = Number(this.el("searchBeamWidth").value);
+    if (algorithm === "beam" && (!Number.isSafeInteger(k) || k < 1)) {
+      this.showSearchProblem("Ancho no válido", "El ancho del haz k debe ser un entero mayor que cero.");
+      return null;
+    }
     this.setTargetPicking(false, {announce: false});
     this.cancelSearch();
     this.clearSearchResult();
@@ -619,13 +653,16 @@ class TacticalGridUI {
     this.updateSearchControls();
     this.setActionHint(`Calculando ruta con ${algorithm.toUpperCase()}…`, {kind: "move"});
     try {
-      const result = await ApiClient.search({
+      const payload = {
         algorithm,
         unit_id: unitId,
         goal: {row: target.row, column: target.column}
-      }, controller.signal);
+      };
+      if (algorithm === "astar") payload.heuristic = heuristic;
+      if (algorithm === "beam") payload.k = k;
+      const result = await ApiClient.search(payload, controller.signal);
       if (requestId !== this.searchRequestId || epoch !== this.stateEpoch) return null;
-      const context = {algorithm, unitId, target};
+      const context = {algorithm, unitId, target, heuristic, k};
       this.renderSearchResult(result, context);
       return result;
     } catch (error) {

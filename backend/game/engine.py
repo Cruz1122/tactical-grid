@@ -167,8 +167,9 @@ def state_key(
     """Produce una clave inmutable y determinista para estados equivalentes.
 
     Preconditions: el estado contiene estructuras JSON válidas y unidades con IDs.
-    Postconditions: la clave considera escenario, turno, unidades/spawns, reina,
-    reyes y fase/resultado; no depende de identidades Python ni del orden de claves.
+    Postconditions: la clave considera escenario, turno, unidades/spawns y datos
+    adicionales, reina, reyes y fase/resultado; ignora identidades Python y orden
+    de claves.
     `static_key`, si se entrega, debe proceder del mismo escenario inmutable.
     Complexity: O(S + U log U + K log K), o O(U log U + K log K) con `static_key`.
     """
@@ -182,6 +183,22 @@ def state_key(
                 unit.get("columna"),
                 unit.get("activo", True),
                 _freeze_state_value(unit.get("spawn")),
+                _freeze_state_value(
+                    {
+                        key: value
+                        for key, value in unit.items()
+                        if key
+                        not in {
+                            "id",
+                            "bando",
+                            "tipo",
+                            "fila",
+                            "columna",
+                            "activo",
+                            "spawn",
+                        }
+                    }
+                ),
             )
             for unit in state.get("unidades", [])
         )
@@ -204,8 +221,35 @@ def state_key(
         game.get("portador_recurso"),
         game.get("estado"),
         game.get("resultado"),
+        _freeze_state_value(
+            {
+                key: value
+                for key, value in game.items()
+                if key not in {"portador_recurso", "estado", "resultado"}
+            }
+        ),
     ) if isinstance(game, dict) else None
     scenario_key = static_key if static_key is not None else static_state_key(state)
+    state_extras = _freeze_state_value(
+        {
+            key: value
+            for key, value in state.items()
+            if key
+            not in {
+                "version",
+                "mapa",
+                "tipos_terreno",
+                "terreno",
+                "bases",
+                "recurso_spawn",
+                "turno",
+                "unidades",
+                "recurso",
+                "juego",
+                "reyes",
+            }
+        }
+    )
     return (
         scenario_key,
         state.get("turno"),
@@ -213,6 +257,7 @@ def state_key(
         _freeze_state_value(state.get("recurso")),
         game_key,
         king_positions,
+        state_extras,
     )
 
 
