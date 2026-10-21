@@ -4,6 +4,12 @@ from typing import Any, TypeGuard
 from backend.game.movement import has_legal_action, is_in_check, move_cost
 
 SUPPORTED_UNIT_TYPES = {"knight", "rook", "bishop", "estandar", "caballo", "torre", "alfil"}
+MAX_MAP_ROWS = 100
+MAX_MAP_COLUMNS = 100
+MAX_MAP_CELLS = 10_000
+MAX_UNITS = 200
+MAX_KINGS = 200
+MAX_ADVERSARIAL_DEPTH = 5
 
 
 class ScenarioValidationError(ValueError):
@@ -124,12 +130,24 @@ def _check_terrain(scenario: dict[str, Any], errors: list[str]) -> tuple[int | N
         columns_value = map_data.get("columnas")
         if not _is_integer(rows_value) or rows_value <= 0:
             errors.append("mapa.filas: debe ser un entero positivo")
+        elif rows_value > MAX_MAP_ROWS:
+            errors.append(f"mapa.filas: no puede exceder {MAX_MAP_ROWS}")
         else:
             rows = rows_value
         if not _is_integer(columns_value) or columns_value <= 0:
             errors.append("mapa.columnas: debe ser un entero positivo")
+        elif columns_value > MAX_MAP_COLUMNS:
+            errors.append(f"mapa.columnas: no puede exceder {MAX_MAP_COLUMNS}")
         else:
             columns = columns_value
+        if (
+            _is_integer(rows_value)
+            and _is_integer(columns_value)
+            and rows_value > 0
+            and columns_value > 0
+            and rows_value * columns_value > MAX_MAP_CELLS
+        ):
+            errors.append(f"mapa: no puede exceder {MAX_MAP_CELLS} celdas")
 
     terrain_types = scenario.get("tipos_terreno")
     if not isinstance(terrain_types, dict):
@@ -223,6 +241,8 @@ def validate_scenario(scenario: dict[str, Any]) -> None:
     if not isinstance(units, list):
         errors.append("unidades: debe ser una lista")
         units = []
+    elif len(units) > MAX_UNITS:
+        errors.append(f"unidades: no puede contener más de {MAX_UNITS} elementos")
     for index, unit in enumerate(units):
         field = f"unidades[{index}]"
         if not isinstance(unit, dict):
@@ -285,6 +305,11 @@ def validate_scenario(scenario: dict[str, Any]) -> None:
             errors.append("juego.estado: valor desconocido")
         if "resultado" in game and game["resultado"] not in (None, "A", "B", "empate"):
             errors.append("juego.resultado: debe ser null, 'A', 'B' o 'empate'")
+        configured_depth = game.get("profundidad_maxima_minimax", 3)
+        if type(configured_depth) is not int or configured_depth < 0:
+            errors.append(
+                "juego.profundidad_maxima_minimax: debe ser un entero mayor o igual a 0"
+            )
 
     resource = scenario.get("recurso")
     resource_position: tuple[int, int] | None = None
@@ -342,6 +367,10 @@ def validate_scenario(scenario: dict[str, Any]) -> None:
                 if not isinstance(group, list):
                     errors.append(f"reyes.{side}: debe ser una lista")
                     continue
+                if len(group) > MAX_KINGS:
+                    errors.append(
+                        f"reyes.{side}: no puede contener más de {MAX_KINGS} elementos"
+                    )
                 for index, king in enumerate(group):
                     field = f"reyes.{side}[{index}]"
                     if not isinstance(king, dict):

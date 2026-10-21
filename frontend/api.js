@@ -95,6 +95,152 @@ function sentenceTeamPhrase(team) {
   return phrase.charAt(0).toUpperCase() + phrase.slice(1);
 }
 
+const MODE_LABELS = {
+  partida: "Partida",
+  busqueda: "Búsqueda",
+  adversarial: "Adversarial"
+};
+
+const HEURISTIC_LABELS = {
+  manhattan: "Distancia Manhattan",
+  second: "Costo restante"
+};
+
+const SEARCH_ALGORITHMS = {
+  bfs: {
+    label: "BFS",
+    hint: "Anchura · mínimos pasos",
+    kind: "Anchura",
+    summary: "Explora por niveles con una cola FIFO: primero todos los estados a un movimiento, después los de dos y así sucesivamente.",
+    facts: [
+      ["Frontera", "Cola FIFO"],
+      ["Orden de movimientos", context => movementOrder(context.unitType)],
+      ["Garantía", "Mínimo número de movimientos"],
+      ["Costo", "No minimiza el costo del terreno"]
+    ],
+    equation: "\\text{FIFO: primero en entrar, primero en salir}",
+    equationNote: "La meta se comprueba al extraer; la primera extraída tiene la menor profundidad.",
+    note: "El orden fino depende de la ficha: las piezas ortogonales generan arriba, abajo, izquierda y derecha; el caballo usa sus 8 saltos y el alfil sus diagonales."
+  },
+  dfs: {
+    label: "DFS",
+    hint: "Profundidad · primera rama",
+    kind: "Profundidad",
+    summary: "Sigue una rama hasta agotarla usando una pila LIFO; retrocede cuando el estado actual ya no tiene sucesores nuevos.",
+    facts: [
+      ["Frontera", "Pila LIFO"],
+      ["Orden de movimientos", context => movementOrder(context.unitType)],
+      ["Garantía", "Sin garantía de ruta corta"],
+      ["Costo", "No minimiza el costo del terreno"]
+    ],
+    equation: "\\text{LIFO: último en entrar, primero en salir}",
+    equationNote: "El motor invierte la inserción para que el primer sucesor legal sea el primero en explorarse.",
+    note: "Puede devolver una ruta larga o una rama completa antes de encontrar la meta; no es óptimo en movimientos ni en costo."
+  },
+  ucs: {
+    label: "UCS",
+    hint: "Costo mínimo · sin heurística",
+    kind: "Costo mínimo",
+    summary: "Expande siempre el estado con menor costo real acumulado g(n), sin usar ninguna estimación heurística.",
+    facts: [
+      ["Frontera", "Cola de prioridad (heap)"],
+      ["Prioridad", "g(n): costo real acumulado"],
+      ["Heurística", "No usa"],
+      ["Garantía", "Costo mínimo con costos positivos"]
+    ],
+    equation: "\\operatorname{prioridad}(n) = g(n)",
+    equationNote: "Desempate por orden de inserción. Las entradas obsoletas se descartan cuando aparece un g(n) mejor.",
+    note: "La meta se acepta al extraerla, no al generarla. Con costos positivos, el primer g(n) de la meta es el mínimo."
+  },
+  astar: {
+    label: "A*",
+    hint: "Prioridad f = g + h",
+    kind: "Heurística",
+    summary: "Combina el costo recorrido g(n) con una estimación del costo restante h(n) para decidir qué estado expandir primero.",
+    facts: [
+      ["Frontera", "Cola de prioridad (heap)"],
+      ["Prioridad", "f(n) = g(n) + h(n)"],
+      ["Heurística", "Seleccionable"],
+      ["Garantía", "Óptima si h(n) no sobreestima"]
+    ],
+    equation: "f(n) = g(n) + h(n)",
+    equationNote: "g(n): costo real acumulado · h(n): estimación restante · desempate por orden de inserción.",
+    note: "La optimalidad depende de la heurística y del mapa. Manhattan no es admisible para todas las fichas y costos; la heurística de costo restante se adapta a la geometría de la pieza."
+  },
+  beam: {
+    label: "Beam",
+    hint: "Haz limitado · heurística",
+    kind: "Haz limitado",
+    summary: "Expande por niveles y conserva únicamente los k estados con menor estimación de costo restante h(n).",
+    facts: [
+      ["Frontera", "Haz de tamaño ≤ k"],
+      ["Prioridad", "h(n): costo restante estimado"],
+      ["Heurística", "Fija · costo restante"],
+      ["Garantía", "Sin garantía de ruta ni optimalidad"]
+    ],
+    equation: "B_{t+1} = \\operatorname{top}_k\\bigl(h(n)\\bigr)",
+    equationNote: "Desempate por g(n) y orden de generación. Aumentar k conserva más candidatos.",
+    note: "Puede descartar el estado que contenía la única ruta válida. En esta implementación usa siempre la heurística de costo restante, sin selector."
+  }
+};
+
+function movementOrder(unitType) {
+  if (unitType === "knight") return "8 saltos (↑↑←, ↑↑→, ↑←←, ↑→→, ↓←←, ↓→→, ↓↓←, ↓↓→)";
+  if (unitType === "bishop") return "Diagonales: ↖, ↗, ↙, ↘";
+  return "Ortogonal: ↑, ↓, ←, →";
+}
+
+const HEURISTIC_SECOND_BRANCHES = {
+  rook: {
+    label: "Torre",
+    tex: "h_{\\text{torre}}(n) = c_{\\min}\\left(\\lvert\\Delta_f\\rvert + \\lvert\\Delta_c\\rvert\\right)"
+  },
+  bishop: {
+    label: "Alfil",
+    tex: "h_{\\text{alfil}}(n) = c_{\\min}\\max\\left(\\lvert\\Delta_f\\rvert, \\lvert\\Delta_c\\rvert\\right)"
+  },
+  knight: {
+    label: "Caballo",
+    tex: "h_{\\text{caballo}}(n) = c_{\\min}\\max\\left(\\left\\lceil\\frac{\\lvert\\Delta_f\\rvert+\\lvert\\Delta_c\\rvert}{3}\\right\\rceil, \\left\\lceil\\frac{\\max(\\lvert\\Delta_f\\rvert,\\lvert\\Delta_c\\rvert)}{2}\\right\\rceil\\right)"
+  },
+  estandar: {
+    label: "Estándar",
+    tex: "h_{\\text{estándar}}(n) = \\sum_{i \\in \\text{tramo}(f_n,f_g)} r_i + \\sum_{j \\in \\text{tramo}(c_n,c_g)} c_j"
+  }
+};
+
+const HEURISTIC_SECOND_DEFINITIONS = [
+  ["Desplazamiento", "\\Delta_f = f_n - f_g, \\quad \\Delta_c = c_n - c_g"],
+  ["Costo mínimo", "c_{\\min} = \\min\\{\\operatorname{costo}(i,j) \\mid (i,j)\\ \\text{transitable}\\}"],
+  ["Mínimo por fila", "r_i = \\min_{j}\\{\\operatorname{costo}(i,j) \\mid (i,j)\\ \\text{transitable}\\}"],
+  ["Mínimo por columna", "c_j = \\min_{i}\\{\\operatorname{costo}(i,j) \\mid (i,j)\\ \\text{transitable}\\}"],
+  ["Tramo estándar", "f_n \\to f_g \\quad \\text{y} \\quad c_n \\to c_g \\quad \\text{(sin incluir la celda actual)}"]
+];
+
+function renderMath(element, tex, {displayMode = false} = {}) {
+  if (!element) return;
+  element.dataset.tex = tex;
+  element.textContent = tex;
+  if (!window.katex?.render) return;
+  try {
+    window.katex.render(tex, element, {
+      throwOnError: false,
+      displayMode,
+      strict: "ignore",
+      trust: false
+    });
+    element.classList.add("is-rendered");
+  } catch (error) {
+    element.classList.remove("is-rendered");
+    element.textContent = tex;
+  }
+}
+
+function scenarioMode(state) {
+  const mode = state?.prueba?.modo;
+  return Object.hasOwn(MODE_LABELS, mode) ? mode : "partida";
+}
+
 class ApiClient {
   static async request(path, payload = null, options = {}) {
     const config = payload === null ? {method: "GET"} : {
@@ -283,6 +429,10 @@ class TacticalGridUI {
     this.legalController = null;
     this.lastPresentation = null;
     this.moveHistory = [];
+    this.mode = null;
+    this.manualKingSide = "A";
+    this.manualKingDrafts = {A: [], B: []};
+    this.manualKingDraftsInitialized = false;
     this.searchAlgorithm = "bfs";
     this.searchPending = false;
     this.searchController = null;
@@ -341,12 +491,74 @@ class TacticalGridUI {
         this.updateKingInputs();
       });
     }
-    for (const card of document.querySelectorAll("[data-search-algorithm]")) {
-      card.addEventListener("click", () => {
-        if (card.disabled) return;
-        this.setSearchAlgorithm(card.dataset.searchAlgorithm);
+    for (const button of document.querySelectorAll("[data-king-side]")) {
+      button.addEventListener("click", () => {
+        if (button.disabled) return;
+        this.manualKingSide = button.dataset.kingSide;
+        this.updateManualKingSideButtons();
+        this.syncManualKingPreview();
+        this.setActionHint(`Coloca reyes de ${teamPhrase(this.manualKingSide)} en el tablero.`, {kind: "info"});
       });
     }
+    for (const side of ["A", "B"]) {
+      el(`manualKings${side}`).addEventListener("input", () => {
+        if (el("kingMode").value !== "manual") return;
+        this.manualKingDrafts[side] = this.parseManualKingDrafts(el(`manualKings${side}`).value);
+        this.manualKingDraftsInitialized = true;
+        this.updateManualKingStatus();
+        this.syncManualKingPreview();
+      });
+    }
+    const algorithmButton = el("searchAlgorithmButton");
+    const algorithmSelect = el("searchAlgorithmSelect");
+    algorithmButton.addEventListener("click", () => this.toggleSearchAlgorithmMenu());
+    algorithmButton.addEventListener("keydown", event => this.handleSearchAlgorithmTriggerKeydown(event));
+    el("searchAlgorithmMenu").addEventListener("click", event => {
+      const option = event.target.closest("[data-search-algorithm]");
+      if (!option || option.disabled) return;
+      this.setSearchAlgorithm(option.dataset.searchAlgorithm);
+    });
+    el("searchAlgorithmMenu").addEventListener("keydown", event => this.handleSearchAlgorithmMenuKeydown(event));
+    algorithmSelect.addEventListener("focusout", event => {
+      if (!event.relatedTarget || !algorithmSelect.contains(event.relatedTarget)) {
+        this.closeSearchAlgorithmMenu();
+      }
+    });
+    document.addEventListener("click", event => {
+      if (!event.target.closest("#searchAlgorithmSelect")) this.closeSearchAlgorithmMenu();
+    });
+    el("searchAlgorithmInfoToggle").addEventListener("click", () => this.toggleSearchAlgorithmInfo());
+    const unitButton = el("searchUnitButton");
+    const unitSelect = el("searchUnitSelect");
+    unitButton.addEventListener("click", () => this.toggleSearchUnitMenu());
+    unitButton.addEventListener("keydown", event => this.handleSearchUnitTriggerKeydown(event));
+    unitButton.addEventListener("mouseenter", () => this.previewSelectedSearchUnit());
+    unitButton.addEventListener("mouseleave", () => this.clearSearchUnitPreview());
+    el("searchUnitMenu").addEventListener("click", event => {
+      const option = event.target.closest("[data-unit-id]");
+      if (!option || option.disabled) return;
+      this.setTargetPicking(false, {announce: false});
+      this.setSearchUnit(option.dataset.unitId, {clearResult: true, closeMenu: true, focusTrigger: true});
+    });
+    el("searchUnitMenu").addEventListener("keydown", event => this.handleSearchUnitMenuKeydown(event));
+    el("searchUnitMenu").addEventListener("mouseover", event => {
+      const option = event.target.closest("[data-unit-id]");
+      if (option && !option.disabled) this.previewSearchUnit(option.dataset.unitId);
+    });
+    el("searchUnitMenu").addEventListener("mouseleave", () => this.clearSearchUnitPreview());
+    el("searchUnitMenu").addEventListener("focusin", event => {
+      const option = event.target.closest("[data-unit-id]");
+      if (option && !option.disabled) this.previewSearchUnit(option.dataset.unitId);
+    });
+    unitSelect.addEventListener("focusout", event => {
+      if (!event.relatedTarget || !unitSelect.contains(event.relatedTarget)) {
+        this.clearSearchUnitPreview();
+        this.closeSearchUnitMenu();
+      }
+    });
+    document.addEventListener("click", event => {
+      if (!event.target.closest("#searchUnitSelect")) this.closeSearchUnitMenu();
+    });
     el("runSearch").addEventListener("click", () => this.search());
     el("clearSearch").addEventListener("click", () => this.clearSearchResult({announce: true}));
     el("runAdversarial").addEventListener("click", () => this.adversarial());
@@ -369,11 +581,35 @@ class TacticalGridUI {
       input.addEventListener("input", () => this.clearAdversarialResult());
       input.addEventListener("change", () => this.clearAdversarialResult());
     }
-    el("pickSearchTarget").addEventListener("click", () => this.setTargetPicking(!this.pickingTarget));
-    el("searchUnit").addEventListener("change", () => {
-      this.setTargetPicking(false, {announce: false});
-      this.clearSearchResult();
+    this.adversarialAlgorithmDropdown = this.initCustomDropdown({
+      wrapperId: "adversarialAlgorithmSelect",
+      triggerId: "adversarialAlgorithmButton",
+      menuId: "adversarialAlgorithmMenu",
+      hiddenId: "adversarialAlgorithm"
     });
+    this.adversarialOrderDropdown = this.initCustomDropdown({
+      wrapperId: "adversarialOrderSelect",
+      triggerId: "adversarialOrderButton",
+      menuId: "adversarialOrderMenu",
+      hiddenId: "adversarialOrder"
+    });
+    for (const [id, delta] of [["adversarialDepthDecrease", -1], ["adversarialDepthIncrease", 1]]) {
+      el(id).addEventListener("click", () => this.stepAdversarialDepth(delta));
+    }
+    el("adversarialDepth").addEventListener("input", event => {
+      const cleaned = event.target.value.replace(/[^0-9]/g, "").slice(0, 1);
+      if (cleaned !== event.target.value) event.target.value = cleaned;
+    });
+    el("adversarialDepth").addEventListener("blur", () => {
+      const input = el("adversarialDepth");
+      const value = Number.parseInt(input.value, 10);
+      const clamped = Math.min(5, Math.max(0, Number.isSafeInteger(value) ? value : 0));
+      if (String(clamped) !== input.value) {
+        input.value = String(clamped);
+        this.clearAdversarialResult();
+      }
+    });
+    el("pickSearchTarget").addEventListener("click", () => this.setTargetPicking(!this.pickingTarget));
     for (const input of [el("searchTargetRow"), el("searchTargetCol")]) {
       input.addEventListener("input", () => {
         this.setTargetPicking(false, {announce: false});
@@ -381,8 +617,26 @@ class TacticalGridUI {
       });
     }
     for (const input of [el("searchHeuristic"), el("searchBeamWidth")]) {
-      input.addEventListener("input", () => this.clearSearchResult());
+      input.addEventListener("input", () => {
+        this.clearSearchResult();
+        this.updateSearchAlgorithmInfo();
+      });
     }
+    for (const [id, delta] of [["beamWidthDecrease", -1], ["beamWidthIncrease", 1]]) {
+      el(id).addEventListener("click", () => this.stepBeamWidth(delta));
+    }
+    el("searchBeamWidth").addEventListener("input", event => {
+      const cleaned = event.target.value.replace(/[^0-9]/g, "");
+      if (cleaned !== event.target.value) event.target.value = cleaned;
+    });
+    el("searchBeamWidth").addEventListener("blur", () => {
+      const value = Number.parseInt(el("searchBeamWidth").value, 10);
+      if (!Number.isSafeInteger(value) || value < 1) {
+        el("searchBeamWidth").value = "1";
+        this.clearSearchResult();
+        this.updateSearchAlgorithmInfo();
+      }
+    });
     document.addEventListener("keydown", event => {
       if (event.key !== "Escape" || !this.pickingTarget) return;
       event.preventDefault();
@@ -394,33 +648,484 @@ class TacticalGridUI {
     this.updateAdversarialControls();
   }
 
+  initCustomDropdown({wrapperId, triggerId, menuId, hiddenId}) {
+    const wrapper = this.el(wrapperId);
+    const trigger = this.el(triggerId);
+    const menu = this.el(menuId);
+    const hidden = this.el(hiddenId);
+    const options = () => [...menu.querySelectorAll("[data-value]")];
+    const sync = () => {
+      const value = hidden.value;
+      for (const option of options()) {
+        const selected = option.dataset.value === value;
+        option.classList.toggle("is-selected", selected);
+        option.setAttribute("aria-selected", String(selected));
+        option.tabIndex = selected ? 0 : -1;
+      }
+      const selected = options().find(option => option.dataset.value === value);
+      if (!selected) return;
+      const label = trigger.querySelector("[data-dropdown-label]");
+      const hint = trigger.querySelector("[data-dropdown-hint]");
+      if (label) label.textContent = selected.dataset.label || "";
+      if (hint) hint.textContent = selected.dataset.hint || "";
+    };
+    const close = ({focusTrigger = false} = {}) => {
+      if (!menu.hidden) {
+        menu.hidden = true;
+        trigger.setAttribute("aria-expanded", "false");
+        wrapper.classList.remove("is-open");
+      }
+      if (focusTrigger && !trigger.disabled) trigger.focus();
+    };
+    const open = () => {
+      if (trigger.disabled || !menu.hidden) return;
+      menu.hidden = false;
+      trigger.setAttribute("aria-expanded", "true");
+      wrapper.classList.add("is-open");
+      const selected = options().find(option => option.dataset.value === hidden.value);
+      (selected || options()[0])?.focus();
+    };
+    const setDisabled = disabled => {
+      trigger.disabled = disabled;
+      for (const option of options()) option.disabled = disabled;
+      if (disabled) close();
+    };
+    trigger.addEventListener("click", () => {
+      if (menu.hidden) open();
+      else close({focusTrigger: true});
+    });
+    trigger.addEventListener("keydown", event => {
+      if (["ArrowDown", "ArrowUp", "Enter", " "].includes(event.key)) {
+        event.preventDefault();
+        open();
+      } else if (event.key === "Escape") {
+        event.preventDefault();
+        close();
+      }
+    });
+    menu.addEventListener("click", event => {
+      const option = event.target.closest("[data-value]");
+      if (!option || option.disabled) return;
+      hidden.value = option.dataset.value;
+      sync();
+      close({focusTrigger: true});
+      hidden.dispatchEvent(new Event("change", {bubbles: true}));
+    });
+    menu.addEventListener("keydown", event => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        event.stopPropagation();
+        close({focusTrigger: true});
+        return;
+      }
+      if (event.key === "Tab") {
+        close({focusTrigger: true});
+        return;
+      }
+      const list = options();
+      const current = list.indexOf(document.activeElement);
+      let next = null;
+      if (event.key === "ArrowDown") next = Math.min(list.length - 1, current + 1);
+      else if (event.key === "ArrowUp") next = Math.max(0, current - 1);
+      else if (event.key === "Home") next = 0;
+      else if (event.key === "End") next = list.length - 1;
+      if (next === null) return;
+      event.preventDefault();
+      list[next]?.focus();
+    });
+    wrapper.addEventListener("focusout", event => {
+      if (!event.relatedTarget || !wrapper.contains(event.relatedTarget)) close();
+    });
+    document.addEventListener("click", event => {
+      if (!event.target.closest(`#${wrapperId}`)) close();
+    });
+    sync();
+    return {sync, setDisabled, close};
+  }
+
+  searchAlgorithmOptions() {
+    return [...this.el("searchAlgorithmMenu").querySelectorAll("[data-search-algorithm]")];
+  }
+
+  toggleSearchAlgorithmMenu(force) {
+    if (this.el("searchAlgorithmButton").disabled) return;
+    const shouldOpen = typeof force === "boolean"
+      ? force
+      : this.el("searchAlgorithmMenu").hidden;
+    if (shouldOpen) this.openSearchAlgorithmMenu();
+    else this.closeSearchAlgorithmMenu({focusTrigger: true});
+  }
+
+  openSearchAlgorithmMenu() {
+    const menu = this.el("searchAlgorithmMenu");
+    if (!menu.hidden) return;
+    menu.hidden = false;
+    this.el("searchAlgorithmButton").setAttribute("aria-expanded", "true");
+    this.el("searchAlgorithmSelect").classList.add("is-open");
+    const selected = menu.querySelector(`[data-search-algorithm="${this.searchAlgorithm}"]`);
+    (selected || menu.querySelector("[data-search-algorithm]"))?.focus();
+  }
+
+  closeSearchAlgorithmMenu({focusTrigger = false} = {}) {
+    const menu = this.el("searchAlgorithmMenu");
+    if (menu && !menu.hidden) {
+      menu.hidden = true;
+      this.el("searchAlgorithmButton").setAttribute("aria-expanded", "false");
+      this.el("searchAlgorithmSelect").classList.remove("is-open");
+    }
+    if (focusTrigger && menu && !this.el("searchAlgorithmButton").disabled) {
+      this.el("searchAlgorithmButton").focus();
+    }
+  }
+
+  handleSearchAlgorithmTriggerKeydown(event) {
+    if (["ArrowDown", "ArrowUp", "Enter", " "].includes(event.key)) {
+      event.preventDefault();
+      this.openSearchAlgorithmMenu();
+    } else if (event.key === "Escape") {
+      event.preventDefault();
+      this.closeSearchAlgorithmMenu();
+    }
+  }
+
+  handleSearchAlgorithmMenuKeydown(event) {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      event.stopPropagation();
+      this.closeSearchAlgorithmMenu({focusTrigger: true});
+      return;
+    }
+    if (event.key === "Tab") {
+      this.closeSearchAlgorithmMenu({focusTrigger: true});
+      return;
+    }
+    const options = this.searchAlgorithmOptions();
+    const current = options.indexOf(document.activeElement);
+    let next = null;
+    if (event.key === "ArrowDown") next = Math.min(options.length - 1, current + 1);
+    else if (event.key === "ArrowUp") next = Math.max(0, current - 1);
+    else if (event.key === "Home") next = 0;
+    else if (event.key === "End") next = options.length - 1;
+    if (next === null) return;
+    event.preventDefault();
+    options[next]?.focus();
+  }
+
+  toggleSearchAlgorithmInfo(force) {
+    const body = this.el("searchAlgorithmInfoBody");
+    const open = typeof force === "boolean" ? force : body.hidden;
+    body.hidden = !open;
+    this.el("searchAlgorithmInfoToggle").setAttribute("aria-expanded", String(open));
+    this.el("searchAlgorithmInfo").classList.toggle("is-open", open);
+  }
+
+  searchUnitOptions() {
+    return [...this.el("searchUnitMenu").querySelectorAll("[data-unit-id]")];
+  }
+
+  toggleSearchUnitMenu(force) {
+    if (this.el("searchUnitButton").disabled) return;
+    const shouldOpen = typeof force === "boolean"
+      ? force
+      : this.el("searchUnitMenu").hidden;
+    if (shouldOpen) this.openSearchUnitMenu();
+    else this.closeSearchUnitMenu({focusTrigger: true});
+  }
+
+  openSearchUnitMenu() {
+    const menu = this.el("searchUnitMenu");
+    if (!menu.hidden) return;
+    menu.hidden = false;
+    this.el("searchUnitButton").setAttribute("aria-expanded", "true");
+    this.el("searchUnitSelect").classList.add("is-open");
+    const options = this.searchUnitOptions();
+    const selected = options.find(option => option.dataset.unitId === this.el("searchUnit").value);
+    (selected || options[0])?.focus();
+  }
+
+  closeSearchUnitMenu({focusTrigger = false} = {}) {
+    const menu = this.el("searchUnitMenu");
+    if (menu && !menu.hidden) {
+      menu.hidden = true;
+      this.el("searchUnitButton").setAttribute("aria-expanded", "false");
+      this.el("searchUnitSelect").classList.remove("is-open");
+    }
+    this.clearSearchUnitPreview();
+    if (focusTrigger && menu && !this.el("searchUnitButton").disabled) {
+      this.el("searchUnitButton").focus();
+    }
+  }
+
+  handleSearchUnitTriggerKeydown(event) {
+    if (["ArrowDown", "ArrowUp", "Enter", " "].includes(event.key)) {
+      event.preventDefault();
+      this.openSearchUnitMenu();
+    } else if (event.key === "Escape") {
+      event.preventDefault();
+      this.closeSearchUnitMenu();
+    }
+  }
+
+  handleSearchUnitMenuKeydown(event) {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      event.stopPropagation();
+      this.closeSearchUnitMenu({focusTrigger: true});
+      return;
+    }
+    if (event.key === "Tab") {
+      this.closeSearchUnitMenu({focusTrigger: true});
+      return;
+    }
+    const options = this.searchUnitOptions();
+    const current = options.indexOf(document.activeElement);
+    let next = null;
+    if (event.key === "ArrowDown") next = Math.min(options.length - 1, current + 1);
+    else if (event.key === "ArrowUp") next = Math.max(0, current - 1);
+    else if (event.key === "Home") next = 0;
+    else if (event.key === "End") next = options.length - 1;
+    if (next === null) return;
+    event.preventDefault();
+    options[next]?.focus();
+  }
+
+  previewSearchUnit(unitId) {
+    if (unitId) this.scene.showUnitPreview(unitId);
+  }
+
+  previewSelectedSearchUnit() {
+    this.previewSearchUnit(this.el("searchUnit").value);
+  }
+
+  clearSearchUnitPreview() {
+    this.scene.clearUnitPreview();
+  }
+
+  renderSearchUnitPreview(unit) {
+    const value = this.el("searchUnitValue");
+    const meta = this.el("searchUnitMeta");
+    const icon = this.el("searchUnitIcon");
+    if (!unit) {
+      value.textContent = "Sin unidades activas";
+      meta.textContent = "No hay fichas disponibles";
+      icon.hidden = true;
+      icon.removeAttribute("src");
+      return;
+    }
+    value.textContent = unit.id;
+    meta.textContent = `${this.unitLabel(unit)} · (${unit.fila}, ${unit.columna})`;
+    icon.src = this.pieceAsset(unit);
+    icon.hidden = false;
+  }
+
+  setSearchUnit(unitId, {clearResult = true, closeMenu = false, focusTrigger = false} = {}) {
+    const unit = this.scene.state?.unidades?.find(candidate =>
+      candidate.id === unitId && candidate.activo !== false
+    ) || null;
+    this.el("searchUnit").value = unit ? unit.id : "";
+    for (const option of this.searchUnitOptions()) {
+      const selected = Boolean(unit) && option.dataset.unitId === unit.id;
+      option.classList.toggle("is-selected", selected);
+      option.setAttribute("aria-selected", String(selected));
+      option.tabIndex = selected ? 0 : -1;
+    }
+    this.renderSearchUnitPreview(unit);
+    if (clearResult) this.clearSearchResult();
+    this.updateSearchAlgorithmInfo();
+    if (closeMenu) this.closeSearchUnitMenu({focusTrigger});
+  }
+
+  searchUnitType() {
+    const unitId = this.el("searchUnit").value;
+    const unit = this.scene.state?.unidades?.find(candidate => candidate.id === unitId);
+    return canonicalPieceType(unit?.tipo) || "estandar";
+  }
+
+  updateSearchAlgorithmInfo() {
+    const config = SEARCH_ALGORITHMS[this.searchAlgorithm] || SEARCH_ALGORITHMS.bfs;
+    const unitType = this.searchUnitType();
+    this.el("searchAlgorithmInfoName").textContent = config.label;
+    this.el("searchAlgorithmInfoKind").textContent = config.kind;
+    this.el("searchAlgorithmInfoSummary").textContent = config.summary;
+    const facts = this.el("searchAlgorithmFacts");
+    facts.replaceChildren();
+    for (const [term, value] of config.facts) {
+      const row = document.createElement("div");
+      const name = document.createElement("dt");
+      const detail = document.createElement("dd");
+      name.textContent = term;
+      detail.textContent = typeof value === "function" ? value({unitType}) : value;
+      row.append(name, detail);
+      facts.append(row);
+    }
+    renderMath(this.el("searchAlgorithmEquationText"), config.equation);
+    this.el("searchAlgorithmEquationNote").textContent = config.equationNote;
+    this.el("searchAlgorithmInfoNote").textContent = config.note;
+    this.renderSearchHeuristicDetail(unitType);
+  }
+
+  renderHeuristicDefinitions(items) {
+    const container = this.el("searchHeuristicDefinitions");
+    container.replaceChildren();
+    if (items.length) {
+      const caption = document.createElement("span");
+      caption.className = "heuristic-section-label";
+      caption.textContent = "Definiciones";
+      container.append(caption);
+    }
+    for (const [label, tex] of items) {
+      const row = document.createElement("div");
+      row.className = "heuristic-definition";
+      const name = document.createElement("span");
+      name.textContent = label;
+      const math = document.createElement("div");
+      math.className = "math-equation";
+      renderMath(math, tex);
+      row.append(name, math);
+      container.append(row);
+    }
+    container.hidden = items.length === 0;
+  }
+
+  renderHeuristicBranches(unitType) {
+    const container = this.el("searchHeuristicBranches");
+    container.replaceChildren();
+    const caption = document.createElement("span");
+    caption.className = "heuristic-section-label";
+    caption.textContent = "Ramas según la ficha";
+    container.append(caption);
+    const activeKind = HEURISTIC_SECOND_BRANCHES[unitType] ? unitType : "estandar";
+    for (const [kind, branch] of Object.entries(HEURISTIC_SECOND_BRANCHES)) {
+      const row = document.createElement("div");
+      row.className = "heuristic-branch";
+      if (kind === activeKind) row.classList.add("is-active");
+      const label = document.createElement("span");
+      label.className = "heuristic-branch-label";
+      label.textContent = branch.label;
+      const math = document.createElement("div");
+      math.className = "math-equation";
+      renderMath(math, branch.tex);
+      row.append(label, math);
+      container.append(row);
+    }
+    container.hidden = false;
+  }
+
+  setRichText(element, parts) {
+    element.replaceChildren();
+    for (const part of parts) {
+      if (typeof part === "string") {
+        element.append(document.createTextNode(part));
+        continue;
+      }
+      const math = document.createElement("span");
+      math.className = "math-inline";
+      renderMath(math, part.math);
+      element.append(math);
+    }
+  }
+
+  setHeuristicNote(parts) {
+    this.setRichText(this.el("searchHeuristicNote"), parts);
+  }
+
+  setHeuristicAdmissibility(parts, visible = true) {
+    const box = this.el("searchHeuristicAdmissibility");
+    box.hidden = !visible;
+    if (visible) this.setRichText(this.el("searchHeuristicAdmissibilityText"), parts);
+  }
+
+  renderSearchHeuristicDetail(unitType) {
+    const algorithm = this.searchAlgorithm;
+    const detail = this.el("searchHeuristicDetail");
+    if (!["astar", "beam"].includes(algorithm)) {
+      detail.hidden = true;
+      this.el("searchHeuristicAdmissibility").hidden = true;
+      return;
+    }
+    const heuristic = algorithm === "beam" ? "second" : this.el("searchHeuristic").value;
+    detail.hidden = false;
+    this.el("searchHeuristicName").textContent = HEURISTIC_LABELS[heuristic] || "Heurística";
+    this.el("searchHeuristicTag").textContent = algorithm === "beam" ? "Fija en Beam" : "Seleccionada";
+    const branches = this.el("searchHeuristicBranches");
+    if (heuristic === "manhattan") {
+      renderMath(
+        this.el("searchHeuristicEquation"),
+        "h(n) = \\lvert\\Delta_f\\rvert + \\lvert\\Delta_c\\rvert"
+      );
+      branches.replaceChildren();
+      branches.hidden = true;
+      this.renderHeuristicDefinitions([
+        ["Desplazamiento", "\\Delta_f = f_n - f_g, \\quad \\Delta_c = c_n - c_g"]
+      ]);
+      this.setHeuristicNote([
+        "A* conserva la garantía de optimalidad solo cuando h no sobreestima el costo restante."
+      ]);
+      this.setHeuristicAdmissibility([
+        "Es admisible para la ficha estándar cuando cada paso cuesta al menos ",
+        {math: "1"},
+        ": cada movimiento ortogonal añade como mínimo ese costo. No es admisible en general para alfil o caballo, porque una sola jugada puede recorrer mucha distancia y Manhattan sobreestima el costo restante."
+      ]);
+    } else {
+      const activeKind = HEURISTIC_SECOND_BRANCHES[unitType] ? unitType : "estandar";
+      renderMath(this.el("searchHeuristicEquation"), HEURISTIC_SECOND_BRANCHES[activeKind].tex);
+      this.renderHeuristicBranches(unitType);
+      this.renderHeuristicDefinitions(HEURISTIC_SECOND_DEFINITIONS);
+      this.setHeuristicNote([
+        {math: "c_{\\min}"},
+        " es el costo mínimo transitable del mapa. ",
+        {math: "r_i"},
+        " y ",
+        {math: "c_j"},
+        " son los mínimos de cada fila y columna; para la ficha estándar se suman los tramos de filas y columnas hacia la meta." +
+          (algorithm === "beam" ? " Beam la usa de forma fija." : "")
+      ]);
+      this.setHeuristicAdmissibility([
+        "Cada movimiento entra al menos una celda de costo ",
+        {math: "c_{\\min}"},
+        " (o una suma de celdas en torre y alfil), y el factor geométrico es una cota inferior del número de movimientos o celdas necesarios. En la ficha estándar, cada fila y columna del tramo debe cruzarse al menos una vez, así que la suma de sus mínimos tampoco supera el costo real: ",
+        {math: "h(n) \\le \\text{costo restante real}"},
+        "."
+      ]);
+    }
+  }
+
   setSearchAlgorithm(algorithm) {
-    if (!["bfs", "dfs", "ucs", "astar", "beam"].includes(algorithm)) return;
+    if (!SEARCH_ALGORITHMS[algorithm]) return;
+    const menuWasOpen = !this.el("searchAlgorithmMenu").hidden;
     this.searchAlgorithm = algorithm;
-    for (const card of document.querySelectorAll("[data-search-algorithm]")) {
-      const selected = card.dataset.searchAlgorithm === algorithm;
-      card.classList.toggle("is-selected", selected);
-      card.setAttribute("aria-pressed", String(selected));
+    const config = SEARCH_ALGORITHMS[algorithm];
+    this.el("searchAlgorithmValue").textContent = config.label;
+    this.el("searchAlgorithmHint").textContent = config.hint;
+    for (const option of this.searchAlgorithmOptions()) {
+      const selected = option.dataset.searchAlgorithm === algorithm;
+      option.classList.toggle("is-selected", selected);
+      option.setAttribute("aria-selected", String(selected));
+      option.tabIndex = selected ? 0 : -1;
     }
     this.el("astarSearchOptions").hidden = algorithm !== "astar";
     this.el("beamSearchOptions").hidden = algorithm !== "beam";
     const result = this.el("searchResult");
     if (result && !result.hidden) this.clearSearchResult();
+    this.updateSearchAlgorithmInfo();
+    if (menuWasOpen) this.closeSearchAlgorithmMenu({focusTrigger: true});
   }
 
   setTargetPicking(active, {announce = true} = {}) {
     const wasPicking = this.pickingTarget;
-    const enabled = Boolean(active) && !this.searchPending && !this.mutationPending && !this.desynchronized;
+    const enabled = Boolean(active) && this.mode === "busqueda" &&
+      !this.searchPending && !this.mutationPending && !this.desynchronized;
     this.pickingTarget = enabled;
     const button = this.el("pickSearchTarget");
     button.classList.toggle("is-active", enabled);
     button.setAttribute("aria-pressed", String(enabled));
     this.el("pickSearchTargetLabel").textContent = enabled ? "Cancelar" : "Elegir";
+    this.scene.clearTargetPreview();
     if (this.scene.game?.canvas) this.scene.game.canvas.style.cursor = enabled ? "crosshair" : "";
     if (!announce) return;
     if (enabled) {
-      this.setActionHint("Selecciona una celda objetivo en el tablero.", {kind: "info"});
-      this.say("Haz clic en una celda del tablero para fijar el objetivo de la búsqueda.");
+      this.setActionHint("Mueve el puntero para resaltar una celda y haz clic para fijar el objetivo.", {kind: "info"});
+      this.say("Mueve el puntero sobre el tablero para previsualizar el objetivo; haz clic para fijarlo.");
     } else {
       this.setActionHint(this.defaultActionHint(
         this.scene.state,
@@ -443,37 +1148,73 @@ class TacticalGridUI {
     this.say(`Objetivo de búsqueda: fila ${row}, columna ${column}.`);
   }
 
-  updateSearchUnits(state) {
-    const select = this.el("searchUnit");
-    const previous = select.value;
+  updateSearchUnits(state, preferScenarioConfig = false) {
+    const previous = this.el("searchUnit").value;
     const units = (state.unidades || []).filter(unit => unit.activo !== false);
-    select.replaceChildren();
+    const menu = this.el("searchUnitMenu");
+    menu.replaceChildren();
     if (units.length === 0) {
-      const option = new Option("Sin unidades activas", "");
-      option.disabled = true;
-      option.selected = true;
-      select.append(option);
+      this.setSearchUnit("", {clearResult: false});
       return;
     }
     for (const unit of units) {
-      select.append(new Option(`${unit.id} · ${this.unitLabel(unit)}`, unit.id));
+      const option = document.createElement("button");
+      option.type = "button";
+      option.className = "unit-select-option";
+      option.dataset.unitId = unit.id;
+      option.setAttribute("role", "option");
+      option.setAttribute("aria-selected", "false");
+      option.tabIndex = -1;
+
+      const iconWrap = document.createElement("span");
+      iconWrap.className = "unit-select-icon";
+      const image = document.createElement("img");
+      image.src = this.pieceAsset(unit);
+      image.alt = "";
+      iconWrap.append(image);
+
+      const copy = document.createElement("span");
+      copy.className = "unit-select-option-copy";
+      const value = document.createElement("strong");
+      value.textContent = unit.id;
+      const meta = document.createElement("small");
+      meta.textContent = `${this.unitLabel(unit)} · (${unit.fila}, ${unit.columna})`;
+      copy.append(value, meta);
+
+      const check = document.createElement("span");
+      check.className = "unit-select-check";
+      check.setAttribute("aria-hidden", "true");
+      check.textContent = "✓";
+
+      option.append(iconWrap, copy, check);
+      menu.append(option);
     }
-    const preferred = [previous, state.prueba?.unidad_inicio]
+    const preferred = (preferScenarioConfig
+      ? [state.prueba?.unidad_inicio, previous]
+      : [previous, state.prueba?.unidad_inicio])
       .find(id => units.some(unit => unit.id === id));
-    select.value = preferred || units[0].id;
+    this.setSearchUnit(preferred || units[0].id, {clearResult: false});
   }
 
-  updateSearchTargetBounds(state) {
+  updateSearchTargetBounds(state, preferScenarioConfig = false) {
     const rows = state?.mapa?.filas ?? this.scene.rows;
     const columns = state?.mapa?.columnas ?? this.scene.cols;
     const rowInput = this.el("searchTargetRow");
     const columnInput = this.el("searchTargetCol");
     rowInput.max = String(Math.max(0, rows - 1));
     columnInput.max = String(Math.max(0, columns - 1));
+    const testGoal = state?.prueba?.objetivo;
+    const testGoalIsValid = testGoal && Number.isInteger(testGoal.fila) &&
+      Number.isInteger(testGoal.columna) && testGoal.fila >= 0 &&
+      testGoal.fila < rows && testGoal.columna >= 0 && testGoal.columna < columns;
+    if (preferScenarioConfig && testGoalIsValid) {
+      rowInput.value = String(testGoal.fila);
+      columnInput.value = String(testGoal.columna);
+      return;
+    }
     const row = this.parseCoordinate(rowInput.value);
     const column = this.parseCoordinate(columnInput.value);
     if (row !== null && column !== null && row < rows && column < columns) return;
-    const testGoal = state?.prueba?.objetivo;
     const queen = state?.juego?.portador_recurso == null ? state?.recurso : null;
     const suggestion = [testGoal, queen, state?.bases?.B, state?.bases?.A].find(candidate =>
       candidate && Number.isInteger(candidate.fila) && Number.isInteger(candidate.columna) &&
@@ -509,20 +1250,29 @@ class TacticalGridUI {
 
   updateSearchControls() {
     const state = this.scene.state;
-    const select = this.el("searchUnit");
-    const hasUnit = Boolean(select?.value &&
-      [...select.options].some(option => option.value === select.value));
-    const locked = this.mutationPending || this.desynchronized || !state || !hasUnit;
+    const unitId = this.el("searchUnit").value;
+    const unitOptions = this.searchUnitOptions();
+    const hasUnit = Boolean(unitId &&
+      unitOptions.some(option => option.dataset.unitId === unitId));
+    const locked = this.mode !== "busqueda" || this.mutationPending || this.desynchronized || !state || !hasUnit;
     const busy = this.searchPending;
     for (const id of [
-      "searchUnit", "searchTargetRow", "searchTargetCol", "searchHeuristic",
-      "searchBeamWidth", "pickSearchTarget", "runSearch"
+      "searchAlgorithmButton", "searchUnitButton", "searchTargetRow", "searchTargetCol",
+      "searchHeuristic", "searchBeamWidth", "beamWidthDecrease", "beamWidthIncrease",
+      "pickSearchTarget", "runSearch"
     ]) {
       const control = this.el(id);
       if (control) control.disabled = locked || busy;
     }
-    for (const card of document.querySelectorAll("[data-search-algorithm]")) {
-      card.disabled = locked || busy;
+    for (const option of this.searchAlgorithmOptions()) {
+      option.disabled = locked || busy;
+    }
+    for (const option of unitOptions) {
+      option.disabled = locked || busy;
+    }
+    if (locked || busy) {
+      this.closeSearchAlgorithmMenu();
+      this.closeSearchUnitMenu();
     }
     const runLabel = this.el("runSearchLabel");
     if (runLabel) runLabel.textContent = busy ? "Calculando ruta…" : "Ejecutar búsqueda";
@@ -562,6 +1312,24 @@ class TacticalGridUI {
       ));
       this.say("Ruta sugerida eliminada.");
     }
+  }
+
+  stepAdversarialDepth(delta) {
+    const input = this.el("adversarialDepth");
+    if (input.disabled) return;
+    const current = Number.parseInt(input.value, 10);
+    const base = Number.isSafeInteger(current) ? current : 0;
+    input.value = String(Math.min(5, Math.max(0, base + delta)));
+    input.dispatchEvent(new Event("input", {bubbles: true}));
+  }
+
+  stepBeamWidth(delta) {
+    const input = this.el("searchBeamWidth");
+    if (input.disabled) return;
+    const current = Number.parseInt(input.value, 10);
+    const base = Number.isSafeInteger(current) ? current : 1;
+    input.value = String(Math.max(1, base + delta));
+    input.dispatchEvent(new Event("input", {bubbles: true}));
   }
 
   formatSearchNumber(value) {
@@ -682,7 +1450,7 @@ class TacticalGridUI {
   }
 
   async search() {
-    if (this.autoPlayActive) this.stopAutoPlay({message: "Autojuego pausado para ejecutar otra búsqueda."});
+    if (this.autoPlayActive) this.stopAutoPlay({message: "Autopartida pausada para ejecutar otra búsqueda."});
     if (this.mutationPending || this.searchPending || this.desynchronized) return null;
     const unitId = this.el("searchUnit").value;
     if (!unitId) {
@@ -743,29 +1511,39 @@ class TacticalGridUI {
 
   updateAdversarialControls() {
     const state = this.scene.state;
+    const analysisMode = this.mode === "adversarial";
+    const autoPlayMode = this.mode === "partida";
     const locked = this.mutationPending || this.desynchronized || !state || this.adversarialPending || this.autoPlayActive;
-    for (const id of ["adversarialAlgorithm", "adversarialDepth", "adversarialOrder", "runAdversarial"]) {
+    for (const id of ["adversarialDepth", "adversarialDepthDecrease", "adversarialDepthIncrease", "runAdversarial"]) {
       const control = this.el(id);
       if (control) control.disabled = locked;
     }
-    this.el("adversarialOrder").disabled = locked || this.el("adversarialAlgorithm").value !== "alpha_beta";
-    this.el("runAdversarialLabel").textContent = this.adversarialPending ? "Analizando…" : "Analizar posición";
+    const orderLocked = locked || this.el("adversarialAlgorithm").value !== "alpha_beta";
+    this.el("adversarialAlgorithm").disabled = locked;
+    this.el("adversarialOrder").disabled = orderLocked;
+    this.adversarialAlgorithmDropdown?.setDisabled(locked);
+    this.adversarialOrderDropdown?.setDisabled(orderLocked);
+    this.el("runAdversarial").hidden = !analysisMode;
+    this.el("runAdversarial").disabled = locked || !analysisMode;
+    this.el("runAdversarialLabel").textContent = this.adversarialPending ? "Analizando…" : "Calcular mejor movimiento";
     const hasOptions = this.adversarialOptions.length > 0;
-    this.el("adversarialPrevious").disabled = locked || !hasOptions || this.adversarialIndex <= 0;
-    this.el("adversarialNext").disabled = locked || !hasOptions || this.adversarialIndex >= this.adversarialOptions.length - 1;
-    this.el("applyAdversarial").disabled = locked || !this.adversarialRecommendation;
+    this.el("adversarialPrevious").disabled = locked || !analysisMode || !hasOptions || this.adversarialIndex <= 0;
+    this.el("adversarialNext").disabled = locked || !analysisMode || !hasOptions || this.adversarialIndex >= this.adversarialOptions.length - 1;
+    this.el("applyAdversarial").disabled = locked || !analysisMode || !this.adversarialRecommendation;
     this.el("clearAdversarial").disabled = locked || this.el("adversarialResult").hidden;
     const autoPlay = this.el("autoPlayToggle");
+    autoPlay.hidden = !autoPlayMode;
     this.el("autoPlayLabel").textContent = this.autoPlayActive
-      ? "Pausar autojuego"
-      : "Autojugar ambos bandos";
+      ? "Pausar autopartida"
+      : "Autojugar hasta finalizar";
     autoPlay.setAttribute("aria-pressed", String(this.autoPlayActive));
-    autoPlay.disabled = this.desynchronized || !state ||
+    autoPlay.disabled = !autoPlayMode || this.desynchronized || !state ||
       (this.mutationPending && !this.autoPlayActive) ||
       (this.adversarialPending && !this.autoPlayActive) ||
-      (!this.autoPlayActive && state.juego?.estado !== "en_curso");
-    this.el("autoPlayStatus").hidden = !this.el("autoPlayStatus").textContent;
-    this.el("adversarialResult").setAttribute("aria-busy", String(this.adversarialPending));
+      (!this.autoPlayActive && !["configuracion", "en_curso"].includes(state.juego?.estado));
+    this.el("autoPlayStatus").hidden = !autoPlayMode || !this.el("autoPlayStatus").textContent;
+    if (!analysisMode) this.el("adversarialResult").hidden = true;
+    this.el("adversarialResult").setAttribute("aria-busy", String(analysisMode && this.adversarialPending));
   }
 
   setAutoPlayStatus(message) {
@@ -863,7 +1641,7 @@ class TacticalGridUI {
     panel.hidden = false;
     panel.dataset.state = result.action ? "found" : "empty";
     this.el("adversarialStatus").textContent = result.action
-      ? `Recomendación de ${result.algorithm === "minimax" ? "Minimax" : "alfa-beta"}. Las opciones de abajo son acciones legales del turno, no ramas internas de búsqueda.`
+      ? `Mejor movimiento de este turno según ${result.algorithm === "minimax" ? "Minimax" : "alfa-beta"}. Las opciones de abajo son acciones legales del turno, no ramas internas de búsqueda.`
       : "No hay recomendación: la posición es terminal o la profundidad solicitada es 0.";
     this.el("adversarialActionSummary").textContent = result.action
       ? this.formatAdversarialAction(result.action)
@@ -940,7 +1718,8 @@ class TacticalGridUI {
   }
 
   async applyAdversarialRecommendation() {
-    if (!this.adversarialRecommendation || this.mutationPending || this.autoPlayActive) return null;
+    if (this.mode !== "adversarial" || !this.adversarialRecommendation ||
+        this.mutationPending || this.autoPlayActive) return null;
     return this.executeAdversarialAction(this.adversarialRecommendation);
   }
 
@@ -959,7 +1738,7 @@ class TacticalGridUI {
 
   toggleAutoPlay() {
     if (this.autoPlayActive) {
-      this.stopAutoPlay({message: "Autojuego pausado por el usuario.", announce: true});
+      this.stopAutoPlay({message: "Autopartida pausada por el usuario.", announce: true});
       return;
     }
     this.startAutoPlay();
@@ -967,9 +1746,13 @@ class TacticalGridUI {
 
   startAutoPlay() {
     const state = this.scene.state;
+    if (this.mode !== "partida") {
+      this.setAutoPlayStatus("La autopartida solo está disponible en modo partida.");
+      return;
+    }
     if (this.mutationPending || this.adversarialPending || this.desynchronized ||
-        !state || state.juego?.estado !== "en_curso") {
-      this.setAutoPlayStatus("El autojuego requiere una partida en curso.");
+        !state || !["configuracion", "en_curso"].includes(state.juego?.estado)) {
+      this.setAutoPlayStatus("La autopartida requiere una partida configurada o en curso.");
       return;
     }
     this.autoPlayActive = true;
@@ -977,12 +1760,12 @@ class TacticalGridUI {
     this.setAutoPlayStatus("Autopartida activa: ambos bandos analizarán y ejecutarán una jugada por turno.");
     this.updateAdversarialControls();
     this.say("Autopartida iniciada. Ambos bandos jugarán con el algoritmo y la profundidad seleccionados.", {
-      title: "Autojuego iniciado", tone: "success"
+      title: "Autopartida iniciada", tone: "success"
     });
     this.runAutoPlay(runId);
   }
 
-  stopAutoPlay({message = "Autojuego detenido.", announce = false} = {}) {
+  stopAutoPlay({message = "Autopartida detenida.", announce = false} = {}) {
     if (!this.autoPlayActive) return false;
     this.autoPlayActive = false;
     this.autoPlayRunId += 1;
@@ -994,7 +1777,7 @@ class TacticalGridUI {
     if (this.adversarialPending) this.cancelAdversarial({clearResult: true});
     this.setAutoPlayStatus(message);
     this.updateAdversarialControls();
-    if (announce) this.say(message, {title: "Autojuego pausado", tone: "info"});
+    if (announce) this.say(message, {title: "Autopartida pausada", tone: "info"});
     return true;
   }
 
@@ -1015,8 +1798,8 @@ class TacticalGridUI {
     try {
       while (isCurrent()) {
         const state = this.scene.state;
-        if (!state || state.juego?.estado !== "en_curso") {
-          this.stopAutoPlay({message: "La partida terminó. Autojuego detenido."});
+        if (!state || !["configuracion", "en_curso"].includes(state.juego?.estado)) {
+          this.stopAutoPlay({message: "La partida terminó. Autopartida detenida."});
           return;
         }
         const side = state.turno;
@@ -1024,18 +1807,18 @@ class TacticalGridUI {
         const result = await this.adversarial();
         if (!isCurrent()) return;
         if (!result) {
-          this.stopAutoPlay({message: "Autojuego detenido: no se pudo obtener una recomendación."});
+          this.stopAutoPlay({message: "Autopartida detenida: no se pudo obtener una recomendación."});
           return;
         }
         if (!result.action) {
-          this.stopAutoPlay({message: "Autojuego detenido: el algoritmo no recomendó una acción legal."});
+          this.stopAutoPlay({message: "Autopartida detenida: el algoritmo no recomendó una acción legal."});
           return;
         }
         const option = this.adversarialOptions.find(candidate =>
           this.matchesAdversarialAction(candidate, result.action)
         );
         if (!option) {
-          this.stopAutoPlay({message: "Autojuego detenido: la recomendación no coincide con las acciones legales actuales."});
+          this.stopAutoPlay({message: "Autopartida detenida: la recomendación no coincide con las acciones legales actuales."});
           return;
         }
         const description = this.formatAdversarialAction(result.action);
@@ -1044,7 +1827,7 @@ class TacticalGridUI {
         const data = await this.executeAdversarialAction(option, {preserveAutoPlay: true, quiet: true});
         if (!isCurrent()) return;
         if (!data) {
-          this.stopAutoPlay({message: "Autojuego detenido: el servidor no confirmó la jugada."});
+          this.stopAutoPlay({message: "Autopartida detenida: el servidor no confirmó la jugada."});
           return;
         }
         const nextState = this.scene.state;
@@ -1056,18 +1839,19 @@ class TacticalGridUI {
         if (!await this.waitForAutoPlay(500, runId)) return;
       }
     } catch (error) {
-      if (isCurrent()) this.stopAutoPlay({message: `Autojuego detenido: ${error?.message || "error inesperado"}.`});
+      if (isCurrent()) this.stopAutoPlay({message: `Autopartida detenida: ${error?.message || "error inesperado"}.`});
     }
   }
 
   async adversarial() {
     if (this.mutationPending || this.adversarialPending || this.desynchronized || !this.scene.state) return null;
+    if (!["adversarial", "partida"].includes(this.mode)) return null;
     const depthText = this.el("adversarialDepth").value.trim();
     const depth = Number(depthText);
-    if (!depthText || !Number.isSafeInteger(depth) || depth < 0) {
+    if (!depthText || !Number.isSafeInteger(depth) || depth < 0 || depth > 5) {
       this.el("adversarialResult").hidden = false;
       this.el("adversarialResult").dataset.state = "error";
-      this.el("adversarialStatus").textContent = "La profundidad debe ser un entero mayor o igual que cero.";
+      this.el("adversarialStatus").textContent = "La profundidad debe ser un entero entre 0 y 5.";
       this.el("adversarialMetrics").hidden = true;
       this.updateAdversarialControls();
       return null;
@@ -1096,7 +1880,7 @@ class TacticalGridUI {
     this.adversarialPending = true;
     this.el("adversarialResult").hidden = false;
     this.el("adversarialResult").dataset.state = "loading";
-    this.el("adversarialStatus").textContent = "Consultando Minimax y las acciones legales del turno…";
+    this.el("adversarialStatus").textContent = "Consultando el algoritmo adversarial y las acciones legales del turno…";
     this.updateAdversarialControls();
     try {
       const [result, legal] = await Promise.all([
@@ -1142,16 +1926,153 @@ class TacticalGridUI {
 
   updateKingInputs() {
     const mode = this.el("kingMode").value;
+    const configurable = this.scene.state?.juego?.estado === "configuracion";
+    if (mode === "manual" && !this.manualKingDraftsInitialized) {
+      this.loadManualKingsFromState(this.scene.state);
+    } else if (mode !== "manual") {
+      this.manualKingDraftsInitialized = false;
+      this.manualKingDrafts = {A: [], B: []};
+      this.el("manualKingsA").value = "";
+      this.el("manualKingsB").value = "";
+    }
     this.el("automaticKings").hidden = mode !== "automatic";
     this.el("manualKings").hidden = mode !== "manual";
-    this.el("kingCountA").disabled = mode !== "automatic";
-    this.el("kingCountB").disabled = mode !== "automatic";
-    this.el("manualKingsA").disabled = mode !== "manual";
-    this.el("manualKingsB").disabled = mode !== "manual";
+    this.el("kingCountA").disabled = mode !== "automatic" || !configurable || this.mutationPending;
+    this.el("kingCountB").disabled = mode !== "automatic" || !configurable || this.mutationPending;
+    this.el("manualKingsA").disabled = mode !== "manual" || !configurable || this.mutationPending;
+    this.el("manualKingsB").disabled = mode !== "manual" || !configurable || this.mutationPending;
+    const manualEnabled = mode === "manual" && configurable && !this.mutationPending;
+    for (const id of ["manualKingSideA", "manualKingSideB"]) {
+      this.el(id).disabled = !manualEnabled;
+    }
     for (const card of document.querySelectorAll("[data-king-mode]")) {
       const selected = card.dataset.kingMode === mode;
       card.classList.toggle("is-selected", selected);
       card.setAttribute("aria-checked", String(selected));
+    }
+    this.updateManualKingSideButtons();
+    this.updateManualKingStatus();
+    this.syncManualKingPreview();
+    if (this.mode === "partida") {
+      this.el("gameHelp").textContent = manualEnabled
+        ? "Haz clic en una celda para colocar o quitar un rey del bando activo."
+        : "Selecciona una ficha del equipo en turno y luego elige uno de sus destinos resaltados.";
+    }
+  }
+
+  isManualKingPlacementActive() {
+    return this.mode === "partida" &&
+      this.el("kingMode").value === "manual" &&
+      this.scene.state?.juego?.estado === "configuracion" &&
+      !this.mutationPending && !this.desynchronized;
+  }
+
+  parseManualKingDrafts(value) {
+    const positions = [];
+    for (const entry of String(value).split(";")) {
+      const parts = entry.trim().split(",").map(Number);
+      if (parts.length !== 2 || !parts.every(Number.isInteger) || parts.some(part => part < 0)) continue;
+      const [row, column] = parts;
+      if (!positions.some(position => position.row === row && position.column === column)) {
+        positions.push({row, column});
+      }
+    }
+    return positions;
+  }
+
+  loadManualKingsFromState(state) {
+    const positions = side => (state?.reyes?.[side] || []).map(king => ({
+      row: king.fila,
+      column: king.columna
+    }));
+    this.manualKingDrafts = {A: positions("A"), B: positions("B")};
+    this.manualKingDraftsInitialized = true;
+    this.syncManualKingInputsFromDrafts();
+  }
+
+  syncManualKingInputsFromDrafts() {
+    for (const side of ["A", "B"]) {
+      this.el(`manualKings${side}`).value = this.manualKingDrafts[side]
+        .map(position => `${position.row},${position.column}`)
+        .join("; ");
+    }
+    this.updateManualKingStatus();
+  }
+
+  updateManualKingStatus() {
+    this.el("manualKingStatus").textContent =
+      `Blancas: ${this.manualKingDrafts.A.length} · Negras: ${this.manualKingDrafts.B.length}`;
+  }
+
+  updateManualKingSideButtons() {
+    for (const button of document.querySelectorAll("[data-king-side]")) {
+      const selected = button.dataset.kingSide === this.manualKingSide;
+      button.classList.toggle("is-active", selected);
+      button.setAttribute("aria-pressed", String(selected));
+    }
+  }
+
+  canPlaceKingAt(row, column, side) {
+    const state = this.scene.state;
+    if (!state) return "No hay un escenario cargado.";
+    if (!Number.isInteger(row) || !Number.isInteger(column) ||
+        row < 0 || column < 0 || row >= state.mapa.filas || column >= state.mapa.columnas) {
+      return "La celda está fuera del tablero.";
+    }
+    const terrainId = state.terreno?.[row]?.[column];
+    if (state.tipos_terreno?.[terrainId]?.transitable !== true) {
+      return "La celda no es transitable.";
+    }
+    const occupied = (state.unidades || []).find(unit =>
+      unit.activo !== false && unit.fila === row && unit.columna === column
+    );
+    if (occupied) return `La celda está ocupada por ${occupied.id}.`;
+    const base = Object.entries(state.bases || {}).find(([, position]) =>
+      position?.fila === row && position?.columna === column
+    );
+    if (base) return `La celda es la base ${base[0]}.`;
+    if (state.juego?.portador_recurso == null &&
+        state.recurso?.fila === row && state.recurso?.columna === column) {
+      return "La celda contiene la reina.";
+    }
+    const otherSide = side === "A" ? "B" : "A";
+    if (this.manualKingDrafts[otherSide].some(position =>
+      position.row === row && position.column === column
+    )) {
+      return `Ya hay un rey de ${teamLabel(otherSide)} en esa celda.`;
+    }
+    return null;
+  }
+
+  placeManualKing(row, column) {
+    if (!this.isManualKingPlacementActive()) return false;
+    const side = this.manualKingSide;
+    const drafts = this.manualKingDrafts[side];
+    const index = drafts.findIndex(position => position.row === row && position.column === column);
+    if (index >= 0) {
+      drafts.splice(index, 1);
+      this.syncManualKingInputsFromDrafts();
+      this.syncManualKingPreview();
+      this.setActionHint(`Rey de ${teamLabel(side)} eliminado de (${row}, ${column}).`, {kind: "info"});
+      return true;
+    }
+    const error = this.canPlaceKingAt(row, column, side);
+    if (error) {
+      this.setActionHint(error, {kind: "info"});
+      return true;
+    }
+    drafts.push({row, column});
+    this.syncManualKingInputsFromDrafts();
+    this.syncManualKingPreview();
+    this.setActionHint(`Rey de ${teamLabel(side)} en (${row}, ${column}).`, {kind: "info"});
+    return true;
+  }
+
+  syncManualKingPreview() {
+    if (this.isManualKingPlacementActive()) {
+      this.scene.setManualKingDrafts(this.manualKingDrafts);
+    } else {
+      this.scene.clearManualKingDrafts();
     }
   }
 
@@ -1283,23 +2204,53 @@ class TacticalGridUI {
     button.disabled = !this.desynchronized || this.mutationPending;
   }
 
-  updateGameSummary(state) {
-    const game = state.juego || {};
-    this.el("gameStatus").textContent = game.estado === "finalizado"
-      ? (game.resultado === "empate" ? "Empate" : `Victoria de ${teamPhrase(game.resultado)}`)
-      : game.estado === "configuracion" ? "Configurando partida" : "Partida en curso";
+  applyScenarioMode(state) {
+    const mode = scenarioMode(state);
+    const changed = mode !== this.mode;
+    this.mode = mode;
+    document.body.dataset.mode = mode;
+
+    const label = MODE_LABELS[mode];
+    this.el("scenarioModeLabel").textContent = `MODO · ${label.toUpperCase()}`;
+    this.el("uiPanel").setAttribute("aria-label", `Controles de ${label.toLowerCase()}`);
+    this.el("searchSection").hidden = mode !== "busqueda";
+    this.el("adversarialSection").hidden = mode === "busqueda";
+    this.el("kingSection").hidden = mode !== "partida";
+    this.el("historySection").hidden = mode !== "partida";
+
+    const analysisMode = mode === "adversarial";
+    this.el("adversarialEyebrow").textContent = analysisMode ? "DECISIÓN ADVERSARIAL" : "AUTOPARTIDA";
+    this.el("adversarialTitle").textContent = analysisMode ? "Mejor movimiento del turno" : "Jugar hasta finalizar";
+    this.el("adversarialBadge").textContent = "1 turno";
+    this.el("adversarialBadge").hidden = !analysisMode;
+    this.el("adversarialCopy").textContent = analysisMode
+      ? "Calcula la mejor acción para el bando en turno. No avanza turnos ni juega la partida completa."
+      : "Juega manualmente o deja que ambos bandos jueguen automáticamente hasta que la partida termine.";
+    this.el("runAdversarial").hidden = !analysisMode;
+    this.el("autoPlayToggle").hidden = analysisMode;
+
+    this.el("gameHelp").textContent = mode === "partida"
+      ? "Selecciona una ficha del equipo en turno y luego elige uno de sus destinos resaltados."
+      : mode === "busqueda"
+        ? "Configura la unidad y el objetivo en el panel de búsqueda. También puedes elegir el objetivo en el tablero."
+        : "Calcula el mejor movimiento del turno en el panel adversarial. El tablero muestra la acción recomendada.";
+
+    if (changed) {
+      if (this.autoPlayActive) this.stopAutoPlay({message: "Autopartida detenida al cambiar de modo."});
+      this.resetAdversarialView();
+      this.clearSearchResult();
+      this.setTargetPicking(false, {announce: false});
+      this.clearSelection();
+    }
+    this.updateSearchControls();
+    this.updateAdversarialControls();
   }
 
-  updateGlobalStatus(state) {
-    const turn = this.el("turn");
-    turn.textContent = `Turno ${teamLabel(state.turno)}`;
-    turn.dataset.team = state.turno;
-    const carrierId = state.juego?.portador_recurso;
-    const carrier = (state.unidades || []).find(unit => unit.id === carrierId);
-    this.el("globalQueen").textContent = carrier ? `Con ${this.unitLabel(carrier)}` : "Disponible";
-    for (const team of ["A", "B"]) {
-      const count = (state.unidades || []).filter(unit => unit.bando === team && unit.activo !== false).length;
-      this.el(`team${team}Count`).textContent = `${teamLabel(team)} ${count}`;
+  updateAdversarialConfig(state, preferScenarioConfig = false) {
+    if (!preferScenarioConfig) return;
+    const configured = state?.juego?.profundidad_maxima_minimax;
+    if (Number.isSafeInteger(configured) && configured >= 0 && configured <= 5) {
+      this.el("adversarialDepth").value = String(configured);
     }
   }
 
@@ -1379,6 +2330,12 @@ class TacticalGridUI {
 
   defaultActionHint(state, finished = false) {
     if (!state) return "Selecciona una ficha para comenzar.";
+    if (this.mode === "busqueda") {
+      return "Modo búsqueda · configura la unidad y el objetivo, luego ejecuta la ruta.";
+    }
+    if (this.mode === "adversarial") {
+      return "Modo adversarial · calcula el mejor movimiento para este turno.";
+    }
     if (finished) return "Partida terminada · puedes revisar el tablero o jugar de nuevo.";
     return `Turno de ${teamPhrase(state.turno)} · selecciona una ficha para ver sus movimientos.`;
   }
@@ -1497,7 +2454,13 @@ class TacticalGridUI {
     this.resultScreenRevision = null;
   }
 
-  updateState(state, source, presentation, animate = false) {
+  updateState(
+    state,
+    source,
+    presentation,
+    animate = false,
+    preferScenarioConfig = false
+  ) {
     assertStateShape(state);
     this.cancelSearch();
     this.clearSearchResult();
@@ -1511,10 +2474,9 @@ class TacticalGridUI {
       eventos_ultimo_turno: []
     };
     this.scene.applyState(state, this.lastPresentation, animate);
+    this.applyScenarioMode(state);
     this.el("boardDimensions").textContent = `${state.mapa.filas} × ${state.mapa.columnas}`;
     if (source) this.el("source").textContent = source;
-    this.updateGameSummary(state);
-    this.updateGlobalStatus(state);
     const finished = state.juego?.estado === "finalizado";
     if (finished) this.showResultScreen(state);
     else this.hideResultScreen();
@@ -1524,8 +2486,9 @@ class TacticalGridUI {
       this.clearSelection();
     }
     this.updateKingModeFromState(state);
-    this.updateSearchUnits(state);
-    this.updateSearchTargetBounds(state);
+    this.updateAdversarialConfig(state, preferScenarioConfig);
+    this.updateSearchUnits(state, preferScenarioConfig);
+    this.updateSearchTargetBounds(state, preferScenarioConfig);
     this.updateSearchControls();
     this.el("connection").hidden = true;
     if (animate) {
@@ -1542,6 +2505,15 @@ class TacticalGridUI {
         ? "automatic"
         : "manual";
     this.el("kingMode").value = mode;
+    this.manualKingDraftsInitialized = false;
+    if (mode === "manual") {
+      this.loadManualKingsFromState(state);
+    } else {
+      this.manualKingDrafts = {A: [], B: []};
+      this.el("manualKingsA").value = "";
+      this.el("manualKingsB").value = "";
+      this.updateManualKingStatus();
+    }
     this.updateKingInputs();
     const configurable = state.juego?.estado === "configuracion";
     for (const card of document.querySelectorAll("[data-king-mode]")) card.disabled = !configurable || this.mutationPending;
@@ -1551,7 +2523,7 @@ class TacticalGridUI {
   async initialize() {
     try {
       const data = await ApiClient.request("/api/state");
-      this.updateState(data.state, data.source, data.presentation, false);
+      this.updateState(data.state, data.source, data.presentation, false, true);
       this.renderHistory();
     } catch (error) {
       this.enterDesynchronized(error, "No se pudo cargar el estado inicial.");
@@ -1684,7 +2656,7 @@ class TacticalGridUI {
   }
 
   enterDesynchronized(error, message) {
-    if (this.autoPlayActive) this.stopAutoPlay({message: "Autojuego detenido: estado sin sincronizar."});
+    if (this.autoPlayActive) this.stopAutoPlay({message: "Autopartida detenida: estado sin sincronizar."});
     this.desynchronized = true;
     this.cancelLegalRequest();
     this.cancelSearch();
@@ -1704,7 +2676,7 @@ class TacticalGridUI {
 
   async synchronizeState() {
     if (this.mutationPending) return null;
-    if (this.autoPlayActive) this.stopAutoPlay({message: "Autojuego detenido para sincronizar la partida."});
+    if (this.autoPlayActive) this.stopAutoPlay({message: "Autopartida detenida para sincronizar la partida."});
     this.cancelAdversarial({clearResult: true});
     this.mutationPending = true;
     this.setInteractive(true);
@@ -1718,7 +2690,7 @@ class TacticalGridUI {
 
   async runMutation(path, payload, expected = "result", {preserveAutoPlay = false, quiet = false} = {}) {
     if (!preserveAutoPlay && this.autoPlayActive) {
-      this.stopAutoPlay({message: "Autojuego pausado por una acción manual."});
+      this.stopAutoPlay({message: "Autopartida pausada por una acción manual."});
     }
     if (this.desynchronized) {
       this.say("La interfaz está desincronizada; sincroniza el estado antes de continuar.");
@@ -1741,7 +2713,14 @@ class TacticalGridUI {
         this.renderHistory();
       }
       if (data.state) {
-        this.updateState(data.state, data.source, data.presentation, path === "/api/move" || path === "/api/collect");
+        const resetSearchInputs = path === "/api/reset" || path === "/api/scenarios";
+        this.updateState(
+          data.state,
+          data.source,
+          data.presentation,
+          path === "/api/move" || path === "/api/collect",
+          resetSearchInputs
+        );
       }
       if (!quiet) this.report(data.result ?? data.state ?? data);
       return data;

@@ -9,7 +9,7 @@ JSON externo
    ↓
 Lectura y análisis sintáctico
    ↓
-Copiar y normalizar tipos de unidad no admitidos a `estandar`
+Copiar y validar el escenario sin coerciones silenciosas
    ↓
 validate_scenario   ── error ──→ informar y conservar la partida anterior
    ↓
@@ -22,7 +22,7 @@ Sustituir el estado oficial una sola vez
 Configuración opcional de reyes, antes del primer movimiento
 ```
 
-La normalización y la validación no son lo mismo: `prepare_scenario` copia la entrada y convierte cualquier tipo de unidad presente que no esté admitido a `estandar`; `validate_scenario` **inspecciona** el escenario ya normalizado. No se modifica el JSON de entrada. Un campo `tipo` ausente sigue siendo inválido.
+La preparación y la validación no son lo mismo: `prepare_scenario` copia la entrada y `validate_scenario` **inspecciona** esa copia antes de completarla con campos internos. No se modifica el JSON de entrada. Un campo `tipo` ausente o no admitido es inválido.
 
 ## Qué valida `validate_scenario`
 
@@ -34,7 +34,7 @@ La normalización y la validación no son lo mismo: `prepare_scenario` copia la 
 - Terrenos transitables con costo numérico positivo; obstáculos no requieren ese costo.
 - Bases, recurso y unidades con coordenadas válidas dentro del tablero.
 - `recurso_spawn`, si aparece, con coordenadas transitables; sin portador debe coincidir con la posición inicial de `recurso`. Si la partida empieza con portador y `recurso` es `null`, `recurso_spawn` es obligatorio y no puede coincidir con un rey.
-- Campos `id`, `bando`, `tipo` y posición de cada unidad donde correspondan. Cualquier tipo de unidad presente que no esté admitido se normaliza a `estandar` durante la preparación del escenario.
+- Campos `id`, `bando`, `tipo` y posición de cada unidad donde correspondan. Un nombre textual genérico se mapea a `estandar`; un tipo ausente, vacío o no textual se rechaza.
 - IDs únicos; bandos y turno `A` o `B`.
 - `juego.portador_recurso` nulo o referencia a una unidad existente.
 - `prueba`, si aparece, con estructura compatible con el modo de prueba solicitado.
@@ -51,7 +51,7 @@ El PDF no obliga a rechazar un mapa externo por medir menos de 20 × 20. Tampoco
 ## Qué hace la construcción del estado
 
 - Preserva el significado de los campos del contrato oficial.
-- Normaliza tipos de unidad desconocidos a `estandar` y obtiene el `spawn` de cada unidad a partir de su posición de inicio.
+- Conserva los tipos conocidos, mapea nombres genéricos a `estandar` y obtiene el `spawn` de cada unidad a partir de su posición de inicio.
 - Inicializa el estado de actividad y los datos internos necesarios para el motor, sin inventar reyes ausentes.
 - Mantiene coherencia entre reina en tablero y portador del recurso.
 - Conserva `recurso_spawn` desde el `recurso` inicial; una captura posterior usa esa posición y nunca la casilla de captura.
@@ -96,7 +96,8 @@ Un mensaje útil señala el campo y el motivo: «`terreno[2][4]`: tipo desconoci
 | Terreno desconocido o costo no positivo | Se rechaza |
 | Unidad sobre obstáculo o fuera de límites | Se rechaza |
 | IDs duplicados o turno inválido | Se rechaza |
-| Tipo de unidad no admitido | Se carga como `estandar` sin modificar el JSON original |
+| Nombre textual genérico de unidad | Se carga como `estandar` sin modificar el JSON original |
+| Tipo de unidad ausente, vacío o no textual | Se rechaza sin modificar el estado oficial |
 | Portador que no existe | Se rechaza |
 | `recurso_spawn` contradictorio con `recurso` inicial sin portador | Se rechaza |
 | Portador con `recurso: null` sin `recurso_spawn` | Se rechaza |
@@ -105,6 +106,15 @@ Un mensaje útil señala el campo y el motivo: «`terreno[2][4]`: tipo desconoci
 | Escenario de dimensiones válidas distintas a 20 × 20 | Se acepta si cumple las demás reglas |
 | Escenario válido seguido de uno inválido | El estado válido anterior sigue intacto |
 
-Las pruebas deben comprobar además que la normalización no muta el JSON original si se reutiliza en otra ejecución.
+Las pruebas deben comprobar además que una carga rechazada no muta el JSON original ni el estado oficial si se reutilizan en otra ejecución.
+
+## Límites de la frontera de confianza
+
+La API limita cada archivo o cuerpo JSON a 2 MiB. El contrato acepta mapas de
+hasta 100 filas, 100 columnas y 10 000 celdas, con un máximo de 200 unidades y
+200 reyes. Rechaza claves JSON duplicadas en cualquier nivel, números no finitos
+y cadenas no serializables como UTF-8. Conserva campos adicionales para
+compatibilidad futura. Estos límites son defensas de entrada, no una promesa de
+que toda búsqueda sobre el tamaño máximo termine rápidamente.
 
 **Referencias:** `Primer proyecto.pdf`, pp. 5–7; `TacticalGrid_Reglas.md`, secciones 2 y 6; criterios de carga acordados por el equipo.

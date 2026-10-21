@@ -5,15 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#131a1d">
   <title>TacticalGrid</title>
-  <link rel="stylesheet" href="/styles.css?v=26">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <link rel="stylesheet" href="/styles.css?v=40">
   <script defer src="https://cdn.jsdelivr.net/npm/phaser@4.2.1/dist/phaser.min.js"></script>
-  <script defer src="/api.js?v=27"></script>
-  <script defer src="/scene.js?v=25"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="/api.js?v=39"></script>
+  <script defer src="/scene.js?v=28"></script>
 </head>
 <body>
   <header class="topbar">
     <div class="brand" aria-label="TacticalGrid">
-      <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+      <span class="brand-mark" aria-hidden="true"></span>
       <span>TACTICAL<span>GRID</span></span>
     </div>
     <div class="topbar-actions">
@@ -34,28 +36,11 @@
     </div>
   </main>
 
-  <aside id="uiPanel" aria-label="Controles de partida">
+  <aside id="uiPanel" aria-label="Controles del escenario">
     <div id="connection" class="connection-indicator" hidden></div>
-    <section class="panel-section global-section" aria-labelledby="globalTitle">
-      <div class="global-heading">
-        <div><span class="eyebrow">ESTADO GLOBAL</span><h1 id="globalTitle">Partida</h1></div>
-        <span id="turn" class="turn-pill" data-team="A">Turno —</span>
-      </div>
-      <p id="gameStatus" class="phase-label">Preparando partida</p>
-      <div class="global-grid">
-        <div class="global-stat queen-stat">
-          <span class="stat-icon queen-icon"><img src="/assets/pieces/queen_a.png" alt=""></span>
-          <span><small>REINA</small><strong id="globalQueen">—</strong></span>
-        </div>
-      <div class="global-stat army-stat">
-        <span class="army-dots" aria-hidden="true"><i class="team-dot team-a"></i><i class="team-dot team-b"></i></span>
-        <span><small>EN JUEGO</small><strong><span id="teamACount">—</span> · <span id="teamBCount">—</span></strong></span>
-        </div>
-      </div>
-    </section>
     <section class="panel-section scenario-section" aria-labelledby="scenarioTitle">
       <div class="section-heading">
-        <div><span class="eyebrow">PARTIDA</span><h1 id="scenarioTitle">Escenario</h1></div>
+        <div><span class="eyebrow" id="scenarioModeLabel">MODO · —</span><h1 id="scenarioTitle">Escenario</h1></div>
         <span id="boardDimensions" class="dimension-badge">— × —</span>
       </div>
       <p id="source" class="scenario-name">Cargando escenario…</p>
@@ -67,29 +52,44 @@
       <input id="scenarioFile" type="file" accept=".json,application/json" hidden>
     </section>
 
-    <section class="panel-section search-section" aria-labelledby="searchTitle">
+    <section id="searchSection" class="panel-section search-section" aria-labelledby="searchTitle">
       <div class="section-heading compact">
-        <div><span class="eyebrow">BÚSQUEDA</span><h2 id="searchTitle">Ruta sugerida</h2></div>
-        <span class="search-algorithm-badge">BFS · DFS · UCS · A* · BEAM</span>
+        <div><span class="eyebrow">BÚSQUEDA</span><h2 id="searchTitle">Algoritmo de búsqueda</h2></div>
       </div>
-      <p class="section-copy">Explora movimientos hipotéticos desde una unidad hasta una celda objetivo.</p>
-      <div class="algorithm-toggle" role="group" aria-label="Algoritmo de búsqueda">
-        <button class="algorithm-option is-selected" type="button" data-search-algorithm="bfs" aria-pressed="true">
-          <strong>BFS</strong><span>Anchura · mínimos pasos</span>
+      <p class="section-copy">Elige un método y ajusta sus parámetros para calcular una ruta hipotética.</p>
+      <div id="searchAlgorithmSelect" class="algorithm-select">
+        <span id="searchAlgorithmLabel" class="field-caption">Método</span>
+        <button id="searchAlgorithmButton" class="algorithm-select-trigger" type="button" role="combobox" aria-haspopup="listbox" aria-expanded="false" aria-controls="searchAlgorithmMenu" aria-labelledby="searchAlgorithmLabel searchAlgorithmValue">
+          <span class="algorithm-select-copy">
+            <strong id="searchAlgorithmValue">BFS</strong>
+            <small id="searchAlgorithmHint">Anchura · mínimos pasos</small>
+          </span>
+          <svg class="algorithm-select-caret" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
         </button>
-        <button class="algorithm-option" type="button" data-search-algorithm="dfs" aria-pressed="false">
-          <strong>DFS</strong><span>Profundidad · primera rama</span>
-        </button>
-        <button class="algorithm-option" type="button" data-search-algorithm="ucs" aria-pressed="false">
-          <strong>UCS</strong><span>Costo mínimo · sin heurística</span>
-        </button>
-        <button class="algorithm-option" type="button" data-search-algorithm="astar" aria-pressed="false">
-          <strong>A*</strong><span>Costo acumulado + heurística</span>
-        </button>
-        <button class="algorithm-option" type="button" data-search-algorithm="beam" aria-pressed="false">
-          <strong>Beam</strong><span>Haz limitado · heurística</span>
-        </button>
+        <div id="searchAlgorithmMenu" class="algorithm-select-menu" role="listbox" aria-labelledby="searchAlgorithmLabel" hidden>
+          <button type="button" class="algorithm-select-option is-selected" role="option" data-search-algorithm="bfs" aria-selected="true">
+            <span><strong>BFS</strong><small>Anchura · mínimos pasos</small></span>
+            <svg class="algorithm-select-check" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>
+          </button>
+          <button type="button" class="algorithm-select-option" role="option" data-search-algorithm="dfs" aria-selected="false">
+            <span><strong>DFS</strong><small>Profundidad · primera rama</small></span>
+            <svg class="algorithm-select-check" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>
+          </button>
+          <button type="button" class="algorithm-select-option" role="option" data-search-algorithm="ucs" aria-selected="false">
+            <span><strong>UCS</strong><small>Costo mínimo · sin heurística</small></span>
+            <svg class="algorithm-select-check" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>
+          </button>
+          <button type="button" class="algorithm-select-option" role="option" data-search-algorithm="astar" aria-selected="false">
+            <span><strong>A*</strong><small>Prioridad f = g + h</small></span>
+            <svg class="algorithm-select-check" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>
+          </button>
+          <button type="button" class="algorithm-select-option" role="option" data-search-algorithm="beam" aria-selected="false">
+            <span><strong>Beam</strong><small>Haz limitado · heurística</small></span>
+            <svg class="algorithm-select-check" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>
+          </button>
+        </div>
       </div>
+
       <div id="astarSearchOptions" class="search-algorithm-options" hidden>
         <label class="search-field" for="searchHeuristic">
           <span>Heurística de A*</span>
@@ -100,16 +100,70 @@
         </label>
       </div>
       <div id="beamSearchOptions" class="search-algorithm-options" hidden>
-        <label class="search-field" for="searchBeamWidth">
-          <span>Ancho del haz · k</span>
-          <input id="searchBeamWidth" type="number" min="1" step="1" value="4" inputmode="numeric" aria-describedby="beamWidthHelp">
-        </label>
-        <p id="beamWidthHelp" class="search-parameter-note">Conserva hasta k estados por nivel. Ordena por la heurística de costo restante.</p>
+        <div class="beam-width-field">
+          <span id="beamWidthLabel" class="field-caption">Ancho del haz · k</span>
+          <div class="beam-stepper" role="group" aria-labelledby="beamWidthLabel">
+            <button id="beamWidthDecrease" class="beam-stepper-button" type="button" aria-label="Reducir ancho del haz">−</button>
+            <input id="searchBeamWidth" class="beam-stepper-input" type="text" value="4" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" spellcheck="false" aria-labelledby="beamWidthLabel" aria-describedby="beamWidthHelp">
+            <button id="beamWidthIncrease" class="beam-stepper-button" type="button" aria-label="Aumentar ancho del haz">+</button>
+          </div>
+          <p id="beamWidthHelp" class="search-parameter-note">Conserva hasta k estados por nivel. Ordena por la heurística de costo restante.</p>
+        </div>
       </div>
-      <label class="search-field" for="searchUnit">
-        <span>Unidad de inicio</span>
-        <select id="searchUnit"></select>
-      </label>
+
+      <section id="searchAlgorithmInfo" class="algorithm-info" aria-labelledby="searchAlgorithmInfoName">
+        <button id="searchAlgorithmInfoToggle" class="algorithm-info-toggle" type="button" aria-expanded="false" aria-controls="searchAlgorithmInfoBody">
+          <span class="algorithm-info-head">
+            <span class="algorithm-info-title-wrap">
+              <span class="algorithm-info-eyebrow">CÓMO FUNCIONA</span>
+              <span id="searchAlgorithmInfoName" class="algorithm-info-title">BFS</span>
+            </span>
+            <span class="algorithm-info-head-right">
+              <span id="searchAlgorithmInfoKind" class="algorithm-info-pill">Anchura</span>
+              <svg class="algorithm-info-caret" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+            </span>
+          </span>
+        </button>
+        <div id="searchAlgorithmInfoBody" class="algorithm-info-body" hidden>
+          <p id="searchAlgorithmInfoSummary" class="algorithm-info-summary"></p>
+          <dl id="searchAlgorithmFacts" class="algorithm-facts"></dl>
+          <div id="searchAlgorithmEquation" class="algorithm-equation">
+            <div id="searchAlgorithmEquationText" class="math-equation"></div>
+            <small id="searchAlgorithmEquationNote"></small>
+          </div>
+          <p id="searchAlgorithmInfoNote" class="algorithm-info-note"></p>
+          <div id="searchHeuristicDetail" class="heuristic-detail" hidden>
+            <div class="heuristic-detail-head">
+              <span id="searchHeuristicName">Costo restante</span>
+              <span id="searchHeuristicTag" class="heuristic-detail-tag">Heurística</span>
+            </div>
+            <div id="searchHeuristicEquation" class="math-equation heuristic-main-equation"></div>
+            <div id="searchHeuristicBranches" class="heuristic-branches" hidden></div>
+            <div id="searchHeuristicDefinitions" class="heuristic-definitions" hidden></div>
+            <div id="searchHeuristicAdmissibility" class="heuristic-admissibility" hidden>
+              <span class="heuristic-section-label">¿Por qué es admisible?</span>
+              <p id="searchHeuristicAdmissibilityText"></p>
+            </div>
+            <p id="searchHeuristicNote" class="heuristic-detail-note"></p>
+          </div>
+        </div>
+      </section>
+
+      <div id="searchUnitSelect" class="unit-select">
+        <span id="searchUnitLabel" class="field-caption">Unidad de inicio</span>
+        <button id="searchUnitButton" class="unit-select-trigger" type="button" role="combobox" aria-haspopup="listbox" aria-expanded="false" aria-controls="searchUnitMenu" aria-labelledby="searchUnitLabel searchUnitValue">
+          <span class="unit-select-preview">
+            <span class="unit-select-icon"><img id="searchUnitIcon" src="/assets/pieces/rook_a.png" alt="" hidden></span>
+            <span class="unit-select-copy">
+              <strong id="searchUnitValue">—</strong>
+              <small id="searchUnitMeta">—</small>
+            </span>
+          </span>
+          <svg class="unit-select-caret" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+        <div id="searchUnitMenu" class="unit-select-menu" role="listbox" aria-labelledby="searchUnitLabel" hidden></div>
+        <input id="searchUnit" type="hidden" value="">
+      </div>
       <div class="search-target">
         <span class="field-caption">Objetivo · fila, columna</span>
         <div class="target-row">
@@ -146,40 +200,78 @@
       </section>
     </section>
 
-    <section class="panel-section adversarial-section" aria-labelledby="adversarialTitle">
+    <section id="adversarialSection" class="panel-section adversarial-section" aria-labelledby="adversarialTitle">
       <div class="section-heading compact">
-        <div><span class="eyebrow">DECISIÓN ADVERSARIAL</span><h2 id="adversarialTitle">Minimax y alfa-beta</h2></div>
-        <span class="search-algorithm-badge">A vs. B</span>
+        <div><span class="eyebrow" id="adversarialEyebrow">DECISIÓN ADVERSARIAL</span><h2 id="adversarialTitle">Mejor movimiento del turno</h2></div>
+        <span id="adversarialBadge" class="search-algorithm-badge">1 turno</span>
       </div>
-      <p class="section-copy">Analiza una jugada o deja que ambos bandos jueguen automáticamente. El autojuego sí ejecuta cada recomendación en la partida.</p>
-      <label class="search-field" for="adversarialAlgorithm">
-        <span>Algoritmo</span>
-        <select id="adversarialAlgorithm">
+      <p id="adversarialCopy" class="section-copy">Calcula la mejor acción para el bando en turno. No avanza turnos ni juega la partida completa.</p>
+      <div id="adversarialAlgorithmSelect" class="algorithm-select">
+        <span id="adversarialAlgorithmLabel" class="field-caption">Algoritmo</span>
+        <button id="adversarialAlgorithmButton" class="algorithm-select-trigger" type="button" role="combobox" aria-haspopup="listbox" aria-expanded="false" aria-controls="adversarialAlgorithmMenu" aria-labelledby="adversarialAlgorithmLabel adversarialAlgorithmValue">
+          <span class="algorithm-select-copy">
+            <strong id="adversarialAlgorithmValue" data-dropdown-label>Alfa-beta</strong>
+            <small data-dropdown-hint>Con poda</small>
+          </span>
+          <svg class="algorithm-select-caret" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+        <div id="adversarialAlgorithmMenu" class="algorithm-select-menu" role="listbox" aria-labelledby="adversarialAlgorithmLabel" hidden>
+          <button type="button" class="algorithm-select-option" role="option" data-value="minimax" data-label="Minimax" data-hint="Sin poda" aria-selected="false">
+            <span><strong>Minimax</strong><small>Sin poda</small></span>
+            <svg class="algorithm-select-check" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>
+          </button>
+          <button type="button" class="algorithm-select-option is-selected" role="option" data-value="alpha_beta" data-label="Alfa-beta" data-hint="Con poda" aria-selected="true">
+            <span><strong>Alfa-beta</strong><small>Con poda</small></span>
+            <svg class="algorithm-select-check" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>
+          </button>
+        </div>
+        <select id="adversarialAlgorithm" hidden>
           <option value="minimax">Minimax</option>
           <option value="alpha_beta" selected>Alfa-beta</option>
         </select>
-      </label>
+      </div>
       <div class="adversarial-parameters">
-        <label class="search-field" for="adversarialDepth">
-          <span>Profundidad</span>
-          <input id="adversarialDepth" type="number" min="0" step="1" value="2" inputmode="numeric" aria-describedby="adversarialDepthHelp">
-        </label>
-        <label class="search-field" for="adversarialOrder">
-          <span>Orden de acciones</span>
-          <select id="adversarialOrder">
+        <div class="search-field">
+          <span id="adversarialDepthLabel" class="field-caption">Profundidad</span>
+          <div class="beam-stepper" role="group" aria-labelledby="adversarialDepthLabel">
+            <button id="adversarialDepthDecrease" class="beam-stepper-button" type="button" aria-label="Reducir profundidad">−</button>
+            <input id="adversarialDepth" class="beam-stepper-input" type="text" value="2" inputmode="numeric" pattern="[0-9]*" maxlength="1" autocomplete="off" spellcheck="false" aria-labelledby="adversarialDepthLabel" aria-describedby="adversarialDepthHelp">
+            <button id="adversarialDepthIncrease" class="beam-stepper-button" type="button" aria-label="Aumentar profundidad">+</button>
+          </div>
+        </div>
+        <div id="adversarialOrderSelect" class="algorithm-select adversarial-order-select">
+          <span id="adversarialOrderLabel" class="field-caption">Orden de acciones</span>
+          <button id="adversarialOrderButton" class="algorithm-select-trigger" type="button" role="combobox" aria-haspopup="listbox" aria-expanded="false" aria-controls="adversarialOrderMenu" aria-labelledby="adversarialOrderLabel adversarialOrderValue">
+            <span class="algorithm-select-copy">
+              <strong id="adversarialOrderValue" data-dropdown-label>Normal</strong>
+              <small data-dropdown-hint>Orden del motor</small>
+            </span>
+            <svg class="algorithm-select-caret" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+          </button>
+          <div id="adversarialOrderMenu" class="algorithm-select-menu" role="listbox" aria-labelledby="adversarialOrderLabel" hidden>
+            <button type="button" class="algorithm-select-option is-selected" role="option" data-value="normal" data-label="Normal" data-hint="Orden del motor" aria-selected="true">
+              <span><strong>Normal</strong><small>Orden del motor</small></span>
+              <svg class="algorithm-select-check" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>
+            </button>
+            <button type="button" class="algorithm-select-option" role="option" data-value="reverse" data-label="Inverso" data-hint="Orden invertido" aria-selected="false">
+              <span><strong>Inverso</strong><small>Orden invertido</small></span>
+              <svg class="algorithm-select-check" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>
+            </button>
+          </div>
+          <select id="adversarialOrder" hidden>
             <option value="normal" selected>Normal</option>
             <option value="reverse">Inverso</option>
           </select>
-        </label>
+        </div>
       </div>
-      <p id="adversarialDepthHelp" class="search-parameter-note">Cada nivel representa una acción completa de un jugador. Profundidad 2 incluye la respuesta rival.</p>
+      <p id="adversarialDepthHelp" class="search-parameter-note">Cada nivel representa una acción completa de un jugador. Profundidad 2 incluye la respuesta rival; el máximo por solicitud es 5.</p>
       <button id="runAdversarial" class="button primary search-run" type="button">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h5l3-8 4 16 3-8h1"/></svg>
-        <span id="runAdversarialLabel">Analizar posición</span>
+        <span id="runAdversarialLabel">Calcular mejor movimiento</span>
       </button>
-      <button id="autoPlayToggle" class="button secondary adversarial-autoplay" type="button" aria-pressed="false">
+      <button id="autoPlayToggle" class="button secondary adversarial-autoplay" type="button" aria-pressed="false" hidden>
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 5 12 7-12 7V5Z"/></svg>
-        <span id="autoPlayLabel">Autojugar ambos bandos</span>
+        <span id="autoPlayLabel">Autojugar hasta finalizar</span>
       </button>
       <p id="autoPlayStatus" class="adversarial-autoplay-status" hidden aria-live="polite"></p>
       <section id="adversarialResult" class="adversarial-result" hidden aria-live="polite" aria-labelledby="adversarialResultTitle">
@@ -212,7 +304,7 @@
       </section>
     </section>
 
-    <section class="panel-section king-section" aria-labelledby="kingsTitle">
+    <section id="kingSection" class="panel-section king-section" aria-labelledby="kingsTitle">
       <div class="section-heading compact"><div><span class="eyebrow">REGLAS</span><h2 id="kingsTitle">Configuración de reyes</h2></div></div>
       <p class="section-copy">Elige cómo entran los reyes antes del primer movimiento.</p>
       <input id="kingMode" type="hidden" value="none">
@@ -229,13 +321,20 @@
         </div>
       </div>
       <div id="manualKings" class="king-fields" hidden>
+        <p class="field-caption">Coloca reyes en el tablero</p>
+        <div class="manual-king-side" role="group" aria-label="Bando para colocar reyes">
+          <button id="manualKingSideA" class="manual-king-side-button is-active" type="button" data-king-side="A" aria-pressed="true"><i class="team-dot team-a"></i>Blancas</button>
+          <button id="manualKingSideB" class="manual-king-side-button" type="button" data-king-side="B" aria-pressed="false"><i class="team-dot team-b"></i>Negras</button>
+        </div>
+        <p id="manualKingHelp" class="search-parameter-note">Haz clic en una celda para colocar o quitar un rey del bando activo.</p>
         <p class="field-caption">Coordenadas · fila,columna;…</p>
         <label class="coordinate-field"><span><i class="team-dot team-a"></i>Blancas</span><input id="manualKingsA" type="text" inputmode="numeric" placeholder="1,1; 2,2"></label>
         <label class="coordinate-field"><span><i class="team-dot team-b"></i>Negras</span><input id="manualKingsB" type="text" inputmode="numeric" placeholder="17,17"></label>
+        <p id="manualKingStatus" class="search-parameter-note">Blancas: 0 · Negras: 0</p>
       </div>
       <button id="configureKings" class="button primary" type="button">Aplicar configuración</button>
     </section>
-    <section class="panel-section history-section" aria-labelledby="historyTitle">
+    <section id="historySection" class="panel-section history-section" aria-labelledby="historyTitle">
       <div class="section-heading compact">
         <div><span class="eyebrow">CRONOLOGÍA</span><h2 id="historyTitle">Movimientos</h2></div>
         <span id="historyCount" class="history-count">0</span>

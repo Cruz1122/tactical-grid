@@ -12,7 +12,8 @@ Estos documentos describen el **comportamiento esperado**, no funcionalidades co
 | [reglas-del-juego.md](reglas-del-juego.md) | Unidades, movimientos, costos, turnos, capturas, jaque, reina, victoria y empate. |
 | [estado-y-json.md](estado-y-json.md) | Estado completo, invariantes, contrato JSON y ejemplo compatible. |
 | [configuracion-de-reyes.md](configuracion-de-reyes.md) | Reyes opcionales, colocación manual o automática y bloqueo de la configuración. |
-| [carga-y-validacion.md](carga-y-validacion.md) | Validaciones, normalización y carga atómica de escenarios. |
+| [informe-verificacion.md](informe-verificacion.md) | Evidencia ejecutada, resultados, timeouts y estado real del gate de entrega. |
+| [carga-y-validacion.md](carga-y-validacion.md) | Validaciones, preparación y carga atómica de escenarios. |
 | [arquitectura.md](arquitectura.md) | Separación de responsabilidades y comunicación entre backend, API e interfaz. |
 | [motor-del-juego.md](motor-del-juego.md) | Contratos de transición, acciones, resultados y configuración de reyes implementados. |
 | [busqueda-y-decision.md](busqueda-y-decision.md) | Diferencia entre planificar una ruta y escoger una jugada; métricas y verificaciones. |

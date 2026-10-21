@@ -23,7 +23,7 @@ Esta lista evita que se confundan **reglas ya acordadas** con detalles todavía 
 
 ## Decisiones implementadas en el motor de la fase 3
 
-- Se aceptan los tipos internos `knight`, `rook`, `bishop`, `estandar` y sus alias `caballo`, `torre`, `alfil`. Al importar escenarios, cualquier tipo de unidad presente que no esté admitido se normaliza a `estandar`, sin modificar la entrada original.
+- Se aceptan los tipos internos `knight`, `rook`, `bishop`, `estandar` y sus alias `caballo`, `torre`, `alfil`. Cualquier otro nombre textual no vacío se mapea explícitamente a `estandar` sin modificar el JSON recibido; tipos ausentes, vacíos o no textuales se rechazan de forma atómica.
 - Reyes automáticos: celdas transitables en orden fila-columna, cantidades explícitas por bando y selección voraz determinista; puede fallar sin mutación aunque exista otra distribución.
 - Ningún rey ocupa el `spawn` de una unidad, para no impedir una reaparición futura.
 - Accesibilidad: las bases deben permanecer conectadas por celdas transitables ortogonales que no ocupen reyes.

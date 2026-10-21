@@ -62,7 +62,7 @@ Una ejecución local de Minimax sobre la misma posición:
 | 3 | A2 captura B1 en `(3, 1)` | 1290 | 1198 | 1199 | 1094 | 0.361 |
 | 4 | A2 captura B1 en `(3, 1)` | 1290 | 12313 | 12314 | 11115 | 3.427 |
 
-El salto de profundidad 1 a 2 cambia la acción; el valor no es monótono porque el horizonte y las respuestas disponibles cambian. En este escenario pequeño, profundidad 4 tardó unos 3.4 s y mantuvo la acción/valor de profundidad 3. En `scenarios/initial.json` (20×20), alfa-beta a profundidad 2 tuvo 49 acciones raíz, generó 2205 sucesores, visitó 1003 nodos, evaluó 953 hojas, podó 1203 ramas y tardó 1.327 s. No se extrapola ese tiempo a profundidad 4 ni se ejecutan profundidades mayores en el mapa inicial: la ramificación y el costo dependen del mapa y del estado.
+El salto de profundidad 1 a 2 cambia la acción; el valor no es monótono porque el horizonte y las respuestas disponibles cambian. En este escenario pequeño, profundidad 4 tardó unos 3.4 s y mantuvo la acción/valor de profundidad 3. En `scenarios/partida/initial.json` (20×20), la configuración predeterminada queda en profundidad 3. El campo del escenario acepta cualquier entero no negativo; las profundidades explícitas enviadas por HTTP se mantienen entre 0 y 5 como protección operativa. Alfa-beta a profundidad 2 tuvo 49 acciones raíz, generó 2205 sucesores, visitó 1003 nodos, evaluó 953 hojas, podó 1203 ramas y tardó 1.327 s. La ramificación y el costo dependen del mapa; ninguna de estas cotas es una regla del juego.
 
 ## Alcance de la evidencia
 

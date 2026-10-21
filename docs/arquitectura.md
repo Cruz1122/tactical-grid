@@ -68,7 +68,7 @@ Rutas orientativas del proyecto (deben verificarse en el código real):
 - `POST /api/kings`: configurar reyes en modo `none`, `manual` o `automatic`.
 - `POST /api/search`: resolver navegación de una unidad seleccionada.
 - `POST /api/adversarial`: recomendar una acción mediante juego adversarial.
-- `POST /api/verify`: revisar una ruta, decisión o estado.
+- `POST /api/verify`: validar un estado, reproducir una ruta paso a paso o recalcular una decisión adversarial con sus mismos parámetros. Un resultado negativo de ruta se revisa estructuralmente, pero no se presenta como prueba independiente de inalcanzabilidad.
 - `POST /api/test`: ejecutar una prueba configurada, si la aplicación la admite.
 - `/docs`: documentación interactiva de FastAPI cuando está activo el servicio.
 

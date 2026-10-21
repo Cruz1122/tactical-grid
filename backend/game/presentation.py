@@ -9,10 +9,10 @@ from __future__ import annotations
 
 import hashlib
 import json
-from typing import Any, Iterable
+from collections.abc import Iterable
+from typing import Any
 
 from backend.game.movement import is_in_check, legal_moves
-
 
 Position = tuple[int, int]
 
@@ -59,7 +59,11 @@ def can_collect_queen(state: dict[str, Any], unit_id: str) -> bool:
         return False
     unit_position = _active_unit_position(unit)
     queen_position = _position(state.get("recurso"))
-    if unit_position is None or queen_position is None or unit_position != queen_position:
+    if (
+        unit_position is None
+        or queen_position is None
+        or unit_position != queen_position
+    ):
         return False
     return not is_in_check(state, unit["bando"])
 
@@ -114,7 +118,9 @@ def legal_move_descriptors(state: dict[str, Any], unit_id: str) -> list[dict[str
         position = _position(destination)
         if position is None:
             continue
-        kind = "capture" if _enemy_at(occupied, position, unit.get("bando")) else "normal"
+        kind = (
+            "capture" if _enemy_at(occupied, position, unit.get("bando")) else "normal"
+        )
         descriptors.append(
             {
                 "row": position[0],
@@ -207,7 +213,10 @@ def transition_events(
                 }
             )
             continue
-        if unit_id in captured_ids and current_positions[unit_id] != previous_positions[unit_id]:
+        if (
+            unit_id in captured_ids
+            and current_positions[unit_id] != previous_positions[unit_id]
+        ):
             events.append(
                 {
                     "tipo": "reaparicion",
@@ -224,9 +233,7 @@ def transition_events(
         else None
     )
     current_carrier = (
-        current_game.get("portador_recurso")
-        if isinstance(current_game, dict)
-        else None
+        current_game.get("portador_recurso") if isinstance(current_game, dict) else None
     )
     if current_carrier is not None and current_carrier != previous_carrier:
         carrier_position = current_positions.get(current_carrier)
@@ -249,8 +256,12 @@ def transition_events(
                 }
             )
 
-    previous_result = previous_game.get("resultado") if isinstance(previous_game, dict) else None
-    current_result = current_game.get("resultado") if isinstance(current_game, dict) else None
+    previous_result = (
+        previous_game.get("resultado") if isinstance(previous_game, dict) else None
+    )
+    current_result = (
+        current_game.get("resultado") if isinstance(current_game, dict) else None
+    )
     if current_result != previous_result and current_result is not None:
         events.append({"tipo": "resultado", "resultado": current_result})
     return events

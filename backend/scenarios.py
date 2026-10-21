@@ -12,8 +12,8 @@ from backend.game.validation import (
 def prepare_scenario(scenario: dict[str, Any]) -> dict[str, Any]:
     """Prepara y valida una copia del estado inicial sin modificar la entrada.
 
-    Copia el escenario, normaliza tipos de unidad no admitidos a `estandar`,
-    asigna el spawn inicial y activa las unidades que no declaran actividad.
+    Copia el escenario, mapea nombres genéricos de pieza a `estandar`, asigna el
+    spawn inicial y activa las unidades que no declaran actividad.
     Recorre el escenario en O(n) tiempo y espacio.
     """
     state = deepcopy(scenario)
@@ -23,11 +23,12 @@ def prepare_scenario(scenario: dict[str, Any]) -> dict[str, Any]:
             if not isinstance(unit, dict):
                 continue
             unit_type = unit.get("tipo")
-            if "tipo" in unit and (
-                not isinstance(unit_type, str) or unit_type not in SUPPORTED_UNIT_TYPES
+            if (
+                isinstance(unit_type, str)
+                and unit_type.strip()
+                and unit_type not in SUPPORTED_UNIT_TYPES
             ):
                 unit["tipo"] = "estandar"
-
     validate_scenario(state)
     resource_spawn = state.get("recurso_spawn") or state.get("recurso")
     if resource_spawn is not None:

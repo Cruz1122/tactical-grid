@@ -68,7 +68,7 @@ Este ejemplo ilustra el formato del PDF con `estandar`, sin `reyes` ni `spawn`. 
 
 Al cargar una unidad con posición `(fila, columna)`, el programa incorpora internamente `spawn = (fila, columna)`; el JSON externo **no tiene que traer `spawn`**. También conserva `recurso_spawn` desde la posición inicial de `recurso`; si el escenario empieza con portador y no tiene `recurso` actual, debe incluir `recurso_spawn` explícitamente. Las unidades inactivas preparadas se representan fuera del tablero con `fila = columna = -1`. Si no llegan reyes, el escenario permanece sin reyes. No se generan de oficio durante la importación. Se añaden `juego.estado = "configuracion"` y `juego.resultado = null` sin renombrar los campos oficiales.
 
-Los tipos previstos internamente son `knight`, `rook`, `bishop` y `estandar`; se admiten además los alias `caballo`, `torre` y `alfil`. El PDF no enumera todos los valores posibles de `tipo`, por lo que cualquier otro nombre se rechaza con validación.
+Los tipos previstos internamente son `knight`, `rook`, `bishop` y `estandar`; se admiten además los alias `caballo`, `torre` y `alfil`. Como el PDF no enumera exhaustivamente los valores de `tipo`, cualquier otro nombre textual no vacío se mapea a `estandar`. Los valores ausentes, vacíos o no textuales se rechazan.
 
 ## Invariantes de estado
 

@@ -59,6 +59,11 @@ class TacticalGridScene extends Phaser.Scene {
     this.carrierGlows = new Map();
     this.carrierQueenSprites = new Map();
     this.selectedUnit = null;
+    this.previewUnitId = null;
+    this.targetPreview = null;
+    this.manualKingDrafts = null;
+    this.manualKingPreviewActive = false;
+    this.draftKingSprites = [];
     this.legalMoves = [];
     this.userSetTarget = false;
     this.path = [];
@@ -89,8 +94,13 @@ class TacticalGridScene extends Phaser.Scene {
     this.indicatorLayer = this.add.graphics().setDepth(2);
     this.pathLayer = this.add.graphics().setDepth(3);
     this.adversarialLayer = this.add.graphics().setDepth(4.8);
+    this.previewLayer = this.add.graphics().setDepth(4.7);
+    this.targetPreviewLayer = this.add.graphics().setDepth(4.6);
+    this.draftKingLayer = this.add.graphics().setDepth(4.55);
     this.actionLayer = this.add.graphics().setDepth(7);
     this.input.on("pointerdown", pointer => this.selectCell(pointer));
+    this.input.on("pointermove", pointer => this.previewTargetCell(pointer));
+    this.input.on("gameout", () => this.clearTargetPreview());
     this.ui = new TacticalGridUI(this);
     this.ui.initialize();
   }
@@ -152,6 +162,7 @@ class TacticalGridScene extends Phaser.Scene {
 
   applyState(state, presentation, animate = false) {
     this.clearAdversarialAction();
+    this.clearTargetPreview();
     if (!state?.mapa || !Array.isArray(state.terreno)) {
       this.ui.reportError(new Error("El servidor no devolvió un escenario con mapa y terreno."));
       return;
@@ -193,6 +204,9 @@ class TacticalGridScene extends Phaser.Scene {
       this.queenSprite.destroy();
       this.queenSprite = null;
     }
+    for (const sprite of this.draftKingSprites) sprite.destroy();
+    this.draftKingSprites = [];
+    this.draftKingLayer?.clear();
   }
 
   hash(value) {
@@ -388,6 +402,7 @@ class TacticalGridScene extends Phaser.Scene {
   }
 
   renderKings() {
+    if (!this.state) return;
     const seen = new Set();
     for (const team of ["A", "B"]) {
       for (const [index, king] of (this.state.reyes?.[team] || []).entries()) {
@@ -400,7 +415,8 @@ class TacticalGridScene extends Phaser.Scene {
           sprite = this.add.image(position.x, position.y, key).setDepth(5);
           this.kingSprites.set(id, sprite);
         }
-        sprite.setTexture(key).setDisplaySize(this.cell * .88, this.cell * .88).setPosition(position.x, position.y).setAlpha(.98);
+        sprite.setTexture(key).setDisplaySize(this.cell * .88, this.cell * .88).setPosition(position.x, position.y).setAlpha(.98)
+          .setVisible(!this.manualKingPreviewActive);
       }
     }
     for (const [id, sprite] of this.kingSprites) {
@@ -581,6 +597,127 @@ class TacticalGridScene extends Phaser.Scene {
   showSearchPath(path) {
     this.path = Array.isArray(path) ? path : [];
     this.drawHighlights();
+  }
+
+  pointerCell(pointer) {
+    const column = Math.floor((pointer.worldX - this.boardX) / this.cell);
+    const row = Math.floor((pointer.worldY - this.boardY) / this.cell);
+    if (row < 0 || column < 0 || row >= this.rows || column >= this.cols) return null;
+    return {fila: row, columna: column};
+  }
+
+  previewTargetCell(pointer) {
+    if (!this.ui?.pickingTarget) {
+      if (this.targetPreview) this.clearTargetPreview();
+      return;
+    }
+    const position = this.pointerCell(pointer);
+    if (!position) {
+      this.clearTargetPreview();
+      return;
+    }
+    if (this.targetPreview &&
+        this.targetPreview.fila === position.fila &&
+        this.targetPreview.columna === position.columna) return;
+    this.targetPreview = position;
+    this.drawTargetPreview();
+  }
+
+  clearTargetPreview() {
+    this.targetPreview = null;
+    this.targetPreviewLayer?.clear();
+  }
+
+  drawTargetPreview() {
+    if (!this.targetPreviewLayer) return;
+    this.targetPreviewLayer.clear();
+    if (!this.targetPreview) return;
+    const {fila, columna} = this.targetPreview;
+    const x = this.boardX + columna * this.cell;
+    const y = this.boardY + fila * this.cell;
+    const center = this.center(fila, columna);
+    this.targetPreviewLayer.fillStyle(0x2f7d78, .18);
+    this.targetPreviewLayer.fillRoundedRect(x + 2, y + 2, this.cell - 4, this.cell - 4, Math.max(4, this.cell * .12));
+    this.targetPreviewLayer.lineStyle(Math.max(2, this.cell * .07), 0x2f7d78, .95);
+    this.targetPreviewLayer.strokeRoundedRect(x + 3, y + 3, this.cell - 6, this.cell - 6, Math.max(4, this.cell * .12));
+    this.targetPreviewLayer.lineStyle(Math.max(1.5, this.cell * .04), 0xffffff, .9);
+    this.targetPreviewLayer.strokeCircle(center.x, center.y, Math.max(4, this.cell * .14));
+  }
+
+  setManualKingDrafts(drafts) {
+    this.manualKingDrafts = drafts
+      ? {
+          A: drafts.A.map(position => ({...position})),
+          B: drafts.B.map(position => ({...position}))
+        }
+      : null;
+    this.manualKingPreviewActive = Boolean(drafts);
+    this.renderKings();
+    this.drawManualKingDrafts();
+  }
+
+  clearManualKingDrafts() {
+    this.manualKingDrafts = null;
+    this.manualKingPreviewActive = false;
+    this.renderKings();
+    this.draftKingLayer?.clear();
+    for (const sprite of this.draftKingSprites) sprite.destroy();
+    this.draftKingSprites = [];
+  }
+
+  drawManualKingDrafts() {
+    if (!this.draftKingLayer) return;
+    this.draftKingLayer.clear();
+    for (const sprite of this.draftKingSprites) sprite.destroy();
+    this.draftKingSprites = [];
+    if (!this.manualKingDrafts) return;
+    for (const side of ["A", "B"]) {
+      const color = side === "B" ? 0xd18c6f : 0x6fa3b9;
+      for (const position of this.manualKingDrafts[side] || []) {
+        if (!Number.isInteger(position.row) || !Number.isInteger(position.column) ||
+            position.row < 0 || position.column < 0 ||
+            position.row >= this.rows || position.column >= this.cols) continue;
+        const x = this.boardX + position.column * this.cell;
+        const y = this.boardY + position.row * this.cell;
+        const center = this.center(position.row, position.column);
+        this.draftKingLayer.fillStyle(color, .18);
+        this.draftKingLayer.fillRoundedRect(x + 2, y + 2, this.cell - 4, this.cell - 4, Math.max(4, this.cell * .12));
+        this.draftKingLayer.lineStyle(Math.max(2, this.cell * .06), color, .95);
+        this.draftKingLayer.strokeRoundedRect(x + 3, y + 3, this.cell - 6, this.cell - 6, Math.max(4, this.cell * .12));
+        const sprite = this.add.image(center.x, center.y, this.assetKey(side, "rey"))
+          .setDepth(5.2)
+          .setDisplaySize(this.cell * .8, this.cell * .8)
+          .setAlpha(.82);
+        this.draftKingSprites.push(sprite);
+      }
+    }
+  }
+
+  showUnitPreview(unitId) {
+    this.previewUnitId = unitId || null;
+    this.drawUnitPreview();
+  }
+
+  clearUnitPreview() {
+    this.previewUnitId = null;
+    this.previewLayer?.clear();
+  }
+
+  drawUnitPreview() {
+    if (!this.previewLayer) return;
+    this.previewLayer.clear();
+    if (!this.previewUnitId) return;
+    const unit = (this.state?.unidades || []).find(candidate =>
+      candidate.id === this.previewUnitId && candidate.activo !== false
+    );
+    if (!unit || !Number.isInteger(unit.fila) || !Number.isInteger(unit.columna)) return;
+    const x = this.boardX + unit.columna * this.cell;
+    const y = this.boardY + unit.fila * this.cell;
+    const teamColor = unit.bando === "B" ? 0xd18c6f : 0x6fa3b9;
+    this.previewLayer.fillStyle(teamColor, .22);
+    this.previewLayer.fillRoundedRect(x + 2, y + 2, this.cell - 4, this.cell - 4, Math.max(4, this.cell * .12));
+    this.previewLayer.lineStyle(Math.max(2, this.cell * .07), 0x1f5961, .95);
+    this.previewLayer.strokeRoundedRect(x + 3, y + 3, this.cell - 6, this.cell - 6, Math.max(4, this.cell * .12));
   }
 
   clearAdversarialAction() {
@@ -776,6 +913,7 @@ class TacticalGridScene extends Phaser.Scene {
       costLabel.setOrigin(.5).setDepth(4.2);
       this.moveCostLabels.push(costLabel);
     }
+    this.drawUnitPreview();
   }
 
   pulseCell(positionValue, color) {
@@ -825,11 +963,24 @@ class TacticalGridScene extends Phaser.Scene {
 
   selectCell(pointer) {
     if (!this.state || this.busy) return;
-    const column = Math.floor((pointer.worldX - this.boardX) / this.cell);
-    const row = Math.floor((pointer.worldY - this.boardY) / this.cell);
-    if (row < 0 || column < 0 || row >= this.rows || column >= this.cols) return;
+    const position = this.pointerCell(pointer);
+    if (!position) return;
+    const {fila: row, columna: column} = position;
     if (this.ui.pickingTarget) {
       this.ui.setTarget(row, column);
+      return;
+    }
+    if (this.ui.isManualKingPlacementActive()) {
+      this.ui.placeManualKing(row, column);
+      return;
+    }
+    if (this.ui.mode !== "partida") {
+      this.ui.setActionHint(
+        this.ui.mode === "busqueda"
+          ? "Modo búsqueda · configura la ruta desde el panel lateral."
+          : "Modo adversarial · calcula el mejor movimiento del turno desde el panel lateral.",
+        {kind: "info"}
+      );
       return;
     }
     const clicked = (this.state.unidades || []).find(unit =>

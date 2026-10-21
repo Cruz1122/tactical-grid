@@ -31,12 +31,16 @@ from backend.game.presentation import (
     state_revision,
     transition_events,
 )
-from backend.game.validation import ScenarioValidationError, validate_utf8_string
+from backend.game.validation import (
+    MAX_ADVERSARIAL_DEPTH,
+    ScenarioValidationError,
+    validate_utf8_string,
+)
 from backend.scenarios import prepare_scenario
 
 ROOT = Path(__file__).resolve().parent.parent
 FRONTEND = ROOT / "frontend"
-INITIAL = ROOT / "scenarios" / "initial.json"
+INITIAL = ROOT / "scenarios" / "partida" / "initial.json"
 
 with INITIAL.open(encoding="utf-8") as file:
     initial_state = prepare_scenario(json.load(file))
@@ -46,6 +50,27 @@ lock = RLock()
 
 app = FastAPI(title="TacticalGrid")
 app.mount("/assets", StaticFiles(directory=FRONTEND / "assets"), name="assets")
+
+MAX_SCENARIO_BYTES = 2 * 1024 * 1024
+MAX_BEAM_WIDTH = 64
+
+
+class DuplicateJsonKeyError(ValueError):
+    """Indica que un objeto JSON repite una clave y sería ambiguo importarlo."""
+
+
+def _load_json_without_duplicate_keys(raw: bytes) -> Any:
+    """Analiza JSON rechazando claves repetidas en cualquier objeto."""
+
+    def unique_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+        result: dict[str, Any] = {}
+        for key, value in pairs:
+            if key in result:
+                raise DuplicateJsonKeyError(f"Clave JSON duplicada: {key!r}")
+            result[key] = value
+        return result
+
+    return json.loads(raw, object_pairs_hook=unique_object)
 
 
 class Position(BaseModel):
@@ -80,12 +105,12 @@ class SearchRequest(BaseModel):
     unit_id: str = Field(min_length=1)
     goal: Position
     heuristic: Literal["manhattan", "second"] = "manhattan"
-    k: StrictInt = Field(default=2, ge=1)
+    k: StrictInt = Field(default=2, ge=1, le=MAX_BEAM_WIDTH)
 
 
 class AdversarialRequest(BaseModel):
     algorithm: Literal["minimax", "alpha_beta"]
-    depth: StrictInt | None = Field(default=None, ge=0)
+    depth: StrictInt | None = Field(default=None, ge=0, le=MAX_ADVERSARIAL_DEPTH)
     action_order: Literal["normal", "reverse"] = "normal"
 
 
@@ -97,8 +122,8 @@ class VerifyRequest(BaseModel):
 class TestRequest(BaseModel):
     algorithm: Literal["bfs", "dfs", "ucs", "astar", "beam", "minimax", "alpha_beta"] = "bfs"
     heuristic: Literal["manhattan", "second"] = "manhattan"
-    k: StrictInt = Field(default=2, ge=1)
-    depth: StrictInt | None = Field(default=None, ge=0)
+    k: StrictInt = Field(default=2, ge=1, le=MAX_BEAM_WIDTH)
+    depth: StrictInt | None = Field(default=None, ge=0, le=MAX_ADVERSARIAL_DEPTH)
     action_order: Literal["normal", "reverse"] = "normal"
 
 
@@ -282,8 +307,16 @@ async def load_scenario(request: Request):
     candidate_source = "scenario.json"
 
     if content_type == "application/json":
+        raw_body = await request.body()
+        if len(raw_body) > MAX_SCENARIO_BYTES:
+            raise HTTPException(
+                status_code=413,
+                detail=f"El escenario no puede exceder {MAX_SCENARIO_BYTES} bytes.",
+            )
         try:
-            body = json.loads(await request.body())
+            body = _load_json_without_duplicate_keys(raw_body)
+        except DuplicateJsonKeyError as error:
+            raise HTTPException(status_code=422, detail=str(error)) from error
         except ValueError as error:
             raise HTTPException(
                 status_code=422,
@@ -298,8 +331,16 @@ async def load_scenario(request: Request):
                     status_code=422,
                     detail="Adjunta el escenario como archivo en el campo «file».",
                 )
+            raw_body = await uploaded_file.read(MAX_SCENARIO_BYTES + 1)
+            if len(raw_body) > MAX_SCENARIO_BYTES:
+                raise HTTPException(
+                    status_code=413,
+                    detail=f"El escenario no puede exceder {MAX_SCENARIO_BYTES} bytes.",
+                )
             try:
-                body = json.loads(await uploaded_file.read())
+                body = _load_json_without_duplicate_keys(raw_body)
+            except DuplicateJsonKeyError as error:
+                raise HTTPException(status_code=422, detail=str(error)) from error
             except ValueError as error:
                 raise HTTPException(
                     status_code=422,
@@ -432,15 +473,23 @@ def search_state(state: dict, body: SearchRequest):
     goal = body.goal.as_scenario_position()
     match body.algorithm:
         case "bfs":
-            return bfs(state, body.unit_id, goal)
+            result = bfs(state, body.unit_id, goal)
         case "dfs":
-            return dfs(state, body.unit_id, goal)
+            result = dfs(state, body.unit_id, goal)
         case "ucs":
-            return ucs(state, body.unit_id, goal)
+            result = ucs(state, body.unit_id, goal)
         case "astar":
-            return astar(state, body.unit_id, goal, body.heuristic)
+            result = astar(state, body.unit_id, goal, body.heuristic)
         case "beam":
-            return beam_search(state, body.unit_id, goal, body.k)
+            result = beam_search(state, body.unit_id, goal, body.k)
+    result["algorithm"] = body.algorithm
+    result["unit_id"] = body.unit_id
+    result["goal"] = goal
+    if body.algorithm == "astar":
+        result["heuristic"] = body.heuristic
+    if body.algorithm == "beam":
+        result["k"] = body.k
+    return result
 
 
 @app.post("/api/search")
@@ -454,12 +503,14 @@ def search(body: SearchRequest):
 def evaluate_state(state: dict, body: AdversarialRequest):
     """Recomienda una acción sin aplicarla al estado de la partida."""
     game = state.get("juego", {})
-    configured_depth = game.get("profundidad_maxima_minimax", 4) if isinstance(game, dict) else 4
+    configured_depth = game.get("profundidad_maxima_minimax", 3) if isinstance(game, dict) else 3
     depth = body.depth if body.depth is not None else configured_depth
     if type(depth) is not int or depth < 0:
         raise HTTPException(
             status_code=422,
-            detail="La profundidad configurada debe ser un entero mayor o igual que cero",
+            detail=(
+                "La profundidad configurada debe ser un entero mayor o igual a 0"
+            ),
         )
     if body.algorithm == "minimax":
         return minimax(state, depth, body.action_order)

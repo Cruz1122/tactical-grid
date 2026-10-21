@@ -1,0 +1,186 @@
+{
+  "version": "1.0",
+  "mapa": {
+    "filas": 7,
+    "columnas": 9
+  },
+  "tipos_terreno": {
+    "camino": {
+      "costo": 1,
+      "transitable": true
+    },
+    "pasto": {
+      "costo": 2,
+      "transitable": true
+    },
+    "grava": {
+      "costo": 3,
+      "transitable": true
+    },
+    "bosque": {
+      "costo": 4,
+      "transitable": true
+    },
+    "pantano": {
+      "costo": 7,
+      "transitable": true
+    },
+    "hielo": {
+      "costo": 0.5,
+      "transitable": true
+    },
+    "muro": {
+      "transitable": false
+    }
+  },
+  "terreno": [
+    [
+      "camino",
+      "camino",
+      "camino",
+      "camino",
+      "camino",
+      "camino",
+      "camino",
+      "camino",
+      "camino"
+    ],
+    [
+      "camino",
+      "camino",
+      "camino",
+      "camino",
+      "camino",
+      "camino",
+      "camino",
+      "camino",
+      "camino"
+    ],
+    [
+      "camino",
+      "camino",
+      "camino",
+      "camino",
+      "camino",
+      "camino",
+      "camino",
+      "camino",
+      "camino"
+    ],
+    [
+      "camino",
+      "camino",
+      "camino",
+      "muro",
+      "muro",
+      "muro",
+      "camino",
+      "camino",
+      "camino"
+    ],
+    [
+      "camino",
+      "camino",
+      "camino",
+      "camino",
+      "camino",
+      "camino",
+      "camino",
+      "camino",
+      "camino"
+    ],
+    [
+      "camino",
+      "camino",
+      "camino",
+      "camino",
+      "camino",
+      "camino",
+      "camino",
+      "camino",
+      "camino"
+    ],
+    [
+      "camino",
+      "camino",
+      "camino",
+      "camino",
+      "camino",
+      "camino",
+      "camino",
+      "camino",
+      "camino"
+    ]
+  ],
+  "bases": {
+    "A": {
+      "fila": 0,
+      "columna": 0
+    },
+    "B": {
+      "fila": 6,
+      "columna": 8
+    }
+  },
+  "recurso": {
+    "fila": 2,
+    "columna": 4
+  },
+  "unidades": [
+    {
+      "id": "A_ES",
+      "bando": "A",
+      "tipo": "estandar",
+      "fila": 1,
+      "columna": 1
+    },
+    {
+      "id": "A_RO",
+      "bando": "A",
+      "tipo": "rook",
+      "fila": 0,
+      "columna": 7
+    },
+    {
+      "id": "A_BI",
+      "bando": "A",
+      "tipo": "bishop",
+      "fila": 6,
+      "columna": 1
+    },
+    {
+      "id": "B_KN",
+      "bando": "B",
+      "tipo": "knight",
+      "fila": 5,
+      "columna": 5
+    },
+    {
+      "id": "B_RO",
+      "bando": "B",
+      "tipo": "rook",
+      "fila": 6,
+      "columna": 7
+    },
+    {
+      "id": "B_BI",
+      "bando": "B",
+      "tipo": "bishop",
+      "fila": 5,
+      "columna": 7
+    }
+  ],
+  "turno": "A",
+  "juego": {
+    "portador_recurso": null,
+    "profundidad_maxima_minimax": 3
+  },
+  "prueba": {
+    "modo": "busqueda",
+    "unidad_inicio": "A_ES",
+    "objetivo": {
+      "fila": 5,
+      "columna": 6
+    }
+  }
+}
