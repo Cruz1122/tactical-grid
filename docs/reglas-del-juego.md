@@ -1,5 +1,7 @@
 # Reglas de TacticalGrid
 
+**Juan Camilo Cruz Parra · Sistemas Inteligentes I**
+
 TacticalGrid es un juego táctico de dos bandos, **A** y **B**. El objetivo consiste en recoger una reina neutral y transportarla legalmente hasta la base del propio equipo. El tablero, los terrenos, los costos, las posiciones iniciales y las bases se definen mediante un archivo JSON.
 
 ## Unidades y movimientos

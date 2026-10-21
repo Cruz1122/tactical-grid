@@ -1,158 +1,215 @@
-# TacticalGrid — Manual ilustrado de usuario
+# Manual de usuario de TacticalGrid
 
-**Guía de uso · Edición 2026**
+**Juan Camilo Cruz Parra · Sistemas Inteligentes I**  
+**Versión académica · Octubre de 2026**
 
-Este manual explica cómo instalar TacticalGrid, utilizar los controles del tablero e interpretar los resultados de búsquedas, decisiones adversariales y partidas. Incluye diagramas de dos escenarios para identificar visualmente los elementos del juego.
+TacticalGrid es un juego táctico por turnos y una herramienta para observar cómo trabajan algoritmos de búsqueda y decisión adversarial. Este manual permite instalarlo **desde un computador sin el proyecto configurado**, iniciar la interfaz y reproducir los experimentos incluidos. Los gráficos corresponden a escenarios JSON del programa.
 
-## 1. Preparar el proyecto
+## 1. Qué necesitas antes de comenzar
 
-**Necesitas:** Python 3.11 o superior, navegador moderno, Git opcional y conexión a internet para cargar Phaser y KaTeX desde las URL CDN que aparecen en el HTML.
+- Un computador con Windows 10/11, Linux o macOS y permisos para instalar Python.
+- **Python 3.10 o posterior**, un navegador reciente (Chrome, Firefox o Edge) y conexión a Internet para cargar las bibliotecas visuales de Phaser y KaTeX.
+- El código de [TacticalGrid en GitHub](https://github.com/Cruz1122/tactical-grid), descargado como ZIP o mediante Git.
+- Una terminal: PowerShell en Windows, Terminal en macOS o la terminal de tu distribución Linux.
 
-Desde la carpeta raíz del repositorio, en Linux o Arch:
+**El juego no requiere Node.js ni un servidor web adicional.** FastAPI sirve tanto la API como la interfaz desde el mismo puerto.
 
-```bash
-python -m venv .venv
-source .venv/bin/activate
-python -m pip install -r requirements.txt
-python -m uvicorn backend.main:app --reload
+## 2. Instalar desde cero en Windows
+
+### Paso 1. Instalar Python
+
+Abre [python.org/downloads](https://www.python.org/downloads/) y descarga una versión compatible de Python. Ejecuta el instalador; habilita la opción que permite añadir Python al `PATH` cuando esté disponible. Al terminar, abre PowerShell y comprueba:
+
+```powershell
+py -3 --version
 ```
 
-El primer comando crea un entorno virtual local; el segundo lo activa en la terminal actual; el tercero instala las dependencias del backend; y el último inicia la API y el frontend en **un único servidor**. Abre `http://127.0.0.1:8000/` en el navegador. Mantén la terminal con Uvicorn abierta. Swagger está en `http://127.0.0.1:8000/docs`.
+El resultado debe indicar Python 3.10 o superior. `py -3` selecciona la instalación de Python 3 registrada en Windows. Si no se reconoce, reinicia PowerShell después de instalar Python.
 
-En Arch Linux, si falta el intérprete, consulta [ArchWiki: Python](https://wiki.archlinux.org/title/Python). `venv`: [documentación oficial](https://docs.python.org/3/library/venv.html). FastAPI: [primeros pasos](https://fastapi.tiangolo.com/tutorial/first-steps/).
+### Paso 2. Obtener el proyecto
 
-**Si no aparece el tablero:** comprueba la conexión a Internet y abre la consola del navegador. La interfaz requiere descargar Phaser y KaTeX; el panel HTML puede cargar aunque falte alguna biblioteca.
+Abre [github.com/Cruz1122/tactical-grid](https://github.com/Cruz1122/tactical-grid), pulsa **Code → Download ZIP**, descomprime el archivo y abre PowerShell dentro de la carpeta descomprimida. Por ejemplo:
 
-## 2. Entender la pantalla antes de pulsar botones
+```powershell
+cd "$HOME\Downloads\tactical-grid-main"
+```
 
-La interfaz está dividida en un **tablero** y un **panel de controles**. El tablero muestra terreno, unidades A/B, reyes si existen, bases, reina, turno y marcas de búsqueda o decisión. El panel presenta el nombre del archivo cargado, el modo de prueba, opciones de selección y métricas. No todas las opciones aparecen en todos los modos.
+El nombre de carpeta depende de la descarga. Debes ver `requirements.txt` y las carpetas `backend`, `frontend` y `scenarios`.
 
-![Diagrama de escenario de partida 6x6 construido desde JSON](figuras/diagrama-partida-6x6.svg)
+### Paso 3. Crear un entorno aislado
 
-*Figura 1 — Representación del escenario `scenarios/partida/mapa_partida_presentacion.json`. Azul = A, rojo = B, rombo = recurso, casilla oscura = obstáculo. Los anillos señalan las bases.*
+```powershell
+py -3 -m venv .venv
+```
 
-**Distinción básica:** que una pieza esté visualmente cerca del recurso no significa que pueda alcanzarlo con el siguiente movimiento: las barreras, los costos y el tipo de unidad importan. Tampoco significa que una recomendación adversarial se ejecute sola.
+Crea `.venv`, un entorno Python dedicado al proyecto. No es obligatorio activarlo: podemos llamar a su intérprete directamente y evitar problemas de políticas de ejecución de PowerShell.
 
-### Leer los elementos
+### Paso 4. Instalar las dependencias
 
-| Elemento | Significado en el juego | Qué observar |
-|---|---|---|
-| Base A / base B | Casillas de entrega del recurso para su equipo | No se gana por llegar sin reina |
-| Reina neutral | Objetivo compartido; su posición inicial queda guardada en `recurso_spawn` | El portador se identifica en el estado; capturarlo devuelve reina al spawn |
-| Pieza A / B | Unidad móvil de uno de los equipos | Solo actúa el equipo cuyo turno esté activo |
-| Obstáculo | Terreno no transitable | Una torre/alfil no puede atravesarlo; caballo puede saltar según reglas |
-| Costo de terreno | Costo de *entrar* o cruzar una casilla | Se usa para UCS/A* y cálculo real de rutas |
-| Rey | Pieza estática no capturable | El jaque bloquea recoger la reina, **no** entregarla |
+```powershell
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+```
 
-## 3. Cargar uno de los tres modos
+Este comando instala FastAPI, Uvicorn y las otras dependencias indicadas por el repositorio. Espera a que termine sin errores antes de continuar.
 
-En el panel de escenario usa el selector de archivo JSON y escoge, por ejemplo:
+### Paso 5. Iniciar TacticalGrid
 
-| Archivo de ejemplo | `prueba.modo` | Resultado esperado |
-|---|---|---|
-| `scenarios/busqueda/02_bfs_ucs_dos_corredores.json` | `busqueda` | Se habilita el panel de navegación de una unidad |
-| `scenarios/adversarial/07_intercepcion_portador.json` | `adversarial` | Minimax o alfa-beta recomienda la jugada del turno |
-| `scenarios/partida/mapa_partida_presentacion.json` | `partida` | Se puede jugar manualmente o activar la autopartida |
+```powershell
+.\.venv\Scripts\python.exe -m uvicorn backend.main:app --reload
+```
 
-**Proceso:** 1) pulsa cargar/seleccionar escenario; 2) elige el JSON; 3) espera confirmación del servidor; 4) revisa nombre, tipo de prueba, dimensiones y turno; 5) antes de una nueva ejecución utiliza **reiniciar escenario** si quieres partir de su estado inicial.
+Cuando la terminal anuncie que Uvicorn está escuchando, abre **http://127.0.0.1:8000** en el navegador. Para explorar las rutas de la API visita **http://127.0.0.1:8000/docs**. No cierres PowerShell mientras juegas; para detener el servidor pulsa **Ctrl+C**.
 
-Si aparece un error 422, lee el detalle: el servidor rechaza el JSON completo sin sobrescribir la partida que tenías antes. No «arregles» un archivo ocultando unidades o costos; corrígelo según el formato de la rúbrica.
+## 3. Instalar desde cero en Linux
 
-### Qué se guarda al cargar
+### Paso 1. Instalar Python y su entorno virtual
 
-Una carga válida sustituye el estado inicial y el estado actual del servidor. La búsqueda y la decisión adversarial utilizan **copias** del estado; un movimiento de partida sí cambia el oficial. Esta diferencia se comprueba leyendo `/api/state` antes y después de la operación.
+Abre una terminal. Ejecuta **solo** el comando de tu distribución:
 
-## 4. Modo búsqueda: ejecutar BFS, DFS, UCS, A* o Beam
+```bash
+# Arch Linux / CachyOS
+sudo pacman -S --needed python
 
-1. Carga un escenario con `prueba.modo = "busqueda"`, como el de los dos corredores.
-2. Selecciona el algoritmo en el panel: BFS, DFS, UCS, A* o Beam Search.
-3. Selecciona **unidad de inicio**. Es la única que avanzará hipotéticamente; las demás son el entorno.
-4. En **Objetivo · fila, columna**, escribe la meta o pulsa **Elegir** y selecciónala en el tablero.
-5. Si elegiste A*, escoge Manhattan o la segunda heurística; si elegiste Beam, indica `k`.
-6. Pulsa **Ejecutar búsqueda**. Observa la ruta marcada y lee los indicadores de movimientos, costo, generados, expandidos, frontera máxima y tiempo.
-7. Reinicia el escenario o limpia el resultado si vas a repetir con otro algoritmo.
+# Debian / Ubuntu
+sudo apt update && sudo apt install python3 python3-venv python3-pip
 
-**Cómo interpretar un resultado:** si BFS devuelve 5 movimientos con costo 20 y UCS 7 movimientos con costo 11, ambos pueden estar correctos. BFS optimiza **movimientos**; UCS optimiza **costo acumulado**. Un deslizamiento largo de torre o alfil es un solo movimiento, pero paga las casillas cruzadas.
+# Fedora
+sudo dnf install python3 python3-pip
+```
 
-**A*** selecciona con `f=g+h`. Manhattan cuenta diferencia absoluta de filas más columnas; la segunda heurística estima el costo faltante con mínimos de terreno y geometría de la pieza. La segunda es la elección apropiada para discutir admisibilidad; Manhattan no es siempre admisible en el sistema. **Beam** solo conserva los `k` mejores candidatos por nivel; un `k` pequeño puede perder soluciones.
+El gestor de paquetes descarga Python desde los repositorios de la distribución. Después comprueba `python3 --version`; debe ser 3.10 o posterior. En Arch, el paquete `python` también ofrece `venv`. Referencias: [ArchWiki — Python](https://wiki.archlinux.org/title/Python), [documentación oficial de venv](https://docs.python.org/3/library/venv.html).
 
-### Ejercicio de comparación BFS, UCS y A*
+### Paso 2. Descargar el repositorio
 
-Abre `02_bfs_ucs_dos_corredores.json`. Ejecuta BFS y anota movimientos y costo. Sin modificar el JSON, ejecuta UCS con el mismo origen y destino y explica por qué puede tomar un rodeo de menor costo. Repite A* con ambas heurísticas y observa estados expandidos sin afirmar de antemano cuál será más rápida.
+La forma más simple no requiere Git: abre la página del proyecto, selecciona **Code → Download ZIP**, extrae el contenido y entra a esa carpeta. Si prefieres Git, instala el paquete `git` con el gestor de tu distribución y ejecuta:
 
-## 5. Modo adversarial: evaluar una acción sin ejecutarla
+```bash
+git clone https://github.com/Cruz1122/tactical-grid.git
+cd tactical-grid
+```
 
-![Diagrama derivado del escenario 20x20 con tres unidades por bando](figuras/diagrama-adversarial-20x20.svg)
+`git clone` copia el repositorio; `cd` entra a su raíz. Si descargaste ZIP, cambia a la carpeta extraída utilizando `cd` con su ruta real.
 
-*Figura 2 — Esquema del escenario `scenarios/adversarial/externo_adversarial_3v3.json`. El fondo muestra terrenos baratos y caros; hay obstáculos cerca del recurso central.*
+### Paso 3. Crear el entorno y las dependencias
 
-1. Carga un JSON con `prueba.modo = "adversarial"`.
-2. En el apartado **Mejor movimiento del turno**, selecciona **Minimax** o **Alfa-beta**.
-3. Escoge **Profundidad** (por ejemplo 2 para demostrar respuesta del rival; el límite de solicitud de la interfaz es 5).
-4. Escoge **Orden de acciones**: normal o inverso.
-5. Pulsa **Calcular mejor movimiento**.
-6. Lee la acción recomendada y las métricas: valor, profundidad, nodos generados, visitados, evaluados, podados y tiempo.
-7. Usa **Anterior/Siguiente** para inspeccionar opciones legales si el panel las muestra. La marca visual de una opción indica **origen y destino**, no representa toda la rama interna de Minimax.
-8. Si quieres convertir esa recomendación en un turno real, usa **Ejecutar jugada recomendada**. La recomendación inicial por sí misma **no** modifica la partida.
+```bash
+python3 -m venv .venv
+.venv/bin/python -m pip install -r requirements.txt
+```
 
-El bando del turno es MAX en la raíz. MIN representa al rival y selecciona respuestas que perjudican la valoración de MAX; no tiene menos capacidad ni reglas diferentes. Con la misma profundidad y utilidad, Minimax y alfa-beta deben devolver la misma decisión; alfa-beta puede evaluar menos hojas porque poda ramas irrelevantes.
+El primer comando crea el entorno; el segundo usa su Python para instalar dependencias sin modificar los paquetes del sistema, lo que es especialmente relevante en distribuciones que aplican PEP 668.
 
-**Si tarda demasiado:** reduce profundidad antes de repetir. El crecimiento aproximado es exponencial respecto al número de acciones por turno. Profundidad 5 puede ser costosa en un 20×20; no demuestra mejor juego por sí sola.
+### Paso 4. Ejecutar
 
-## 6. Modo partida: jugar una partida completa
+```bash
+.venv/bin/python -m uvicorn backend.main:app --reload
+```
 
-Este modo **sí** altera el estado del servidor. No es lo mismo que recibir una recomendación adversarial.
+Abre **http://127.0.0.1:8000**. Si ya hay otro servidor usando el puerto 8000, detén ese proceso o utiliza `--port 8001` y abre la dirección correspondiente. Detén TacticalGrid con **Ctrl+C**. En una máquina de exposición puede omitirse `--reload` para evitar reinicios automáticos.
 
-### Partida manual
+## 4. Instalar desde cero en macOS
+
+Instala Python desde [python.org](https://www.python.org/downloads/) o, si ya utilizas Homebrew, ejecuta `brew install python`. Comprueba la versión con `python3 --version`. Descarga y descomprime el ZIP del repositorio desde GitHub. En Terminal, entra a la carpeta extraída y ejecuta:
+
+```bash
+python3 -m venv .venv
+.venv/bin/python -m pip install -r requirements.txt
+.venv/bin/python -m uvicorn backend.main:app --reload
+```
+
+Cada comando tiene el mismo propósito que en Linux: crear entorno, instalar dependencias e iniciar el servidor. Accede a **http://127.0.0.1:8000** desde Safari, Chrome o Firefox.
+
+## 5. Primer inicio: reconocer el tablero
+
+![Estado de una partida 6×6](figuras/diagrama-partida-6x6.svg)
+
+*Figura 1. Escenario `scenarios/partida/mapa_partida_presentacion.json`: bases en las esquinas, reina neutral en (2,3), dos unidades estándar y barreras en las filas 1 y 4. Las coordenadas son (fila, columna), desde cero.*
+
+En el tablero verás las **bases** de A y B, la **reina neutral**, las piezas de cada equipo, las casillas transitables y los obstáculos. El panel lateral muestra el escenario activo, el turno y las herramientas disponibles. Un jugador solo puede mover unidades de su bando durante su turno. Si hay reyes configurados, permanecen inmóviles y el jaque afecta a la recogida de la reina.
+
+### Cargar un escenario
+
+1. Ubica el control de selección o importación de escenarios.
+2. Elige un archivo `.json` de las carpetas `scenarios/busqueda/`, `scenarios/adversarial/` o `scenarios/partida/`.
+3. Espera la confirmación de carga y comprueba el modo, las dimensiones y el turno.
+4. Para repetir desde el comienzo, usa **Reiniciar escenario** antes de ejecutar otro experimento.
+
+Los nombres de carpeta solo ayudan a organizar archivos. El comportamiento se determina por el campo `prueba.modo` dentro del JSON.
+
+## 6. Modo búsqueda: encontrar rutas para una unidad
+
+![Dos corredores con distinto costo](figuras/caso-02-corredores.svg)
+
+*Figura 2. `scenarios/busqueda/02_bfs_ucs_dos_corredores.json`. La ruta BFS (naranja) tiene 10 movimientos y costo 64; UCS (verde) realiza 12 movimientos y costo 12. Ambas empiezan y terminan en las mismas casillas.*
+
+1. Carga `scenarios/busqueda/02_bfs_ucs_dos_corredores.json`.
+2. Comprueba que el modo indique **Búsqueda**; el JSON define `unidad_inicio` y `objetivo`.
+3. En el panel de búsqueda selecciona **BFS** y ejecuta. Observa el camino y anota `movimientos`, `costo`, `generados`, `expandidos`, `frontera máxima` y `tiempo`.
+4. Sin cambiar escenario, unidad ni objetivo, selecciona **UCS** y vuelve a ejecutar.
+5. Compara los resultados: BFS minimiza número de movimientos; UCS minimiza costo acumulado de terreno. No son el mismo criterio.
+6. Para **A\*** selecciona Manhattan o la segunda heurística. Para **Beam Search**, indica un ancho `k` (por ejemplo 1, 2, 4 u 8).
+
+En modo búsqueda solo se mueve la unidad seleccionada **hipotéticamente**; el estado de la partida no avanza turnos. La ruta calculada es una solución de navegación, no una secuencia de turnos reales garantizada.
+
+Otros ejemplos útiles: `01_bfs_dfs_laberinto_perfecto.json` (comparación BFS/DFS), `03_trampa_U_manhattan.json` (barrera), `04_heuristicas_franjas_costosas.json` (comparación A*) y `05_beam_callejon_engañoso.json` (Beam pierde la ruta con k=1).
+
+## 7. Modo adversarial: recomendar la mejor acción del turno
+
+![Escenario adversarial con seis unidades](figuras/diagrama-adversarial-20x20.svg)
+
+*Figura 3. `scenarios/adversarial/externo_adversarial_3v3.json`: tres unidades estándar por bando, terreno de costos diferentes y recurso en (10,10). El mapa es 20×20.*
+
+1. Carga un escenario cuyo `prueba.modo` sea **adversarial**, por ejemplo `externo_adversarial_3v3.json`.
+2. En **Mejor movimiento del turno**, elige **Minimax** o **Alfa-beta**.
+3. Configura la profundidad. A profundidad 1 solo se evalúa la acción del turno actual; con profundidad 2 también se considera una respuesta del rival.
+4. Opcionalmente elige orden de exploración normal o inverso.
+5. Pulsa **Calcular mejor movimiento**. El resultado indica la acción elegida, su valor y las métricas de nodos y tiempo.
+6. Si quieres ejecutar la acción recomendada en la partida, pulsa **Ejecutar jugada recomendada**. Calcularla **no** la ejecuta automáticamente.
+
+Minimax maximiza la utilidad del equipo que tiene el turno suponiendo respuestas que le perjudican. Alfa-beta conserva la misma decisión y puede evitar evaluar ramas irrelevantes. Una valoración alta expresa preferencia según la función implementada, no certeza de victoria. En escenarios grandes una profundidad 5 puede requerir bastante tiempo.
+
+## 8. Modo partida: jugar hasta obtener un resultado
 
 1. Carga `scenarios/partida/mapa_partida_presentacion.json`.
-2. Comprueba cuál bando tiene el turno y selecciona una unidad activa de ese bando en el tablero.
-3. Elige un destino legal. Si la casilla contiene enemigo, el motor aplica la captura.
-4. Comprueba el cambio de turno, posible reaparición, estado de la reina y avisos del juego.
-5. Si una unidad ya está sobre la casilla de la reina y está autorizada, usa la acción explícita de **recoger reina**; también puede recogerse al llegar legalmente según las reglas del motor.
-6. Lleva la reina hasta la base propia. El juego declara victoria solamente después de una entrega legal.
+2. Selecciona una unidad activa del bando cuyo turno aparece en pantalla.
+3. Escoge uno de sus destinos legales; una captura mueve a la víctima a su spawn si está libre.
+4. Al llegar legalmente a la reina, recógela según las acciones habilitadas. También existe la acción explícita de recoger para una unidad situada sobre ella.
+5. Transporta la reina a la **base de tu propio bando** para ganar. Llegar sin ella no basta.
+6. Si prefieres que ambos bandos actúen automáticamente, configura el algoritmo y usa **Autojugar hasta finalizar**. Puedes detener la ejecución desde el mismo control.
 
-### Autopartida
+En el escenario 6×6, una simulación reproducible de alfa-beta a profundidad 2 terminó con victoria de B después de 24 acciones. Es un resultado del escenario concreto, no una garantía de que todas las partidas terminen. Capturar al portador devuelve la reina a `recurso_spawn`; estar en jaque impide **recogerla**, pero no **transportarla ni entregarla**.
 
-En modo partida aparece **Autojugar hasta finalizar**. Esta función solicita una recomendación adversarial, la transforma en una acción real, espera la confirmación del servidor y continúa con el siguiente bando. La autopartida no reemplaza la validación de movimientos; sigue utilizando `/api/move` y `/api/collect`. Si se detiene sin un resultado terminal, la partida no tiene ganador oficial: consulta el último estado y los mensajes de error.
+## 9. Comprobar que la instalación funciona
 
-**Resultado reproducido:** el escenario de partida 6×6 con alfa-beta a profundidad 2 terminó con victoria oficial de B después de 24 acciones en el registro JSON. El escenario adversarial 20×20, jugado como simulación repetida, alcanzó 105 acciones y se detuvo por un detector de repetición **externo al motor**; no hubo ganador. Véase el informe para los parámetros exactos.
+Con Uvicorn activo, abre **http://127.0.0.1:8000/api/state**. El navegador debe mostrar un JSON con el estado de la partida. El endpoint **http://127.0.0.1:8000/docs** permite probar las operaciones sin utilizar la interfaz gráfica.
 
-### Qué ocurre en una captura del portador
+Para ejecutar las pruebas automáticas desde la carpeta raíz usa el Python del entorno:
 
-Cuando capturas a quien lleva la reina, **no te conviertes en portador automáticamente**. La reina vuelve a su posición inicial `recurso_spawn`. La víctima reaparece en su `spawn` si está disponible; en caso contrario permanece inactiva. Por eso una captura puede cambiar la valoración estratégica sin acercar físicamente la reina a tu base.
+```bash
+# Linux y macOS
+.venv/bin/python -m unittest discover -s backend/tests -t . -v
+.venv/bin/python -m compileall -q backend
+```
 
-### Jaque y reyes
+```powershell
+# Windows PowerShell
+.\.venv\Scripts\python.exe -m unittest discover -s backend/tests -t . -v
+.\.venv\Scripts\python.exe -m compileall -q backend
+```
 
-Si configuras reyes y tu rey está en jaque, no puedes **recoger** la reina mientras persista el jaque. Sin embargo, puedes **seguir moviendo** y, si ya llevabas la reina, **entregarla**. Los reyes son estáticos. No apliques jaque mate ni otras reglas del ajedrez convencional que el proyecto no define.
+El primer comando comprueba comportamientos del motor, algoritmos y API. El segundo revisa que los módulos Python compilen. Los resultados de referencia y los tableros empleados para cada experimento aparecen en el **Informe de verificación**.
 
-## 7. Cómo comparar algoritmos correctamente
+## 10. Solución de problemas
 
-Antes de comparar, asegura que escenario, unidad, objetivo, orden y profundidad sean los mismos. Para las búsquedas registra como mínimo los campos del panel; para Minimax y alfa-beta, compara **acción y valor**, luego nodos y tiempo. No mezcles tiempos entre computadores ni compares dos decisiones con profundidades distintas como si se hubiera variado solo la poda.
-
-**Demostraciones esenciales:** BFS/DFS; BFS/UCS; obstáculo que obliga a rodear; A* con dos heurísticas; Beam con k=1,2,4,8; estado compuesto; decisión defensiva; Minimax/alfa-beta; orden normal/inverso; profundidad 1,2,3. Los escenarios de los diez casos están organizados por modo.
-
-## 8. Verificar la respuesta desde la interfaz o la API
-
-La aplicación implementa `/api/verify` para estado, ruta y decisión. En una ruta se revisan desplazamientos legales, costo real y meta alcanzada; en una recomendación se comprueba que la acción sea legal para el turno, no que la estrategia sea infalible. También puedes consultar `/docs` para ver el contrato de cada endpoint sin inventar campos.
-
-Solución de problemas frecuentes:
-
-| Síntoma | Causa probable | Acción correcta |
+| Problema | Qué revisar | Solución recomendada |
 |---|---|---|
-| Pantalla sin tablero, pero panel HTML visible | Phaser no cargó desde CDN | Revisar conectividad y consola JS antes de la demo |
-| JSON rechazado | Dimensiones, identificadores, posiciones o costos no válidos | Leer error 422; conservar y corregir el archivo externo |
-| Búsqueda sin ruta | Meta no alcanzable para esa pieza | Contrastar obstáculos, ocupación, tipo y, con alfil, paridad |
-| Beam falla y BFS funciona | Se descartó el candidato útil | Aumentar k y mostrar la diferencia |
-| Jugada adversarial no parece buena | Horizonte corto o pesos aproximados | Consultar la profundidad y el valor de evaluación; no existe garantía de victoria |
-| Autopartida repite posiciones | Bloqueo táctico o límite de evaluación | Consultar el estado y la traza; la repetición no equivale a un empate oficial |
+| No se reconoce `python3` o `py` | Instalación o `PATH` | Reinstala Python y abre una terminal nueva |
+| `requirements.txt` no aparece | Carpeta de trabajo | Entra a la raíz del proyecto antes de instalar |
+| Falla la creación de `.venv` en Debian/Ubuntu | Falta `python3-venv` | Instala ese paquete con `apt` |
+| `ModuleNotFoundError` al iniciar | Dependencias instaladas fuera del entorno | Usa explícitamente el intérprete `.venv` en todos los comandos |
+| La página HTML abre, pero no se dibuja el tablero | Dependencias visuales en línea | Comprueba conexión y consola del navegador; recarga después |
+| Error 422 al importar JSON | Escenario inválido | Revisa el mensaje: posición, costo, matriz y turno |
+| Beam no encuentra ruta | Ancho `k` limitado | Compara con BFS y aumenta `k` |
+| La autopartida se detiene o repite posiciones | Estado táctico complejo o horizonte limitado | Revisa turno, valor, amenazas y traza; repetición no significa empate oficial |
 
-## 9. Preguntas frecuentes
-
-**¿Por qué una ruta no ejecuta movimientos reales?** Porque el modo de búsqueda trabaja sobre una copia hipotética del estado.
-
-**¿Por qué alfa-beta no siempre gana?** Selecciona una acción según la profundidad elegida y la evaluación aproximada; el rival puede reaccionar y no hay garantía de victoria.
-
-**¿Qué cambia si modifico un costo de terreno?** El cálculo de costos y los algoritmos que los optimizan utilizan los nuevos valores del JSON, sin modificar el código fuente.
-
-**¿Dónde consulto la implementación y los resultados?** En el [documento técnico](documento-tecnico.md) y el [informe de verificación](informe-verificacion.md).
+El funcionamiento interno y los límites matemáticos están desarrollados en el **Documento técnico** y las reglas concretas en **Reglas de TacticalGrid**.

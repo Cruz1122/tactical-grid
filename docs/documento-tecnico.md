@@ -1,8 +1,8 @@
 # TacticalGrid — Documento técnico
 
-**Sistemas Inteligentes I · Proyecto 1 · UCaldas**  
+**Sistemas Inteligentes I · Primer proyecto**  
 **Versión de referencia:** octubre de 2026.  
-**Autoría:** equipo de TacticalGrid. El uso sustancial de IA en código y documentación se detalla en la [declaración de IA](uso-de-ia.md).
+**Autor:** Juan Camilo Cruz Parra · **Asignatura:** Sistemas Inteligentes I. La intervención sustancial de IA en el código y la documentación se declara en **Uso de inteligencia artificial**.
 
 > **Alcance.** Se describe la implementación de `backend/` y `frontend/` y se presentan mediciones reproducibles bajo las condiciones indicadas. La política adversarial es aproximada y no garantiza victoria en todos los escenarios.
 
@@ -57,6 +57,14 @@ Una captura ocurre al terminar en casilla ocupada por enemigo: el capturado reap
 
 Las capturas hipotéticas de la búsqueda utilizan los efectos del motor, aunque ello no implica que una ruta sea una partida real garantizada.
 
+### Validación ilustrada de datos externos
+
+Los errores de importación son parte del contrato del motor: validar el JSON completo evita que una estructura inconsistente altere la partida actual. Los siguientes dos ejemplos proceden del banco de errores: `positions_07_unidad_en_muro.json` intenta ubicar `unidades[0]` en `(1,1)`, una casilla bloqueada; `terrain_02_costo_cero.json` configura `pantano.costo = 0`, incompatible con la condición de costo estrictamente positivo.
+
+![JSON inválidos y motivo del rechazo](figuras/validacion-escenarios-invalidos.svg)
+
+*Figura A. Dos tableros 4×4 procedentes de escenarios inválidos reales. También se verifica `game_01_turno_C.json`: el turno C se rechaza porque solo existen A y B.*
+
 ## 4. Algoritmos de navegación: qué optimiza cada uno
 
 Se explora un grafo implícito de estados. Cada arista representa una acción **completa** de la pieza seleccionada: una torre que se desliza cinco casillas recorre una arista, no cinco movimientos BFS. Definimos *V* como el número de estados alcanzables, *E* como el número de transiciones y *b* como la ramificación máxima del estado.
@@ -74,6 +82,14 @@ Mantiene una pila LIFO, con orden determinista de sucesores. Sirve para demostra
 Utiliza `heapq` para priorizar la menor distancia acumulada g(n). Si alcanza el mismo estado con menor g, relaja la ruta y actualiza su padre. Las entradas antiguas del heap se ignoran. Con costos de transición estrictamente positivos encuentra un costo mínimo al extraer la meta de la cola. En un grafo explícito con heap, una referencia aproximada es O((V+E) log V), sin ocultar el costo de materializar transiciones o gestionar entradas repetidas.
 
 **Experimento obligatorio:** un corredor corto sobre terreno caro frente a otro más largo y barato. BFS minimiza movimientos; UCS puede seleccionar más movimientos con menor costo.
+
+### Resultado experimental: costos frente a movimientos
+
+La comparación utiliza `scenarios/busqueda/02_bfs_ucs_dos_corredores.json` (20×20), con la misma unidad `A_ES` y meta para ambos métodos.
+
+![BFS y UCS en corredores ponderados](figuras/caso-02-corredores.svg)
+
+*Figura B. El camino BFS tiene 10 movimientos y costo 64; UCS toma 12 movimientos con costo 12. La diferencia se debe a los costos del terreno del JSON, no a modificar el algoritmo según el escenario.*
 
 ## 5. A*: dos heurísticas realmente implementadas
 
@@ -102,11 +118,27 @@ La formulación estima *costo*, no distancia visual. Los obstáculos y terrenos 
 
 **Complejidad:** `_terrain_minima` recorre una matriz F×C y requiere O(FC) tiempo y O(F+C) espacio auxiliar. Usando esos mínimos precalculados, la evaluación de `estandar` efectúa sumas de hasta O(Δf+Δc); las ramas de otras piezas son O(1). No es correcto afirmar que el cálculo de la heurística `estandar` sea O(1) solo porque se precalcularon los mínimos.
 
+### Comparación visual de heurísticas
+
+En `scenarios/busqueda/04_heuristicas_franjas_costosas.json`, el tablero tiene regiones de distinto costo. A* con Manhattan expandió 257 estados; con la segunda heurística expandió 197. **Ambos alcanzaron costo 32 en 27 movimientos.** Este caso muestra un ahorro observado de expansión, no una mejora universal.
+
+![A* sobre franjas de terreno ponderado](figuras/caso-04-tablero.svg)
+
+*Figura C. Trayectoria registrada de A* con la segunda heurística en el escenario de franjas de terreno.*
+
 ## 6. Beam Search: poda por ancho, no poda alfa-beta
 
 Beam se organiza por niveles y conserva únicamente los **k estados distintos con mejor h(n)** de cada nivel, con costo real como desempate. Se implementó para `k = 1, 2, 4, 8` y valores adicionales dentro del límite API. Los estados descartados no equivalen a estados ya explorados. Las métricas cuentan candidatos únicos generados, expandidos, frontera retenida y candidatos descartados.
 
 A diferencia de A*, **Beam no es completo ni óptimo**: un haz estrecho puede perder un corredor que inicialmente parece malo pero conduce al destino. La comparación de valores de k evidencia la renuncia a alternativas; más k consume más tiempo/memoria, y no garantiza que todas las instancias mejoren. Complejidad ilustrativa por nivel O(k·b·log(k·b)) para ordenar candidatos, además de generar y validar transiciones; la memoria histórica puede crecer por claves visitadas.
+
+### Ejemplo experimental de descarte en Beam
+
+En `scenarios/busqueda/05_beam_callejon_engañoso.json`, `k=1` no resolvió la búsqueda porque perdió una alternativa útil; `k=2`, `k=4` y `k=8` sí encontraron rutas de costo 19. Es una pérdida deliberada de completitud propia de Beam con haz limitado, comprobada en ese escenario.
+
+![Beam y el callejón que engaña a k=1](figuras/caso-05-tablero.svg)
+
+*Figura D. Ruta de Beam k=2 en el mapa 20×20; Beam k=1 no tiene ruta final que dibujar.*
 
 ## 7. Minimax y alfa-beta: árbol de juego real
 
@@ -115,6 +147,14 @@ Aquí **MAX y MIN son roles**, no clases de fichas ni capacidades distintas. Al 
 La profundidad d representa d acciones completas alternadas; d=2 considera nuestra jugada y la respuesta del enemigo. En estados terminales se evalúa inmediatamente. Al alcanzar el horizonte se llama a `evaluate`. Para el mismo estado, profundidad, evaluación y criterio de desempate, Minimax y alfa-beta deben coincidir en valor y acción. El algoritmo alfa-beta elimina sucesores cuando `α ≥ β`; **no** es una heurística que elija otro ganador. `normal` y `reverse` cambian la exploración, y por tanto las podas, sin modificar el objetivo estratégico.
 
 Complejidad Minimax: O(b^d) nodos en el peor caso, con O(d) profundidad recursiva y almacenamiento adicional para los sucesores materializados por nivel. Alfa-beta tiene el mismo peor caso; el ahorro efectivo depende del orden. Para una ordenación ideal y estructura adecuada puede aproximarse a O(b^(d/2)) evaluaciones, pero **no garantizamos** ese comportamiento para todos los estados ni esa reducción medida en TacticalGrid.
+
+### Posición táctica real de la comparación Minimax / alfa-beta
+
+Los casos 7–10 utilizan un tablero 6×6 creado por `tactical_state()` en las pruebas Python, con reina libre en `(3,3)`, `A1` en `(3,2)`, `A2` torre en `(0,1)` y torre rival `B1` en `(3,1)`. A d=1 Minimax elige avanzar A1 a la reina; a d=2 decide capturar B1 con A2. Con d=3, Minimax y alfa-beta seleccionan la misma captura con valor 845; alfa-beta evalúa 328 hojas frente a 1094.
+
+![Posición táctica de comparación](figuras/casos-07-10-tablero-tactico.svg)
+
+*Figura E. Estado inicial de la prueba de decisión adversarial. Los resultados de esta figura no proceden del escenario 20×20.*
 
 ### 7.1. Utilidad estratégica actual (pesos verificables en `evaluation.py`)
 
@@ -148,7 +188,7 @@ La API contiene `/api/verify` y funciones de verificación para estado, ruta y r
 
 ### Experimentos y criterios
 
-Se usan los diez casos de las páginas 8–9 del PDF: BFS/DFS; BFS/UCS; U y obstáculo; dos heurísticas; Beam con k; estado compuesto; intercepción Minimax; Minimax contra alfa-beta; orden normal/inverso; y profundidad. Los escenarios nombrados de cada caso se encuentran bajo `scenarios/busqueda/` y `scenarios/adversarial/`, junto con un banco de errores deliberados bajo `scenarios/error/`. Los resultados observados y la metodología de repetición están en [Informe de verificación](informe-verificacion.md) y [Experimentos adversariales](experimentos-adversariales.md).
+Se documentan los diez casos de las páginas 8–9 del enunciado: BFS/DFS; BFS/UCS; U y obstáculo; dos heurísticas; Beam con k; estado compuesto; intercepción Minimax; Minimax contra alfa-beta; orden normal/inverso; y profundidad. Los escenarios nombrados de cada caso se encuentran bajo `scenarios/busqueda/` y `scenarios/adversarial/`, junto con un banco de errores deliberados bajo `scenarios/error/`. Los resultados observados y la metodología de repetición están en el **Informe de verificación** y en **Experimentos adversariales**.
 
 **Precaución importante:** no todas las diferencias de nodos constituyen mejoras universalmente válidas; el tiempo varía por máquina, entorno, caché y número de estados. No se asignan mejoras porcentuales ficticias ni se presume que un resultado de un escenario garantiza rendimiento en otros.
 
@@ -159,8 +199,8 @@ Se usan los diez casos de las páginas 8–9 del PDF: BFS/DFS; BFS/UCS; U y obst
 3. **Heurísticas frente a dinámica:** h geométricas ignoran algunas interacciones entre piezas; la función estratégica topológica es aproximada. Son estimaciones con fines distintos.
 4. **Dependencias del frontend:** Phaser/KaTeX se cargan desde CDN. Un entorno sin acceso bloquea la visualización en navegador, aunque API y motor sigan operativos.
 5. **Variación de rendimiento:** los tiempos dependen del número de acciones, la profundidad, los costos de validación, las copias de estados y el equipo utilizado.
-6. **Intervención de IA:** la IA generativa participó sustancialmente en implementación, depuración, pruebas y redacción. Se describe el alcance en [uso-de-ia.md](uso-de-ia.md).
+6. **Intervención de IA:** la IA generativa participó sustancialmente en implementación, depuración, pruebas y redacción. Se describe el alcance en **Uso de inteligencia artificial**.
 
 ## 10. Declaración de uso de IA
 
-Los métodos principales incluyen `Purpose`, `Preconditions`, `Postconditions`, `Complexity`, `AI usage`, `AI intervention` y `Student validation`, con descripciones en español de su finalidad, garantías, complejidad e intervención de IA. El proceso de desarrollo utilizó IA generativa de forma sustancial, incluida la generación y revisión de código, el diseño de heurísticas y los experimentos de regresión. Los mecanismos de verificación y el alcance de esa asistencia se detallan en [uso-de-ia.md](uso-de-ia.md).
+Los métodos principales incluyen `Purpose`, `Preconditions`, `Postconditions`, `Complexity`, `AI usage`, `AI intervention` y `Student validation`, con descripciones en español de su finalidad, garantías, complejidad e intervención de IA. El proceso de desarrollo utilizó IA generativa de forma sustancial, incluida la generación y revisión de código, el diseño de heurísticas y los experimentos de regresión. Los mecanismos de verificación y el alcance de esa asistencia se detallan en **Uso de inteligencia artificial**.

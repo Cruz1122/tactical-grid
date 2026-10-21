@@ -15,7 +15,8 @@ El repositorio incluye un backend FastAPI, una interfaz web servida por la misma
 aplicación, escenarios JSON y pruebas deterministas para el motor, la API, BFS,
 DFS, UCS, A*, Beam Search, Minimax y poda alfa-beta.
 
-**Integrantes:** [nombres completos de los integrantes]
+**Autor:** Juan Camilo Cruz Parra  
+**Asignatura:** Sistemas Inteligentes I
 
 ## Requisitos
 
@@ -201,7 +202,7 @@ outputs/        Mediciones y trazas reproducibles
 
 ## Documentación
 
-La guía de lectura está en [docs/README.md](docs/README.md). Los documentos de consulta son:
+El [índice de documentación](docs/README.md) permite consultar los manuales y anexos. Los documentos de consulta son:
 
 - [Manual de usuario](docs/manual-usuario.md)
 - [Reglas del juego](docs/reglas-del-juego.md)

@@ -1,5 +1,7 @@
 # Documentación de TacticalGrid
 
+**Juan Camilo Cruz Parra · Sistemas Inteligentes I**
+
 Los documentos están organizados por tarea: aprender a utilizar la aplicación, consultar las reglas, comprender la implementación y reproducir los resultados experimentales.
 
 | Documento | Contenido |
