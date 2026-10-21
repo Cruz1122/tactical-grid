@@ -18,15 +18,15 @@ _UNIT_TYPES = {
 
 
 def manhattan(position: Position, goal: Position) -> int:
-    """Calcula Manhattan, que no es admisible para todas las piezas o costos.
-
-    Purpose: Calcular distancia ortogonal geométrica para orientar A*.
-    Preconditions: Posición, objetivo y ficha de entrada válidos.
-    Postconditions: Devuelve número no negativo; no se presume admisible para todas las piezas.
-    Complexity: O(1) tiempo y espacio.
+    """Medir separación ortogonal por filas y columnas para A* de referencia.
+    
+    Purpose: Medir separación ortogonal por filas y columnas para A* de referencia.
+    Preconditions: Dos coordenadas enteras (fila, columna).
+    Postconditions: Distancia entera no negativa; no se presume admisible con cualquier pieza ni costo.
+    Complexity: O(1) tiempo y O(1) memoria.
     AI usage: Yes.
-    AI intervention: apoyo de IA en diseño, revisión, documentación o pruebas; verificar el alcance preciso en el informe.
-    Student validation: hay pruebas automatizadas; la comprobación y defensa personal de los integrantes sigue pendiente.
+    AI intervention: IA asistió en diseño/implementación y discusión de contraejemplos de admisibilidad.
+    Student validation: Comparación empírica con heurística propia; examen individual de cotas aún pendiente.
     """
     return abs(position[0] - goal[0]) + abs(position[1] - goal[1])
 
@@ -34,7 +34,16 @@ def manhattan(position: Position, goal: Position) -> int:
 def _terrain_minima(
     state: dict[str, Any],
 ) -> tuple[float, list[float], list[float]]:
-    """Precalcula costos mínimos transitables globales, por fila y por columna."""
+    """Precalcular costos transitables mínimos globales, por fila y por columna.
+    
+    Purpose: Precalcular costos transitables mínimos globales, por fila y por columna.
+    Preconditions: Escenario validado, matriz y catálogo de terrenos disponibles.
+    Postconditions: Tupla de costo global mínimo y vectores de mínimos que pueden reutilizarse.
+    Complexity: O(F*C) tiempo y O(F+C) memoria.
+    AI usage: Yes.
+    AI intervention: IA contribuyó a implementar el preprocesamiento para h propia por tipo de pieza.
+    Student validation: Pruebas de escenarios con costos positivos/fraccionarios; revisión personal pendiente.
+    """
     rows = state["mapa"]["filas"]
     columns = state["mapa"]["columnas"]
     row_minima = [inf] * rows
@@ -65,15 +74,15 @@ def second_heuristic(
     unit_type: str,
     terrain_minima: tuple[float, list[float], list[float]] | None = None,
 ) -> float:
-    """Estima el costo restante según geometría y mínimos de terreno.
-
-    Purpose: Estimar una cota inferior del costo restante de acuerdo con la geometría de la pieza.
-    Preconditions: Mapa válido y costos positivos procedentes del JSON.
-    Postconditions: Devuelve estimación no negativa y nula en objetivo.
-    Complexity: O(F*C) si calcula mínimos del mapa; O(1) con mínimos precalculados.
+    """Estimar una cota inferior de costo restante según movimiento de estándar/caballo/torre/alfil.
+    
+    Purpose: Estimar una cota inferior de costo restante según movimiento de estándar/caballo/torre/alfil.
+    Preconditions: Terrenos con costo positivo y coordenadas coherentes; mínimos precalculados o mapa válido.
+    Postconditions: Estimación no negativa y nula en la meta; no muta el mapa.
+    Complexity: Sin mínimos: O(F*C). Con mínimos: O(|Δf|+|Δc|) para estándar y O(1) en las otras ramas; memoria auxiliar O(F+C) al precalcular.
     AI usage: Yes.
-    AI intervention: apoyo de IA en diseño, revisión, documentación o pruebas; verificar el alcance preciso en el informe.
-    Student validation: hay pruebas automatizadas; la comprobación y defensa personal de los integrantes sigue pendiente.
+    AI intervention: IA intervino sustancialmente en la formulación de filas/columnas, cotas geométricas y codificación.
+    Student validation: Casos de A*, comparación contra UCS y escenarios de costos; defensa matemática individual pendiente.
     """
     min_cost, row_minima, column_minima = terrain_minima or _terrain_minima(state)
     dr = abs(position[0] - goal[0])

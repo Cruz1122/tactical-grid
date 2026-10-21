@@ -40,20 +40,15 @@ def _unit_position(state: dict[str, Any], unit_id: str) -> dict[str, int] | None
 
 
 def verify_path(scenario: dict[str, Any], result: dict[str, Any]) -> dict[str, Any]:
-    """Reproduce una ruta encontrada y contrasta su costo sin mutar la entrada.
-
-    La verificación prueba legalidad y coherencia de un testigo positivo. Un
-    resultado ``found=false`` no constituye por sí solo una prueba de
-    inalcanzabilidad, por lo que se informa esa limitación explícitamente.
+    """Reproducir un camino informado comprobando movimientos, costos y meta.
     
-
-    Purpose: Reproducir y comprobar cada movimiento de una ruta calculada.
-    Preconditions: Ruta, unidad y escenario suministrados.
-    Postconditions: Confirma legalidad, costo y objetivo o informa la discrepancia.
-    Complexity: O(P*T), P pasos y T costo de transición hipotética.
+    Purpose: Reproducir un camino informado comprobando movimientos, costos y meta.
+    Preconditions: Estado inicial y resultado de navegación bien formados.
+    Postconditions: Detecta pasos ilegales/costos incoherentes u objetivo no cumplido.
+    Complexity: O(L*(T_move+S)) para L pasos y transición del motor.
     AI usage: Yes.
-    AI intervention: apoyo de IA en diseño, revisión, documentación o pruebas; verificar el alcance preciso en el informe.
-    Student validation: hay pruebas automatizadas; la comprobación y defensa personal de los integrantes sigue pendiente.
+    AI intervention: IA ayudó a proponer e implementar verificación independiente de caminos reconstruidos.
+    Student validation: Suite de rutas y experimentos 1–5; revisión humana pendiente.
     """
     errors: list[str] = []
     checks: dict[str, bool] = {}
@@ -155,15 +150,15 @@ def verify_path(scenario: dict[str, Any], result: dict[str, Any]) -> dict[str, A
 
 
 def verify_state(state: dict[str, Any]) -> dict[str, Any]:
-    """Valida todas las invariantes estructurales del estado sin modificarlo.
-
-    Purpose: Verificar coherencia de un estado mediante las invariantes del motor.
-    Preconditions: Estado serializable y preparado o diagnosticable.
-    Postconditions: Retorna informe de validación sin modificar entrada.
-    Complexity: Dominada por validación del estado; típicamente O(F*C+U+K).
+    """Comprobar invariantes del estado que recibe el verificador.
+    
+    Purpose: Comprobar invariantes del estado que recibe el verificador.
+    Preconditions: Escenario y estado con contrato del motor.
+    Postconditions: Resultado de validez o detalle de error sin mutación.
+    Complexity: Depende de validación de mapa F*C y U unidades.
     AI usage: Yes.
-    AI intervention: apoyo de IA en diseño, revisión, documentación o pruebas; verificar el alcance preciso en el informe.
-    Student validation: hay pruebas automatizadas; la comprobación y defensa personal de los integrantes sigue pendiente.
+    AI intervention: IA asistió diseño y casos límite de verificaciones entregables.
+    Student validation: Tests del backend aprobados; revisión personal pendiente.
     """
     original = deepcopy(state)
     errors: list[str] = []
@@ -179,7 +174,16 @@ def verify_state(state: dict[str, Any]) -> dict[str, Any]:
 
 
 def verify_decision(state: dict[str, Any], result: dict[str, Any]) -> dict[str, Any]:
-    """Recalcula una decisión adversarial bajo los mismos parámetros y la compara."""
+    """Comprobar que la acción adversarial recomendada sea legal en el turno actual.
+    
+    Purpose: Comprobar que la acción adversarial recomendada sea legal en el turno actual.
+    Preconditions: Estado y respuesta adversarial con formato reconocido.
+    Postconditions: Validez o error sin ejecutar la acción.
+    Complexity: Dominado por generación/comprobación de acciones legales del estado.
+    AI usage: Yes.
+    AI intervention: IA asistió contrato de verificación adversarial y tests.
+    Student validation: Casos de API/Minimax ejecutados; revisión personal pendiente.
+    """
     errors: list[str] = []
     checks: dict[str, bool] = {}
     if not isinstance(result, dict):

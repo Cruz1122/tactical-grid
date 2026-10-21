@@ -1,40 +1,25 @@
-# TacticalGrid — documentación de diseño
+# Documentación de TacticalGrid — Índice de entrega
 
-TacticalGrid es un juego táctico 2D por turnos y un banco de pruebas para algoritmos de búsqueda y toma de decisiones. **El juego proporciona los estados y las reglas; lo que se estudia es cómo decide el sistema inteligente.**
+Este índice agrupa documentos escritos a partir de las reglas reales y del código verificado. **No sustituye la lectura ni la revisión individual exigida por el profesor.** La redacción de esta documentación contó con asistencia sustancial de IA y está declarada.
 
-Estos documentos explican reglas, arquitectura y evidencia de la versión preparada. Las verificaciones efectivas y sus límites figuran en el informe de verificación; no se atribuyen resultados no ejecutados. No organizan el proyecto por fases: cada archivo responde a una cuestión de diseño.
+## Ruta de lectura recomendada
 
-## Guía de lectura
+| Documento | Para qué sirve | Puntos concretos |
+|---|---|---|
+| [Manual ilustrado](manual-usuario.md) | Usar el programa | Instalar, cargar JSON, ejecutar búsqueda, decisión adversarial, partida y verificación. Figuras **esquemáticas**, no screenshots. |
+| [Documento técnico](documento-tecnico.md) | Sustentación de ingeniería | Modelo compuesto, costos por pieza, fórmulas de A*, función de utilidad con pesos actuales, Minimax y alfa-beta, complejidad. |
+| [Resultados verificados](informe-verificacion.md) | Reproducibilidad | Tabla real BFS/DFS/UCS/A*/Beam; nodos de Minimax y alfa-beta, partidas y límites. |
+| [Experimentos 7–10](experimentos-adversariales.md) | Preguntas adversariales | Acción defensiva, igualdad entre algoritmos, efecto de orden y profundidad. |
+| [Declaración de IA](uso-de-ia.md) | Transparencia requerida | Intervención real en código, pruebas, estrategia y redacción; validación humana pendiente. |
+| [Decisiones del equipo](decisiones-pendientes.md) | Evitar reglas inventadas | Mapeo a `estandar`, reyes opcionales, retorno a `recurso_spawn`, repetición no oficial. |
+| [Capturas por validar](capturas-por-validar.md) | Evidencia visual honesta | Capturas in-game pendientes; criterios de calidad antes de su inclusión. |
 
-| Documento | Qué explica |
-| --- | --- |
-| [documento-tecnico.md](documento-tecnico.md) | Modelado, algoritmos, complejidad, utilidad y metodología de la entrega. |
-| [manual-usuario.md](manual-usuario.md) | Instalación, modos, juego, API y diagnóstico para usuarios. |
-| [uso-de-ia.md](uso-de-ia.md) | Intervención de IA generativa y validación personal pendiente. |
-| [contexto.md](contexto.md) | Problema académico, alcance, restricciones y propósito de los experimentos. |
-| [reglas-del-juego.md](reglas-del-juego.md) | Unidades, movimientos, costos, turnos, capturas, jaque, reina, victoria y empate. |
-| [estado-y-json.md](estado-y-json.md) | Estado completo, invariantes, contrato JSON y ejemplo compatible. |
-| [configuracion-de-reyes.md](configuracion-de-reyes.md) | Reyes opcionales, colocación manual o automática y bloqueo de la configuración. |
-| [informe-verificacion.md](informe-verificacion.md) | Evidencia ejecutada, resultados, timeouts y estado real del gate de entrega. |
-| [carga-y-validacion.md](carga-y-validacion.md) | Validaciones, preparación y carga atómica de escenarios. |
-| [arquitectura.md](arquitectura.md) | Separación de responsabilidades y comunicación entre backend, API e interfaz. |
-| [motor-del-juego.md](motor-del-juego.md) | Contratos de transición, acciones, resultados y configuración de reyes implementados. |
-| [busqueda-y-decision.md](busqueda-y-decision.md) | Diferencia entre planificar una ruta y escoger una jugada; métricas y verificaciones. |
-| [decisiones-pendientes.md](decisiones-pendientes.md) | Ambigüedades y contradicciones aún no resueltas; no fingir que hay reglas acordadas. |
+## Consolidación documental
 
-## Criterios transversales
+Se sustituyeron los borradores parciales de arquitectura, reglas, carga, modelos y búsqueda por **un documento técnico único y detallado**, el manual, el informe y los anexos. Las decisiones normativas del equipo permanecen explícitas en `decisiones-pendientes.md`. Las versiones antiguas siguen recuperables mediante el historial Git; no se conservan duplicados potencialmente contradictorios en la entrega final.
 
-- El mapa, los costos, las posiciones y los objetivos proceden del JSON: no se incrustan en los algoritmos.
-- Ambos bandos usan exactamente las mismas reglas.
-- Las operaciones inválidas no alteran una partida ni consumen turno.
-- Las búsquedas consultan el motor; no mantienen versiones paralelas de sus reglas.
-- La interfaz representa el estado y los resultados reales; no genera resultados simulados.
-- Se prioriza código pequeño, explícito y legible; no se crean abstracciones sin una responsabilidad concreta.
+## Evidencia en el repositorio
 
-## Fuentes y precedencia
+`outputs/busqueda_comparacion_real.json` registra casos 1–5 medidos; `outputs/adversarial_comparacion.json` registra casos 7–10; `outputs/demo_partida_6x6.json` y `outputs/demo_adversarial_20x20.json` contienen trazas de autopartida. `backend/tests/` y `scenarios/error/` son pruebas de regresión, **no archivos sobrantes**.
 
-1. `Primer proyecto.pdf`: requisitos del profesor y contrato de interoperabilidad.
-2. `TacticalGrid_Reglas.md`: definición original de mecánicas propias.
-3. Decisiones acordadas para este proyecto: `estandar` ortogonal de un paso; `spawn` inicial; reyes opcionales, configurables antes del primer movimiento; empate si no hay movimiento ni recogida explícita legal.
-
-Cuando una decisión propia parece entrar en tensión con el PDF, se deja visible en [decisiones-pendientes.md](decisiones-pendientes.md), en vez de afirmar que está resuelta. El estado de implementación y las pruebas automatizadas se documentan en [motor-del-juego.md](motor-del-juego.md); la validación personal del estudiante se declara por separado.
+La imagen técnica del manual se creó desde los JSON del juego y está etiquetada como diagrama. **No se inventaron screenshots**: queda una tarea visual pendiente.

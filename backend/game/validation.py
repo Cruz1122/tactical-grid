@@ -62,7 +62,16 @@ def validate_utf8_string(value: str, field: str) -> None:
 
 
 def carrier_winner(state: dict[str, Any]) -> str | None:
-    """Devuelve el bando del portador activo situado en su propia base."""
+    """Comprobar victoria por portador en la base propia.
+    
+    Purpose: Comprobar victoria por portador en la base propia.
+    Preconditions: Unidades, portador y bases consistentes.
+    Postconditions: Equipo ganador o ausencia de victoria sin alterar estado.
+    Complexity: O(U) por localización del portador.
+    AI usage: Yes.
+    AI intervention: IA asistió revisión de condición de victoria por entrega.
+    Student validation: Pruebas de captura, entrega y jaque; revisión personal pendiente.
+    """
     game = state.get("juego", {})
     carrier_id = game.get("portador_recurso") if isinstance(game, dict) else None
     units = state.get("unidades", [])
@@ -120,7 +129,16 @@ def _check_position(
 
 
 def _check_terrain(scenario: dict[str, Any], errors: list[str]) -> tuple[int | None, int | None]:
-    """Valida dimensiones, catálogo y matriz; devuelve las dimensiones válidas."""
+    """Validar que la matriz de terreno coincide con dimensiones y catálogo.
+    
+    Purpose: Validar que la matriz de terreno coincide con dimensiones y catálogo.
+    Preconditions: Objeto mapa y catálogo JSON disponibles.
+    Postconditions: Errores acumulados sobre matriz, costos y transitabilidad.
+    Complexity: O(F*C+T) sobre celdas y catálogo.
+    AI usage: Yes.
+    AI intervention: IA asistió detección de casos límite del contrato JSON y mensajes de error.
+    Student validation: Banco de terrenos inválidos y costo 0/negativo; revisión humana pendiente.
+    """
     map_data = scenario.get("mapa")
     rows = columns = None
     if not isinstance(map_data, dict):
@@ -194,20 +212,15 @@ def _check_terrain(scenario: dict[str, Any], errors: list[str]) -> tuple[int | N
 
 
 def validate_scenario(scenario: dict[str, Any]) -> None:
-    """Valida el contrato JSON y acumula los errores que puede detectar.
-
-    Recorre el árbol JSON, el mapa, las unidades, los reyes y los terrenos:
-    tiempo O(N + R*C + U + K + T), espacio auxiliar O(U + K + E).
-    No modifica el escenario ni usa IA; las búsquedas pueden confiar en sus invariantes.
+    """Comprobar contrato JSON externo, dimensiones, terrenos, posiciones y unidades.
     
-
-    Purpose: Rechazar escenarios externos que incumplan el contrato del profesor.
-    Preconditions: JSON externo suministrado.
-    Postconditions: Acepta o falla sin mutar un juego ya cargado.
-    Complexity: O(F*C+U+K) más comprobaciones de conectividad.
+    Purpose: Comprobar contrato JSON externo, dimensiones, terrenos, posiciones y unidades.
+    Preconditions: Entrada JSON (no necesariamente válida).
+    Postconditions: Escenario aceptable o excepción estructurada sin tocar el estado oficial.
+    Complexity: O(F*C+U+K) más validación de conectividad si corresponde.
     AI usage: Yes.
-    AI intervention: apoyo de IA en diseño, revisión, documentación o pruebas; verificar el alcance preciso en el informe.
-    Student validation: hay pruebas automatizadas; la comprobación y defensa personal de los integrantes sigue pendiente.
+    AI intervention: IA asistió en generación/revisión de validadores atómicos, errores y matrices de casos.
+    Student validation: Banco de escenarios válidos/invalidos y tests; revisión individual pendiente.
     """
     if not isinstance(scenario, dict):
         raise ScenarioValidationError(["escenario: debe ser un objeto JSON"])
@@ -439,7 +452,16 @@ def validate_scenario(scenario: dict[str, Any]) -> None:
 
 
 def _base_positions_connected(state: dict[str, Any]) -> bool:
-    """Comprueba conectividad ortogonal de las bases sin ocupar casillas de rey."""
+    """Comprobar conectividad básica de bases bajo obstáculos fijos.
+    
+    Purpose: Comprobar conectividad básica de bases bajo obstáculos fijos.
+    Preconditions: Mapa validado y bases dentro de cuadrícula.
+    Postconditions: Booleano de conectividad, sin cambiar el escenario.
+    Complexity: O(F*C) recorridos de celdas.
+    AI usage: Yes.
+    AI intervention: IA ayudó a implementar y probar requisito de bases alcanzables.
+    Student validation: Pruebas con muro separador; revisión individual pendiente.
+    """
     bases = state.get("bases", {})
     if not isinstance(bases, dict) or "A" not in bases or "B" not in bases:
         return False
@@ -484,20 +506,15 @@ def _base_positions_connected(state: dict[str, Any]) -> bool:
 def validate_state(
     state: dict[str, Any], *, check_connectivity: bool = True
 ) -> None:
-    """Valida el estado; la conectividad se puede omitir tras validar el escenario.
-
-    `check_connectivity` debe permanecer activo al cargar/configurar reyes. Las
-    transiciones pueden omitirlo porque no cambian terreno, bases ni reyes.
-    Complexity: O(R*C + U + K); espacio O(R*C + U + K).
+    """Comprobar invariantes dinámicos, ocupación, portador, reyes y finales.
     
-
-    Purpose: Comprobar invariantes de partida para motor y API.
-    Preconditions: Estado ya cargado o candidato a transición.
-    Postconditions: Acepta coherencia completa o informa errores.
-    Complexity: O(F*C+U+K) y verificaciones de accesibilidad opcionales.
+    Purpose: Comprobar invariantes dinámicos, ocupación, portador, reyes y finales.
+    Preconditions: Estado interno candidato construido con reglas del motor.
+    Postconditions: Acepta estado coherente o señala errores sin mutación externa.
+    Complexity: O(F*C+U+K) más coste de conectividad opcional.
     AI usage: Yes.
-    AI intervention: apoyo de IA en diseño, revisión, documentación o pruebas; verificar el alcance preciso en el informe.
-    Student validation: hay pruebas automatizadas; la comprobación y defensa personal de los integrantes sigue pendiente.
+    AI intervention: IA participó en implementación de invariantes y pruebas Nemesis.
+    Student validation: Suite de motores y validaciones aprobada; revisión personal pendiente.
     """
     if not isinstance(state, dict):
         raise ScenarioValidationError(["estado: debe ser un objeto JSON"])
@@ -635,22 +652,15 @@ def _action_position(value: Any) -> dict[str, int]:
 
 
 def validate_action(state: dict[str, Any], action: dict[str, Any]) -> None:
-    """Valida movimiento o recogida explícita sin modificar el estado.
-
-    Preconditions: estado preparado, acción JSON y bando en turno.
-    Postconditions: una acción ilegal lanza `ValueError` y una estructura/tipo
-    inválido lanza `TypeError`; el movimiento consulta `move_cost`, que exige un
-    destino incluido en `legal_moves`.
-    Complexity: O(U + K*U*max(F,C) + D), según movimiento, jaque y trayecto.
+    """Rechazar acciones ilegales antes de crear el estado sucesor.
     
-
-    Purpose: Validar una acción completa contra el estado vigente.
-    Preconditions: Estado coherente y acción solicitada.
-    Postconditions: Autoriza transición legal o falla antes de modificar el estado.
-    Complexity: O(U+K+F+C) según patrón y jaque.
+    Purpose: Rechazar acciones ilegales antes de crear el estado sucesor.
+    Preconditions: Estado válido; descripción de acción a evaluar.
+    Postconditions: Acción validada o excepción; no ejecuta movimiento ilegal.
+    Complexity: Dominado por generación de movimientos y comprobación de situación terminal.
     AI usage: Yes.
-    AI intervention: apoyo de IA en diseño, revisión, documentación o pruebas; verificar el alcance preciso en el informe.
-    Student validation: hay pruebas automatizadas; la comprobación y defensa personal de los integrantes sigue pendiente.
+    AI intervention: IA contribuyó a validación y protección de atomicidad de jugadas.
+    Student validation: Pruebas de acciones inválidas y turnos; validación personal pendiente.
     """
     if not isinstance(action, dict):
         raise TypeError("La acción debe ser un objeto")

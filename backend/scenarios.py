@@ -10,20 +10,15 @@ from backend.game.validation import (
 
 
 def prepare_scenario(scenario: dict[str, Any]) -> dict[str, Any]:
-    """Prepara y valida una copia del estado inicial sin modificar la entrada.
-
-    Copia el escenario, mapea nombres genéricos de pieza a `estandar`, asigna el
-    spawn inicial y activa las unidades que no declaran actividad.
-    Recorre el escenario en O(n) tiempo y espacio.
+    """Copiar y preparar JSON externo, normalizando tipo genérico a estándar y preservando spawns.
     
-
-    Purpose: Preparar JSON externo conservando contrato y normalizando estado interno.
-    Preconditions: JSON externo sin cambios todavía aplicados.
-    Postconditions: Devuelve escenario validado y copiado sin alterar su argumento.
-    Complexity: O(F*C+U+K) más validación y conectividad.
+    Purpose: Copiar y preparar JSON externo, normalizando tipo genérico a estándar y preservando spawns.
+    Preconditions: Objeto JSON acorde con campos obligatorios del profesor.
+    Postconditions: Estado interno validado y enriquecido o error sin mutar escenario original.
+    Complexity: O(F*C+U+K) más validaciones según conectividad.
     AI usage: Yes.
-    AI intervention: apoyo de IA en diseño, revisión, documentación o pruebas; verificar el alcance preciso en el informe.
-    Student validation: hay pruebas automatizadas; la comprobación y defensa personal de los integrantes sigue pendiente.
+    AI intervention: IA asistió diseño/implementación de carga, normalización y prueba de escenarios.
+    Student validation: Validación del tipo genérico acordado por el usuario y tests de JSON; revisión individual pendiente.
     """
     state = deepcopy(scenario)
     units = state.get("unidades") if isinstance(state, dict) else None

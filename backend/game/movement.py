@@ -51,25 +51,15 @@ def _inside_board(state: dict[str, Any], position: Position) -> bool:
 
 
 def terrain_cost(state: dict[str, Any], position: PositionLike) -> float:
-    """Consulta el costo de terreno de una casilla.
-
-    Precondiciones: `state` contiene dimensiones, matriz y catálogo de terrenos
-    coherentes; `position` usa coordenadas enteras dentro del mapa y es transitable.
-    Postcondiciones: devuelve el costo configurado como `float` y no modifica el estado.
-    Complejidad: O(1) en tiempo y espacio.
-
-    Raises:
-        TypeError: si las coordenadas o el costo no tienen tipo válido.
-        ValueError: si la posición está fuera del mapa o no es transitable.
+    """Leer del JSON el costo positivo de entrar a una casilla transitable.
     
-
-    Purpose: Consultar costo de una celda transitable del JSON.
-    Preconditions: Posición dentro del tablero y tipo de terreno existente.
-    Postconditions: Devuelve costo positivo o error ante terreno inválido.
-    Complexity: O(1) tiempo y espacio.
+    Purpose: Leer del JSON el costo positivo de entrar a una casilla transitable.
+    Preconditions: Posición dentro del mapa y terreno definido.
+    Postconditions: Valor positivo o excepción informativa ante bloqueo/costo inválido.
+    Complexity: O(1) acceso a matriz y catálogo.
     AI usage: Yes.
-    AI intervention: apoyo de IA en diseño, revisión, documentación o pruebas; verificar el alcance preciso en el informe.
-    Student validation: hay pruebas automatizadas; la comprobación y defensa personal de los integrantes sigue pendiente.
+    AI intervention: IA participó en codificación/revisión de costos y pruebas de variación de pantano.
+    Student validation: Casos de costos y 177 tests globales; validación individual pendiente.
     """
     row, column = _position_tuple(position)
     coordinate = (row, column)
@@ -174,6 +164,16 @@ def _is_square_attacked(
     kings: set[Position],
     queen: Position | None,
 ) -> bool:
+    """Determinar si una casilla es atacada por un bando según geometrías de piezas.
+    
+    Purpose: Determinar si una casilla es atacada por un bando según geometrías de piezas.
+    Preconditions: Estado válido y coordenada interior.
+    Postconditions: Booleano usado en el cálculo del jaque.
+    Complexity: O(U*(F+C)) peor caso por rayos de torre/alfil.
+    AI usage: Yes.
+    AI intervention: IA asistió implementación/revisión de amenazas sin jaque mate tradicional.
+    Student validation: Casos de torre, alfil y caballo en jaque; revisión humana pendiente.
+    """
     occupied = _unit_positions(units)
     for unit in units:
         if unit.get("bando") != attacking_side:
@@ -229,24 +229,15 @@ def is_in_check(
     side: str,
     hypothetical_move: tuple[str, PositionLike] | None = None,
 ) -> bool:
-    """Indica si un bando tiene algún rey amenazado en el estado indicado.
-
-    `hypothetical_move`, si se proporciona, proyecta una jugada sin modificar
-    `state`: la unidad activa se desplaza y una unidad enemiga en el destino se
-    considera capturada. Esta interfaz permite que el motor de transiciones de la
-    fase 3 reutilice la misma regla de jaque.
-
-    Precondiciones: el estado tiene posiciones y tipos de unidad válidos; `side`
-    es `A` o `B`; el movimiento hipotético identifica una unidad activa y un destino.
-    Postcondiciones: devuelve si algún rey del bando está amenazado; el estado y sus
-    unidades originales permanecen intactos. Sin reyes, devuelve `False`.
-    Complejidad: O(K * U * max(F, C)) en el peor caso, donde K es el número de
-    reyes, U el de unidades, F las filas y C las columnas; espacio O(U + K).
-
-    Raises:
-        TypeError: si las coordenadas del destino no son enteras.
-        ValueError: si el movimiento hipotético referencia una unidad inactiva o
-            inexistente, o una posición fuera del mapa/no transitable.
+    """Calcular amenaza al rey fijo de un equipo según ataques de piezas enemigas.
+    
+    Purpose: Calcular amenaza al rey fijo de un equipo según ataques de piezas enemigas.
+    Preconditions: Estado con reyes opcionales y posiciones coherentes.
+    Postconditions: Booleano, sin aplicar jugada ni cambiar el estado.
+    Complexity: O(U*(F+C)) peor caso con ataques deslizantes.
+    AI usage: Yes.
+    AI intervention: IA asistió diseño/revisión del cálculo de jaque y pruebas de capturas.
+    Student validation: Casos de rey y prohibición de recoger; validación humana pendiente.
     """
     if side not in ("A", "B"):
         raise ValueError("El bando debe ser 'A' o 'B'")
@@ -301,28 +292,15 @@ def is_in_check(
 
 
 def legal_moves(state: dict[str, Any], unit_id: str) -> list[dict[str, int]]:
-    """Genera los destinos disponibles para una unidad sin alterar el estado.
-
-    Precondiciones: `state` describe un tablero coherente y `unit_id` identifica
-    una unidad; las unidades inactivas o de tipo desconocido se tratan como sin
-    movimientos disponibles.
-    Postcondiciones: devuelve coordenadas `{fila, columna}` dentro del mapa que
-    respetan terreno, ocupación y patrón de movimiento. Para un destino en la reina,
-    el jaque se comprueba sobre la posición hipotética posterior al movimiento.
-    No modifica el estado.
-    Complejidad: O(U + K + F + C) sin evaluar una recogida; si la reina es un
-    destino candidato, el cálculo adicional de jaque cuesta hasta O(K * U *
-    max(F, C)). Espacio O(U + K + F + C), incluida la lista de destinos.
-
+    """Enumerar destinos que una unidad activa puede alcanzar legalmente con su geometría.
     
-
-    Purpose: Enumerar destinos legales de una unidad según su tipo y el tablero.
-    Preconditions: Escenario preparado y unit_id existente o reconocible.
-    Postconditions: Devuelve destinos válidos sin modificar estado.
-    Complexity: O(U+K+F+C), más costo de comprobar jaque cuando procede.
+    Purpose: Enumerar destinos que una unidad activa puede alcanzar legalmente con su geometría.
+    Preconditions: Estado válido, identificador de unidad existente.
+    Postconditions: Lista sin destinos sobre obstáculo/rey/aliado, con capturas enemigas permitidas.
+    Complexity: O(F+C) para líneas deslizantes; O(1) geometría básica, más comprobaciones de ocupación.
     AI usage: Yes.
-    AI intervention: apoyo de IA en diseño, revisión, documentación o pruebas; verificar el alcance preciso en el informe.
-    Student validation: hay pruebas automatizadas; la comprobación y defensa personal de los integrantes sigue pendiente.
+    AI intervention: IA apoyó generación/revisión de movimientos, bloqueos, capturas y pruebas de piezas.
+    Student validation: Pruebas de movimientos y bordes; revisión individual pendiente.
     """
     units = _active_units(state)
     unit = next((candidate for candidate in units if candidate.get("id") == unit_id), None)
@@ -409,7 +387,16 @@ def legal_moves(state: dict[str, Any], unit_id: str) -> list[dict[str, int]]:
 
 
 def has_legal_action(state: dict[str, Any], side: str) -> bool:
-    """Indica si el bando tiene un movimiento o recogida explícita legales."""
+    """Determinar si un equipo dispone de alguna acción legal.
+    
+    Purpose: Determinar si un equipo dispone de alguna acción legal.
+    Preconditions: Estado válido y bando A/B.
+    Postconditions: Booleano usado para detectar inmovilidad terminal.
+    Complexity: O(U*(F+C)) aproximado en peor caso.
+    AI usage: Yes.
+    AI intervention: IA contribuyó a comprobaciones de bloqueo y acción de recogida.
+    Student validation: Pruebas de finalización sin movimientos; revisión individual pendiente.
+    """
     if side not in ("A", "B"):
         return False
     units = _active_units(state)
@@ -431,30 +418,15 @@ def has_legal_action(state: dict[str, Any], side: str) -> bool:
 def move_cost(
     state: dict[str, Any], unit_id: str, destination: PositionLike
 ) -> float:
-    """Calcula el costo de un destino legal sin alterar el estado.
-
-    Precondiciones: `state` contiene un escenario coherente; `unit_id` identifica
-    una unidad activa y `destination` pertenece a `legal_moves(state, unit_id)`.
-    Postcondiciones: devuelve el costo del terreno destino para caballo/estándar,
-    o la suma de casillas recorridas (sin origen) para torre/alfil. No modifica el
-    estado.
-    Complejidad: O(U + K + F + C + D) sin comprobar una recogida; si el destino
-    es la reina, se añade hasta O(K * U * max(F, C)) para verificar el jaque
-    posterior al movimiento. D es la longitud del desplazamiento.
-
-
-    Raises:
-        TypeError: si las coordenadas no son enteras.
-        ValueError: si la unidad no está activa o el destino no es legal.
+    """Calcular costo real de una acción legal, sumando casillas atravesadas cuando corresponde.
     
-
-    Purpose: Calcular el costo real de un desplazamiento completo.
-    Preconditions: Movimiento legal y costos positivos definidos en tipos_terreno.
-    Postconditions: Devuelve costo positivo de destino o casillas atravesadas, excluyendo origen.
-    Complexity: O(max(F,C)) para deslizantes; O(1) para saltos o estándar.
+    Purpose: Calcular costo real de una acción legal, sumando casillas atravesadas cuando corresponde.
+    Preconditions: Movimiento legal y catálogo de terrenos positivo.
+    Postconditions: Caballo/estándar pagan destino; torre/alfil suman recorrido excluyendo origen.
+    Complexity: O(L) con L longitud del desplazamiento para deslizantes; O(1) en otras piezas.
     AI usage: Yes.
-    AI intervention: apoyo de IA en diseño, revisión, documentación o pruebas; verificar el alcance preciso en el informe.
-    Student validation: hay pruebas automatizadas; la comprobación y defensa personal de los integrantes sigue pendiente.
+    AI intervention: IA ayudó en implementación y corrección de fórmulas de terreno del motor.
+    Student validation: Comparaciones BFS/UCS y pruebas de distintos costos; validación individual pendiente.
     """
     target = _position_tuple(destination)
     unit = next(

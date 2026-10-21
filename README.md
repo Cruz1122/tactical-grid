@@ -1,12 +1,22 @@
-# TacticalGrid — Sistemas Inteligentes I
+# TacticalGrid
 
-Juego táctico 2D por turnos con búsqueda de rutas y planificación adversarial sobre escenarios JSON externos. Implementación: Python/FastAPI para motor y algoritmos; HTML/CSS/JavaScript y Phaser para el cliente. El frontend consulta resultados reales de la API.
+**Sistemas Inteligentes I · Proyecto 1 · Ingeniería de Sistemas y Computación · Universidad de Caldas**
 
-**Integrantes:** completar antes de la entrega: `[nombre completo 1]`, `[nombre completo 2]`, `[nombre completo 3]` (ajustar al equipo real). No presentar el repositorio sin identificar a sus autores.
+TacticalGrid es un laboratorio interactivo de inteligencia artificial: un juego táctico 2D por turnos donde dos equipos compiten por recoger una reina neutral y llevarla a su base. Se estudian búsquedas sin información, búsqueda de costo, heurísticas, memoria limitada y toma de decisiones adversarial.
 
-## Requisitos y ejecución
+> **Integrantes:** **pendiente de completar por el equipo antes de la entrega**. No atribuir nombres ni tareas no confirmadas. Una parte sustancial del código y la documentación fue creada o modificada con asistencia de IA. La trazabilidad está en [`docs/uso-de-ia.md`](docs/uso-de-ia.md).
 
-Python 3.11 o posterior y conexión a internet para cargar Phaser y KaTeX desde CDN (ver `frontend/index.html`). Desde la raíz del repositorio:
+## Qué hace cada modo
+
+| JSON `prueba.modo` | Algoritmos o acción | Qué ocurre |
+|---|---|---|
+| `busqueda` | BFS, DFS, UCS, A*, Beam | Ruta hipotética de **una** pieza; el estado oficial no cambia |
+| `adversarial` | Minimax, alfa-beta | Recomienda una **única** acción legal con turnos rivales simulados; no la ejecuta |
+| `partida` | Turnos reales y autopartida | Permite mover, recoger y aplicar decisiones sucesivas al estado oficial |
+
+## Instalar y ejecutar (Linux / Arch)
+
+Requisitos: Python 3.11 o superior, pip, navegador actualizado y acceso a los CDNs indicados en `frontend/index.html` para cargar Phaser/KaTeX.
 
 ```bash
 python -m venv .venv
@@ -15,39 +25,50 @@ python -m pip install -r requirements.txt
 python -m uvicorn backend.main:app --reload
 ```
 
-El primer comando crea un entorno aislado; el segundo lo activa; el tercero instala las dependencias; el cuarto ejecuta el servidor de desarrollo. En Arch Linux instala Python mediante `sudo pacman -S python python-pip` si no están disponibles. Documentación: [ArchWiki — Python](https://wiki.archlinux.org/title/Python), [Python — venv](https://docs.python.org/3/library/venv.html), [FastAPI](https://fastapi.tiangolo.com/tutorial/first-steps/).
+Los comandos crean un entorno virtual aislado, lo activan, instalan las dependencias y levantan el servidor de desarrollo. Abre **http://127.0.0.1:8000/**. La documentación de la API está en **http://127.0.0.1:8000/docs**. Frontend y backend se sirven desde el mismo origen HTTP.
 
-Abrir `http://127.0.0.1:8000/`. La documentación OpenAPI está en `/docs`. Se utiliza **el mismo origen HTTP** para interfaz y API.
+Documentación oficial: [Python `venv`](https://docs.python.org/3/library/venv.html), [FastAPI](https://fastapi.tiangolo.com/tutorial/first-steps/), [ArchWiki: Python](https://wiki.archlinux.org/title/Python). En Arch, usa `sudo pacman -S python python-pip` solo si no están instalados (actualiza bases y revisa la documentación de pacman según tu entorno).
 
-## Modos de escenario
+## Escenarios para demostrar
 
-| `prueba.modo` | Comportamiento |
-| --- | --- |
-| `busqueda` | Navegación hipotética de **una** unidad mediante BFS, DFS, UCS, A* o Beam. No juega turnos enemigos ni cambia la partida oficial. |
-| `adversarial` | Minimax o alfa-beta recomiendan **una** acción legal usando todas las unidades del turno y respuestas futuras del rival. La API no ejecuta la recomendación. |
-| `partida` | La interfaz ejecuta turnos reales mediante el motor. La autopartida solicita recomendaciones sucesivas y aplica las acciones con `/api/move` o `/api/collect`. |
+| Caso profesor | Ejemplo incluido |
+|---|---|
+| 1. BFS/DFS | `scenarios/busqueda/01_bfs_dfs_laberinto_perfecto.json` |
+| 2. BFS/UCS | `scenarios/busqueda/02_bfs_ucs_dos_corredores.json` |
+| 3. Obstáculo | `scenarios/busqueda/03_trampa_U_manhattan.json` |
+| 4. Heurísticas | `scenarios/busqueda/04_heuristicas_franjas_costosas.json` |
+| 5. Beam k | `scenarios/busqueda/05_beam_callejon_engañoso.json` |
+| 6. Estado compuesto | `scenarios/adversarial/06_estado_compuesto_turno_A.json` y versión B |
+| 7. Defensa | `scenarios/adversarial/07_intercepcion_portador.json` |
+| 8. Minimax/alfa-beta | `scenarios/adversarial/08_minimax_alphabeta_intercambio.json` |
+| 9. Orden | `scenarios/adversarial/09_orden_alpha_beta.json` |
+| 10. Profundidad | `scenarios/adversarial/10_horizonte_profundidad.json` |
 
-Los modos **no son intercambiables**. Una recomendación adversarial no es una partida completa, y una ruta de búsqueda no es una secuencia garantizada de turnos.
+Estos archivos son para reproducir fenómenos, no suposiciones de resultados. Las métricas medidas de búsquedas y decisiones están en [`docs/informe-verificacion.md`](docs/informe-verificacion.md) y en `outputs/*.json`.
 
-## Pruebas y reproducciones
+## Ejecutar las verificaciones
 
 ```bash
-python -m unittest discover -s backend/tests -v
+python -m unittest discover -s backend/tests -q
 python -m compileall -q backend
 python -m scripts.self_play scenarios/partida/mapa_partida_presentacion.json --depth 2 --max-turns 40
 python -m scripts.self_play scenarios/adversarial/externo_adversarial_3v3.json --depth 2 --max-turns 120
 ```
 
-Los límites de turnos y detección de repetición del script son **diagnósticos**, no condiciones nuevas de victoria ni empate en el motor. Los resultados históricos de la muestra verificada están en `outputs/`.
+Los dos primeros validan lógica y sintaxis. Los scripts de autopartida producen **diagnósticos experimentales**, no añaden una regla de empate por repetición. En la versión documentada se aprobaron **177 pruebas automatizadas**; la partida 6×6 terminó con victoria B en 24 acciones y el 20×20 mostró repetición después de 105 acciones sin ganador oficial. Estos límites están declarados, no ocultos.
 
-## Documentación para la entrega
+## Leer antes de presentar
 
-- [Manual de usuario](docs/manual-usuario.md)
-- [Documento técnico](docs/documento-tecnico.md)
-- [Resultados y limitaciones verificadas](docs/informe-verificacion.md)
-- [Experimentos adversariales 7–10](docs/experimentos-adversariales.md)
-- [Declaración y revisión del uso de IA](docs/uso-de-ia.md)
-- [Reglas y decisiones acordadas](docs/decisiones-pendientes.md)
-- [Índice de documentos existentes](docs/README.md)
+1. [Manual ilustrado de usuario](docs/manual-usuario.md) — controles, tres modos y procedimientos.
+2. [Documento técnico](docs/documento-tecnico.md) — estados, complejidad, A* con dos heurísticas, evaluación adversarial y fórmulas reales.
+3. [Informe reproducible de verificación](docs/informe-verificacion.md) — números medidos y sus limitaciones.
+4. [Experimentos Minimax y alfa-beta](docs/experimentos-adversariales.md) — casos 7–10 con acciones, valores, nodos y tiempos.
+5. [Uso de IA generativa](docs/uso-de-ia.md) — declaración **sustancial**, errores corregidos y validación individual pendiente.
+6. [Reglas y decisiones confirmadas](docs/decisiones-pendientes.md) — incluye tipo genérico→`estandar` y reina→`recurso_spawn`.
+7. [Capturas reales por validar](docs/capturas-por-validar.md) — no se presentan diagramas como pantallazos de Phaser.
 
-Conservar los escenarios de desarrollo y las regresiones automatizadas: forman parte de la evidencia reproducible solicitada por el profesor. Antes de presentar, completar integrantes, verificar personalmente la trazabilidad de IA y repetir las pruebas en el equipo de sustentación.
+## Compatibilidad y estructura
+
+`backend/` contiene reglas, validadores, algoritmos y API; `frontend/`, HTML/CSS/JS + Phaser; `scenarios/`, los JSON de búsqueda, partida, adversarial y entradas erróneas deliberadas; `docs/`, explicación técnica y manual; `scripts/`, reproducción; `outputs/`, trazas y documentos de entrega. Las claves obligatorias del profesor se mantienen en español; los nombres de funciones y rutas del proyecto permanecen en inglés.
+
+**No elimines el banco de regresiones antes de entregar.** Los JSON de error y los tests sirven como evidencia de calidad. El equipo debe añadir los nombres reales de los integrantes y revisar personalmente la documentación y la declaración de IA. El repositorio y sus PDFs deben corresponder al mismo commit ensayado en sustentación.

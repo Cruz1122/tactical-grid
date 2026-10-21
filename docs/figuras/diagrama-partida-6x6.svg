@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="852" height="582" viewBox="0 0 852 582">
+<rect width="852" height="582" fill="#f7f9fc"/>
+<style>text{font-family:Inter,Arial,sans-serif}.head{font-weight:700;fill:#173752}.med{fill:#53697d}.small{fill:#53697d;font-size:13px}</style>
+<text class="head" x="30" y="40" font-size="25">TacticalGrid  /  Diagrama de estado</text>
+<text class="med" x="30" y="70" font-size="17">6 × 6 celdas · Turno A · Esquema derivado del JSON, no captura del navegador</text>
+<rect x="30" y="105" width="71" height="71" fill="#e6eef4" stroke="#c9d4df" stroke-width=".6"/>
+<rect x="102" y="105" width="71" height="71" fill="#e6eef4" stroke="#c9d4df" stroke-width=".6"/>
+<rect x="174" y="105" width="71" height="71" fill="#e6eef4" stroke="#c9d4df" stroke-width=".6"/>
+<rect x="246" y="105" width="71" height="71" fill="#e6eef4" stroke="#c9d4df" stroke-width=".6"/>
+<rect x="318" y="105" width="71" height="71" fill="#e6eef4" stroke="#c9d4df" stroke-width=".6"/>
+<rect x="390" y="105" width="71" height="71" fill="#e6eef4" stroke="#c9d4df" stroke-width=".6"/>
+<rect x="30" y="177" width="71" height="71" fill="#e6eef4" stroke="#c9d4df" stroke-width=".6"/>
+<rect x="102" y="177" width="71" height="71" fill="#364455" stroke="#c9d4df" stroke-width=".6"/>
+<rect x="174" y="177" width="71" height="71" fill="#364455" stroke="#c9d4df" stroke-width=".6"/>
+<rect x="246" y="177" width="71" height="71" fill="#364455" stroke="#c9d4df" stroke-width=".6"/>
+<rect x="318" y="177" width="71" height="71" fill="#364455" stroke="#c9d4df" stroke-width=".6"/>
+<rect x="390" y="177" width="71" height="71" fill="#e6eef4" stroke="#c9d4df" stroke-width=".6"/>
+<rect x="30" y="249" width="71" height="71" fill="#e6eef4" stroke="#c9d4df" stroke-width=".6"/>
+<rect x="102" y="249" width="71" height="71" fill="#e6eef4" stroke="#c9d4df" stroke-width=".6"/>
+<rect x="174" y="249" width="71" height="71" fill="#e6eef4" stroke="#c9d4df" stroke-width=".6"/>
+<rect x="246" y="249" width="71" height="71" fill="#e6eef4" stroke="#c9d4df" stroke-width=".6"/>
+<rect x="318" y="249" width="71" height="71" fill="#e6eef4" stroke="#c9d4df" stroke-width=".6"/>
+<rect x="390" y="249" width="71" height="71" fill="#e6eef4" stroke="#c9d4df" stroke-width=".6"/>
+<rect x="30" y="321" width="71" height="71" fill="#e6eef4" stroke="#c9d4df" stroke-width=".6"/>
+<rect x="102" y="321" width="71" height="71" fill="#e6eef4" stroke="#c9d4df" stroke-width=".6"/>
+<rect x="174" y="321" width="71" height="71" fill="#e6eef4" stroke="#c9d4df" stroke-width=".6"/>
+<rect x="246" y="321" width="71" height="71" fill="#e6eef4" stroke="#c9d4df" stroke-width=".6"/>
+<rect x="318" y="321" width="71" height="71" fill="#e6eef4" stroke="#c9d4df" stroke-width=".6"/>
+<rect x="390" y="321" width="71" height="71" fill="#e6eef4" stroke="#c9d4df" stroke-width=".6"/>
+<rect x="30" y="393" width="71" height="71" fill="#e6eef4" stroke="#c9d4df" stroke-width=".6"/>
+<rect x="102" y="393" width="71" height="71" fill="#364455" stroke="#c9d4df" stroke-width=".6"/>
+<rect x="174" y="393" width="71" height="71" fill="#364455" stroke="#c9d4df" stroke-width=".6"/>
+<rect x="246" y="393" width="71" height="71" fill="#364455" stroke="#c9d4df" stroke-width=".6"/>
+<rect x="318" y="393" width="71" height="71" fill="#364455" stroke="#c9d4df" stroke-width=".6"/>
+<rect x="390" y="393" width="71" height="71" fill="#e6eef4" stroke="#c9d4df" stroke-width=".6"/>
+<rect x="30" y="465" width="71" height="71" fill="#e6eef4" stroke="#c9d4df" stroke-width=".6"/>
+<rect x="102" y="465" width="71" height="71" fill="#e6eef4" stroke="#c9d4df" stroke-width=".6"/>
+<rect x="174" y="465" width="71" height="71" fill="#e6eef4" stroke="#c9d4df" stroke-width=".6"/>
+<rect x="246" y="465" width="71" height="71" fill="#e6eef4" stroke="#c9d4df" stroke-width=".6"/>
+<rect x="318" y="465" width="71" height="71" fill="#e6eef4" stroke="#c9d4df" stroke-width=".6"/>
+<rect x="390" y="465" width="71" height="71" fill="#e6eef4" stroke="#c9d4df" stroke-width=".6"/>
+<circle cx="66.0" cy="141.0" r="28.1" stroke="#276ca7" stroke-width="5.1" fill="none"/>
+<circle cx="426.0" cy="501.0" r="28.1" stroke="#b75c5c" stroke-width="5.1" fill="none"/>
+<path d="M 282.0 267.0 L 300.0 285.0 L 282.0 303.0 L 264.0 285.0 Z" fill="#e9b14f" stroke="#856521"/>
+<circle cx="138.0" cy="141.0" r="20.160000000000004" stroke="#ffffff" stroke-width="2.5" fill="#276ca7"/><text x="138.0" y="147.8" text-anchor="middle" fill="white" font-weight="700" font-size="19.4">A1</text>
+<circle cx="354.0" cy="501.0" r="20.160000000000004" stroke="#ffffff" stroke-width="2.5" fill="#b75c5c"/><text x="354.0" y="507.8" text-anchor="middle" fill="white" font-weight="700" font-size="19.4">B1</text>
+<rect x="492" y="113" width="20" height="20" fill="#276ca7"/>
+<text x="521" y="129" font-size="17" fill="#213d50">Bando A</text>
+<text x="521" y="147" class="small">Fichas azules</text>
+<rect x="492" y="169" width="20" height="20" fill="#b75c5c"/>
+<text x="521" y="185" font-size="17" fill="#213d50">Bando B</text>
+<text x="521" y="203" class="small">Fichas rojas</text>
+<rect x="492" y="225" width="20" height="20" fill="#e9b14f"/>
+<text x="521" y="241" font-size="17" fill="#213d50">Reina</text>
+<text x="521" y="259" class="small">Rombo dorado</text>
+<rect x="492" y="281" width="20" height="20" fill="#364455"/>
+<text x="521" y="297" font-size="17" fill="#213d50">Muro</text>
+<text x="521" y="315" class="small">Casilla oscura</text>
+<rect x="492" y="337" width="20" height="20" fill="#78aa88"/>
+<text x="521" y="353" font-size="17" fill="#213d50">Terreno costoso</text>
+<text x="521" y="371" class="small">Ver catálogo JSON</text>
+<text x="492" y="413" class="small">Coordenadas: (fila, columna)</text>
+</svg>

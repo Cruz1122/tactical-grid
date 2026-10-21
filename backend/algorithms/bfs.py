@@ -13,19 +13,15 @@ from backend.game.engine import state_key, static_state_key
 
 
 def bfs(state: dict[str, Any], unit_id: str, goal: dict[str, Any]) -> dict[str, Any]:
-    """Busca por niveles y garantiza el menor número de movimientos.
-
-    Los estados generados incluyen el origen; los expandidos no cuentan la meta;
-    la frontera máxima incluye su tamaño inicial y el tiempo incluye reconstrucción.
+    """Explorar una ruta de una sola unidad por capas con cola FIFO.
     
-
-    Purpose: Explorar rutas por niveles para una sola ficha.
-    Preconditions: Estado válido, ficha activa y objetivo dentro del mapa.
-    Postconditions: Devuelve ruta mínima en número de movimientos o fallo explícito sin mutar el estado.
-    Complexity: Tiempo O(V+E) más costo de generar sucesores; espacio O(V+E).
+    Purpose: Explorar una ruta de una sola unidad por capas con cola FIFO.
+    Preconditions: Estado preparado, unidad y meta coherentes con el contrato de navegación.
+    Postconditions: Devuelve ruta mínima en número de movimientos, o ausencia de solución; sin mutar el estado.
+    Complexity: O(V+E) operaciones sobre grafo implícito, más costo de generar/copiar estados; O(V) memoria.
     AI usage: Yes.
-    AI intervention: apoyo de IA en diseño, revisión, documentación o pruebas; verificar el alcance preciso en el informe.
-    Student validation: hay pruebas automatizadas; la comprobación y defensa personal de los integrantes sigue pendiente.
+    AI intervention: Generación asistida de estructura FIFO, visitados, métricas y reconstrucción; revisión de casos límite.
+    Student validation: Comparación experimental BFS/DFS del caso 1; suite automatizada aprobada. Revisión individual pendiente.
     """
     started_at = perf_counter()  # Inicia la medición antes de preparar la búsqueda.
     target, error = prepare_search(state, unit_id, goal)  # Valida los datos antes de explorar.

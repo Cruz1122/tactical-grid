@@ -50,7 +50,16 @@ def _active_unit_position(unit: dict[str, Any] | None) -> Position | None:
 
 
 def can_collect_queen(state: dict[str, Any], unit_id: str) -> bool:
-    """Return whether ``unit_id`` can perform the explicit pickup action."""
+    """Determinar para una unidad si la recogida explícita está autorizada.
+    
+    Purpose: Determinar para una unidad si la recogida explícita está autorizada.
+    Preconditions: Estado preparado, unidad identificada.
+    Postconditions: Booleano coherente con portador/posición/jaque.
+    Complexity: O(U+K) aproximadamente, según comprobación de amenazas.
+    AI usage: Yes.
+    AI intervention: IA intervino en integración de regla de recogida con respuesta visual.
+    Student validation: Pruebas de permisos de recogida; revisión personal pendiente.
+    """
     game = state.get("juego", {})
     if not isinstance(game, dict) or game.get("estado") == "finalizado":
         return False
@@ -102,12 +111,15 @@ def _active_units_by_position(state: dict[str, Any]) -> dict[Position, dict[str,
 
 
 def legal_move_descriptors(state: dict[str, Any], unit_id: str) -> list[dict[str, Any]]:
-    """Decorate movement destinations and an explicit queen pickup action.
-
-    A pickup keeps the unit in its current cell, so it is represented as a
-    descriptor at that cell with ``kind == "collect"``.  This lets clients
-    expose every legal action through the same board interaction instead of
-    maintaining a separate panel control for the pickup.
+    """Preparar destinos y etiquetas de captura/recogida que muestra el frontend.
+    
+    Purpose: Preparar destinos y etiquetas de captura/recogida que muestra el frontend.
+    Preconditions: Unidad/turno y motor coherentes.
+    Postconditions: Descriptores derivados exclusivamente de movimientos del motor.
+    Complexity: O(L+U) para L destinos legales y clasificación de ocupación.
+    AI usage: Yes.
+    AI intervention: IA asistió integración backend-frontend de destinos y estados reales.
+    Student validation: Pruebas de presentación y API; revisión humana pendiente.
     """
     unit = _unit_by_id(state, unit_id)
     if unit is None:
@@ -160,10 +172,15 @@ def transition_events(
     previous: dict[str, Any] | None,
     current: dict[str, Any],
 ) -> list[dict[str, Any]]:
-    """Derive confirmed capture, respawn, pickup, and result events.
-
-    The function only compares server-produced snapshots. It never infers an
-    event from a client request that was rejected or from an optimistic UI state.
+    """Inferir eventos visuales a partir de dos estados consecutivos del motor.
+    
+    Purpose: Inferir eventos visuales a partir de dos estados consecutivos del motor.
+    Preconditions: Estados previo y siguiente válidos.
+    Postconditions: Eventos de presentación sin alterar reglas del juego.
+    Complexity: O(U+K) más comparación de posiciones.
+    AI usage: Yes.
+    AI intervention: IA ayudó a implementar notificaciones visuales coherentes con acciones reales.
+    Student validation: Pruebas de eventos de presentación; revisión personal pendiente.
     """
     if previous is None:
         return []
@@ -268,7 +285,16 @@ def transition_events(
 
 
 def state_revision(state: dict[str, Any]) -> str:
-    """Return a stable fingerprint for matching async reads to a state snapshot."""
+    """Crear un identificador determinista de revisión para evitar aplicar acciones obsoletas.
+    
+    Purpose: Crear un identificador determinista de revisión para evitar aplicar acciones obsoletas.
+    Preconditions: Estado serializable y preparado.
+    Postconditions: Token estable mientras el estado no cambia.
+    Complexity: O(S) para serialización/cálculo de clave.
+    AI usage: Yes.
+    AI intervention: IA contribuyó a controles de concurrencia y sincronización del frontend.
+    Student validation: Pruebas de revisión stale y API; validación humana pendiente.
+    """
     serialized = json.dumps(
         state,
         ensure_ascii=False,
@@ -281,7 +307,16 @@ def state_revision(state: dict[str, Any]) -> str:
 def build_presentation(
     state: dict[str, Any], events: Iterable[dict[str, Any]] = ()
 ) -> dict[str, Any]:
-    """Build the browser-facing metadata without mutating ``state``."""
+    """Proyectar estado del juego en información que el frontend puede representar.
+    
+    Purpose: Proyectar estado del juego en información que el frontend puede representar.
+    Preconditions: Estado oficial coherente y eventos opcionales ya calculados.
+    Postconditions: Objeto visual derivado, sin modificar el estado del motor.
+    Complexity: O(S+L) aproximado para copias y destinos procesados.
+    AI usage: Yes.
+    AI intervention: IA intervino en construcción de presentación y pruebas de coherencia de tablero.
+    Student validation: Pruebas de presentación y escenas; revisión individual pendiente.
+    """
     game = state.get("juego", {})
     return {
         "revision": state_revision(state),

@@ -62,15 +62,15 @@ def _distance_map(
     target: tuple[int, int],
     unit_type: str,
 ) -> dict[tuple[int, int], int]:
-    """Calcula distancias optimistas en turnos ignorando unidades móviles.
-
-    Purpose: permitir que la utilidad detecte rodeos y callejones sin lanzar BFS real.
-    Preconditions: tablero no vacío, tipo conocido y destino transitable.
-    Postconditions: distancias mínimas con bloqueos estáticos; no muta el estado.
-    Complexity: O(V*(F+C)) en deslizantes, O(V) en estándar/caballo; O(V) espacio.
+    """Calcular movimientos optimistas desde un objetivo sobre bloqueos estáticos para valorar posiciones.
+    
+    Purpose: Calcular movimientos optimistas desde un objetivo sobre bloqueos estáticos para valorar posiciones.
+    Preconditions: Matriz booleana no vacía y destino dentro de ella.
+    Postconditions: Mapa de distancias mínimas según geometría básica y obstáculos; ignora turnos del adversario.
+    Complexity: O(V*(F+C)) peor caso para deslizantes; O(V) para estándar/caballo; O(V) memoria, con caché.
     AI usage: Yes.
-    AI intervention: se propuso el reemplazo de Manhattan por distancias topológicas.
-    Student validation: pendiente de revisión y confirmación personal del equipo.
+    AI intervention: IA generó la búsqueda topológica como sustitución de cercanía Manhattan después de observar oscilaciones.
+    Student validation: Pruebas de rodeos y autopartida 6x6; se observó aún repetición 20x20. Revisión individual pendiente.
     """
     rows, columns = len(terrain), len(terrain[0])
     if not (0 <= target[0] < rows and 0 <= target[1] < columns and terrain[target[0]][target[1]]):
@@ -97,7 +97,16 @@ def _distance_map(
 def _movement_distance(
     state: dict[str, Any], unit: dict[str, Any], target: tuple[int, int], *, block_allies: bool = False
 ) -> int:
-    """Obtiene una cota optimista de movimientos basada en obstáculos y tipo."""
+    """Traducir distancias topológicas a una unidad, opcionalmente bloqueando aliados.
+    
+    Purpose: Traducir distancias topológicas a una unidad, opcionalmente bloqueando aliados.
+    Preconditions: Estado con mapa y unidades preparados; objetivo en coordenadas del tablero.
+    Postconditions: Devuelve estimación optimista o penalización para destino inalcanzable.
+    Complexity: O(F*C + U + K) para construir ocupación y mapa, más cálculo del mapa en caché; memoria O(F*C).
+    AI usage: Yes.
+    AI intervention: IA ayudó a integrar obstáculos, reyes y bloqueo propio en la evaluación posicional.
+    Student validation: Regresión de portador bloqueado por aliados; revisión personal pendiente.
+    """
     position = _position(unit)
     if position is None:
         return _largest_map_distance(state) * 2 + 1
@@ -129,7 +138,16 @@ def _movement_distance(
 
 
 def _carrier_threatened(state: dict[str, Any], carrier: dict[str, Any]) -> bool:
-    """Detecta si una unidad enemiga puede capturar al portador en su siguiente turno."""
+    """Detectar si existe una captura legal inmediata sobre el portador del recurso.
+    
+    Purpose: Detectar si existe una captura legal inmediata sobre el portador del recurso.
+    Preconditions: Portador activo y estado válido.
+    Postconditions: Booleano sin aplicar capturas ni modificar estado.
+    Complexity: O(U*L), donde L es costo de generar destinos legales por unidad enemiga.
+    AI usage: Yes.
+    AI intervention: IA ayudó a implementar/revisar chequeo de amenazas inmediatas para utilidad adversarial.
+    Student validation: Comprobado en pruebas de decisiones y motor; validación manual del estudiante pendiente.
+    """
     carrier_position = _position(carrier)
     if carrier_position is None:
         return False
@@ -143,7 +161,16 @@ def _carrier_threatened(state: dict[str, Any], carrier: dict[str, Any]) -> bool:
 
 
 def _side_score(state: dict[str, Any], side: str) -> float:
-    """Suma posesión, progreso realizable, actividad, jaque y seguridad de portador."""
+    """Puntuar actividad, posesión, distancias, intercepción, seguridad y jaque para un bando.
+    
+    Purpose: Puntuar actividad, posesión, distancias, intercepción, seguridad y jaque para un bando.
+    Preconditions: Estado coherente y bando A/B.
+    Postconditions: Puntaje estático numérico determinado por pesos visibles del archivo.
+    Complexity: Dominada por distancias topológicas y consultas a movimientos legales; depende de F*C, U y caché.
+    AI usage: Yes.
+    AI intervention: IA propuso e implementó pesos y factores de intercepción/soporte; se corrigieron oscilaciones detectadas.
+    Student validation: Experimentos 7–10, caso 6x6 y repetición 20x20 documentada; revisión humana pendiente.
+    """
     units = [u for u in state["unidades"] if u.get("activo", True) is True and u["bando"] == side]
     score = ACTIVE_UNIT_SCORE * len(units)
     carrier_id = state["juego"].get("portador_recurso")
@@ -183,15 +210,15 @@ def _side_score(state: dict[str, Any], side: str) -> float:
 
 
 def evaluate(state: dict[str, Any], side: str) -> float:
-    """Evalúa el estado desde un bando, con utilidad simétrica y terminal dominante.
-
-    Purpose: comparar acciones completas en Minimax y poda alfa-beta.
-    Preconditions: estado preparado; `side` es A o B.
-    Postconditions: resultado numérico simétrico, sin modificar el tablero.
-    Complexity: O(U*V*(F+C)+U*L) tiempo sin caché; O(V) memoria auxiliar.
+    """Devolver utilidad terminal o diferencia de puntajes para el bando fijo MAX/MIN.
+    
+    Purpose: Devolver utilidad terminal o diferencia de puntajes para el bando fijo MAX/MIN.
+    Preconditions: Estado preparado; side es A o B.
+    Postconditions: Resultado terminal ±100000/0 o diferencia simétrica; sin mutación.
+    Complexity: Costo de dos evaluaciones de bando y chequeo terminal; dominado por _side_score.
     AI usage: Yes.
-    AI intervention: ajuste de la señal de distancia y prueba de partidas completas.
-    Student validation: pendiente de revisión y confirmación personal del equipo.
+    AI intervention: IA participó en formulación, implementación, rediseño topológico y ajuste de pesos tras pruebas de partidas.
+    Student validation: 177 tests globales aprobados y simulaciones; autoría/validación personal por método pendiente.
     """
     if side not in ("A", "B"):
         raise ValueError("El bando de evaluación debe ser 'A' o 'B'")

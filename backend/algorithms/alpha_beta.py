@@ -17,20 +17,15 @@ from backend.game.engine import check_winner
 def alpha_beta(
     state: dict[str, Any], depth: int, action_order: str = "normal"
 ) -> dict[str, Any]:
-    """Elige una acción con Minimax y poda alfa-beta sin alterar su utilidad.
-
-    La raíz pasa alpha a cada respuesta y vuelve a buscar con ventana completa
-    una cota empatada que podría ganar el desempate canónico. En los subárboles,
-    alpha >= beta omite ramas; `nodes_pruned` cuenta esos sucesores inmediatos.
+    """Recomendar la misma jugada Minimax evitando sucesores mediante límites alfa y beta.
     
-
-    Purpose: Calcular la misma decisión minimax mediante límites alfa y beta.
-    Preconditions: Misma utilidad, profundidad y desempate que Minimax.
-    Postconditions: Devuelve acción y valor minimax; reduce visitas cuando se producen podas válidas.
-    Complexity: Peor caso O(b^d*T); orden favorable reduce exploración; memoria O(b*d*S).
+    Purpose: Recomendar la misma jugada Minimax evitando sucesores mediante límites alfa y beta.
+    Preconditions: Estado y profundidad válidos; misma función de evaluación y desempate que Minimax.
+    Postconditions: Acción y valor exactos bajo la política de desempate, con contador de ramas inmediatas omitidas.
+    Complexity: Peor caso O(b^d*T); mejores órdenes pueden reducir hojas, sin garantía de reducción universal.
     AI usage: Yes.
-    AI intervention: apoyo de IA en diseño, revisión, documentación o pruebas; verificar el alcance preciso en el informe.
-    Student validation: hay pruebas automatizadas; la comprobación y defensa personal de los integrantes sigue pendiente.
+    AI intervention: IA participó en implementación de poda, tratamiento de empates, repeticiones selectivas y pruebas.
+    Student validation: Caso 8: mismo valor/acción que Minimax con 328 vs 1094 hojas; validación individual pendiente.
     """
     started_at = perf_counter()  # Mide desde antes de validar hasta construir la respuesta.
     validate_search(state, depth, action_order)  # Rechaza profundidad, turno y orden inválidos.

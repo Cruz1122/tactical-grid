@@ -13,15 +13,15 @@ StateKey = tuple[Any, ...]
 def prepare_search(
     state: dict[str, Any], unit_id: str, goal: dict[str, Any]
 ) -> tuple[Position | None, str | None]:
-    """Valida la entrada y separa errores de entrada de metas inalcanzables.
-
-    Purpose: Validar unidad, objetivo y condiciones iniciales de búsqueda.
-    Preconditions: Escenario JSON preparado.
-    Postconditions: Devuelve objetivo normalizado o diagnóstico sin mutar entrada.
-    Complexity: Tiempo O(U+F*C) como máximo según validación.
+    """Validar petición de navegación de unidad y meta sin modificar la partida.
+    
+    Purpose: Validar petición de navegación de unidad y meta sin modificar la partida.
+    Preconditions: Estado preparado y parámetros con estructura correcta.
+    Postconditions: Meta normalizada o error explícito para dato inválido.
+    Complexity: Validación y búsqueda de unidad O(U), más validaciones de posición.
     AI usage: Yes.
-    AI intervention: apoyo de IA en diseño, revisión, documentación o pruebas; verificar el alcance preciso en el informe.
-    Student validation: hay pruebas automatizadas; la comprobación y defensa personal de los integrantes sigue pendiente.
+    AI intervention: IA asistió el diseño del contrato común entre cinco búsquedas.
+    Student validation: Suite de navegación aprobada; revisión individual pendiente.
     """
     if isinstance(goal, dict):
         row = goal.get("fila", goal.get("row"))
@@ -72,15 +72,15 @@ def unit_position(state: dict[str, Any], unit_id: str) -> Position:
 def unit_successors(
     state: dict[str, Any], unit_id: str
 ) -> list[tuple[dict[str, Any], float]]:
-    """Genera los movimientos legales de una unidad en el orden del motor.
-
-    Purpose: Generar desplazamientos hipotéticos de una sola unidad.
-    Preconditions: Unidad activa y estado coherente.
-    Postconditions: Devuelve sucesores con efectos y costos reales sin alternar turnos enemigos.
-    Complexity: O(b*T) tiempo y O(b*S) memoria, b destinos legales y T transición hipotética.
+    """Producir estados hipotéticos y costos de una sola unidad conservando efectos del motor.
+    
+    Purpose: Producir estados hipotéticos y costos de una sola unidad conservando efectos del motor.
+    Preconditions: Unidad válida y estado navegable.
+    Postconditions: Sucesores legales con costos reales; no alterna enemigos ni muta el oficial.
+    Complexity: O(b*(T_move+S)), con b destinos, T_move reglas y S copia/validación de estado.
     AI usage: Yes.
-    AI intervention: apoyo de IA en diseño, revisión, documentación o pruebas; verificar el alcance preciso en el informe.
-    Student validation: hay pruebas automatizadas; la comprobación y defensa personal de los integrantes sigue pendiente.
+    AI intervention: IA participó en separación de navegación vs. transición adversarial y diseño de sucesores.
+    Student validation: Regresiones de capturas y verificación de rutas; revisión humana pendiente.
     """
     successors = []
     for destination in legal_moves(state, unit_id):
@@ -102,20 +102,15 @@ def search_result(
     started_at: float,
     error: str | None = None,
 ) -> dict[str, Any]:
-    """Construye la ruta y devuelve métricas compartidas por BFS y DFS.
-
-    `generated` incluye el origen; `expanded` cuenta nodos extraídos que no eran
-    meta; `max_frontier` incluye el tamaño inicial; el tiempo incluye la búsqueda
-    y reconstrucción de ruta y se mide en segundos con `perf_counter`.
+    """Reconstruir ruta por padres y empaquetar métricas comunes de búsquedas.
     
-
-    Purpose: Reconstruir una ruta y publicar métricas comunes de búsqueda.
-    Preconditions: Padres, estados y costos procedentes de un algoritmo válido.
-    Postconditions: Entrega estructura reproducible, sin alterar estados originales.
-    Complexity: O(P+V) tiempo/espacio en la reconstrucción, P longitud de ruta, V estados indexados.
+    Purpose: Reconstruir ruta por padres y empaquetar métricas comunes de búsquedas.
+    Preconditions: Diccionarios de padres/estados/costos coherentes; reloj iniciado.
+    Postconditions: Resultado uniforme para éxito, fallo y error de entrada.
+    Complexity: O(L) para reconstruir ruta de L estados, más serialización del resultado.
     AI usage: Yes.
-    AI intervention: apoyo de IA en diseño, revisión, documentación o pruebas; verificar el alcance preciso en el informe.
-    Student validation: hay pruebas automatizadas; la comprobación y defensa personal de los integrantes sigue pendiente.
+    AI intervention: IA contribuyó al formato compartido y a registrar tiempo/estados.
+    Student validation: Resultados usados en comparaciones de casos 1–5; revisión individual pendiente.
     """
     path: list[dict[str, int]] = []
     total_cost: float | None = None

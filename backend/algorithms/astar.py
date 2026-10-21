@@ -23,15 +23,15 @@ def astar(
     goal: dict[str, Any],
     heuristic: str = "manhattan",
 ) -> dict[str, Any]:
-    """Busca una ruta con prioridad f(n) = g(n) + h(n), sin mutar el estado.
-
-    Purpose: Priorizar estados con f=g+h y relajar costos.
-    Preconditions: Estado y meta válidos; heurística seleccionada entre las implementadas.
-    Postconditions: Devuelve ruta; la optimalidad exige una heurística adecuada como la propia consistente.
-    Complexity: Tiempo peor caso exponencial respecto de la longitud óptima; memoria proporcional a estados guardados.
+    """Buscar rutas con prioridad f=g+h, admitiendo Manhattan o heurística propia.
+    
+    Purpose: Buscar rutas con prioridad f=g+h, admitiendo Manhattan o heurística propia.
+    Preconditions: Costos positivos; meta y unidad válidas; selector de heurística soportado.
+    Postconditions: Devuelve ruta encontrada y métricas; optimalidad garantizable solo con heurística apropiada.
+    Complexity: O((V+E) log V) bajo condiciones de grafo explícito, más costo de h y de generar sucesores; memoria proporcional a frontera y registros.
     AI usage: Yes.
-    AI intervention: apoyo de IA en diseño, revisión, documentación o pruebas; verificar el alcance preciso en el informe.
-    Student validation: hay pruebas automatizadas; la comprobación y defensa personal de los integrantes sigue pendiente.
+    AI intervention: IA participó en diseño e implementación de heap, reaperturas, integración de h y pruebas comparativas.
+    Student validation: Caso 4: ambas rutas de costo 32, propia expandió 197 vs. 257 de Manhattan; validación humana pendiente.
     """
     # Inicia el cronómetro antes de validar para incluir toda la búsqueda.
     started_at = perf_counter()

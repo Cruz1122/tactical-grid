@@ -12,19 +12,15 @@ from backend.game.engine import state_key, static_state_key
 
 
 def dfs(state: dict[str, Any], unit_id: str, goal: dict[str, Any]) -> dict[str, Any]:
-    """Explora iterativamente con pila LIFO y orden determinista de sucesores.
-
-    Los estados generados incluyen el origen; los expandidos no cuentan la meta;
-    la frontera máxima incluye su tamaño inicial y el tiempo incluye reconstrucción.
+    """Recorrer la navegación de una unidad mediante pila LIFO y visitados.
     
-
-    Purpose: Explorar rutas por profundidad usando pila LIFO.
-    Preconditions: Estado válido, ficha activa y objetivo dentro del mapa.
-    Postconditions: Devuelve ruta legal si la encuentra, sin garantizar longitud óptima ni mutar el estado.
-    Complexity: Tiempo O(V+E) más generación; espacio O(V+E).
+    Purpose: Recorrer la navegación de una unidad mediante pila LIFO y visitados.
+    Preconditions: Escenario válido, unidad seleccionada y meta; mismo generador que BFS.
+    Postconditions: Ruta legal si existe y se alcanza en el recorrido; no garantiza mínimo costo ni movimientos.
+    Complexity: O(V+E) sobre grafo alcanzable finito, más sucesores; O(V) memoria.
     AI usage: Yes.
-    AI intervention: apoyo de IA en diseño, revisión, documentación o pruebas; verificar el alcance preciso en el informe.
-    Student validation: hay pruebas automatizadas; la comprobación y defensa personal de los integrantes sigue pendiente.
+    AI intervention: Asistencia de IA en generación de búsqueda iterativa, orden de sucesores y registro de métricas.
+    Student validation: Caso 1 comparado con BFS; suite automatizada aprobada. Revisión individual pendiente.
     """
     started_at = perf_counter()  # Inicia la medición antes de preparar la búsqueda.
     target, error = prepare_search(state, unit_id, goal)  # Valida los datos antes de explorar.

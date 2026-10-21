@@ -17,20 +17,15 @@ from backend.game.engine import state_key, static_state_key
 
 
 def ucs(state: dict[str, Any], unit_id: str, goal: dict[str, Any]) -> dict[str, Any]:
-    """Busca costo mínimo sin modificar el estado recibido.
-
-    `states_generated` cuenta claves únicas (incluido el origen); `states_expanded`
-    cuenta extracciones vigentes que no son meta; `max_frontier` incluye entradas
-    obsoletas. El tiempo incluye validación y reconstrucción del camino.
+    """Encontrar para una unidad un camino de costo de terreno mínimo usando heap y relajación.
     
-
-    Purpose: Encontrar la ruta de menor costo con una cola de prioridad.
-    Preconditions: Costos de transición positivos y entrada válida.
-    Postconditions: Devuelve una ruta de costo mínimo o fallo explícito sin mutar el estado.
-    Complexity: Tiempo O((V+E) log V) más generación; espacio O(V+E), en modelo de grafo explícito.
+    Purpose: Encontrar para una unidad un camino de costo de terreno mínimo usando heap y relajación.
+    Preconditions: Costos de transición positivos; escenario y objetivo válidos.
+    Postconditions: Ruta de costo mínimo si existe, con costo acumulado real; estado oficial intacto.
+    Complexity: O((V+E) log V) en grafo explícito con heap, más materialización y copias; O(V+E) memoria.
     AI usage: Yes.
-    AI intervention: apoyo de IA en diseño, revisión, documentación o pruebas; verificar el alcance preciso en el informe.
-    Student validation: hay pruebas automatizadas; la comprobación y defensa personal de los integrantes sigue pendiente.
+    AI intervention: IA asistió en implementación de cola de prioridad, g_score, actualización de padres y tests de costos.
+    Student validation: Caso 2: costo 12 frente a costo 64 de BFS. Tests globales aprobados; revisión personal pendiente.
     """
     started_at = perf_counter()  # Mide desde la validación hasta la reconstrucción del camino.
     target, error = prepare_search(state, unit_id, goal)  # Valida unidad, origen y destino antes de explorar.

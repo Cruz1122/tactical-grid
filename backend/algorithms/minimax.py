@@ -17,19 +17,15 @@ from backend.game.engine import check_winner
 def minimax(
     state: dict[str, Any], depth: int, action_order: str = "normal"
 ) -> dict[str, Any]:
-    """Elige una acción con Minimax y devuelve la decisión y sus métricas.
-
-    Una profundidad es una acción completa; la raíz cuenta como profundidad cero.
-    `nodes_pruned` vale cero: Minimax visita todos los sucesores legales.
+    """Recomendar una acción adversarial mediante exploración exhaustiva a profundidad limitada.
     
-
-    Purpose: Elegir acción racional para MAX modelando respuestas MIN.
-    Preconditions: Estado válido, profundidad no negativa y orden determinista.
-    Postconditions: Recomienda acción legal y utilidad, sin ejecutar la acción.
-    Complexity: Tiempo O(b^d*T), espacio O(b*d*S) por materialización de sucesores; b ramificación, d profundidad, T transición, S estado.
+    Purpose: Recomendar una acción adversarial mediante exploración exhaustiva a profundidad limitada.
+    Preconditions: Estado del turno A/B, profundidad entera >= 0 y orden legal.
+    Postconditions: Mejor acción/valor según utilidad compartida, con métricas y sin ejecutar la acción.
+    Complexity: O(b^d*T) tiempo en peor caso; memoria por niveles O(b*d*S) al materializar sucesores.
     AI usage: Yes.
-    AI intervention: apoyo de IA en diseño, revisión, documentación o pruebas; verificar el alcance preciso en el informe.
-    Student validation: hay pruebas automatizadas; la comprobación y defensa personal de los integrantes sigue pendiente.
+    AI intervention: IA asistió directamente en generación de árbol MAX/MIN, desempate, métricas y tests.
+    Student validation: Caso 8: valor 845 idéntico a alfa-beta en d=3; revisión individual pendiente.
     """
     started_at = perf_counter()  # Inicia el cronómetro antes de validar y buscar.
     validate_search(state, depth, action_order)  # Rechaza profundidad, turno u orden inválidos.

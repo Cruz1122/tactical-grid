@@ -62,6 +62,16 @@ def _queen_spawn(state: dict[str, Any]) -> Position | None:
 def _capture_unit(
     state: dict[str, Any], attacker_id: str, victim_id: str, position: Position
 ) -> None:
+    """Aplicar la captura de una víctima y devolver la reina a su spawn si la portaba.
+    
+    Purpose: Aplicar la captura de una víctima y devolver la reina a su spawn si la portaba.
+    Preconditions: Atacante y víctima activos, bandos distintos, captura legal.
+    Postconditions: La víctima queda inactiva hasta la reaparición y la reina vuelve a recurso_spawn si era portador.
+    Complexity: O(U) para localizar unidades, además de actualización de estructuras.
+    AI usage: Yes.
+    AI intervention: IA participó en depuración de capturas; el usuario corrigió una sugerencia errónea de devolver reina a la casilla de captura.
+    Student validation: Regla recurso_spawn confirmada por el usuario y pruebas; revisión personal pendiente.
+    """
     attacker = _unit_by_id(state, attacker_id)
     victim = _unit_by_id(state, victim_id)
     if (
@@ -88,6 +98,16 @@ def _capture_unit(
 
 
 def _respawn_in_place(state: dict[str, Any]) -> None:
+    """Reactivar unidades inactivas cuando su spawn original está libre y es legal.
+    
+    Purpose: Reactivar unidades inactivas cuando su spawn original está libre y es legal.
+    Preconditions: Estado interno coherente con spawns guardados.
+    Postconditions: Unidades reaparecidas sin superponer ocupación; restantes esperan inactivas.
+    Complexity: O(U log U+F*C+K) más conjuntos de ocupación.
+    AI usage: Yes.
+    AI intervention: IA asistió en implementación de reapariciones y cobertura de casos ocupados.
+    Student validation: Pruebas de respawn/capturas aprobadas; revisión personal pendiente.
+    """
     units = state.get("unidades", [])
     active_positions = {
         (unit["fila"], unit["columna"])
@@ -145,7 +165,16 @@ def _freeze_state_value(value: Any) -> Any:
 
 
 def static_state_key(state: dict[str, Any]) -> tuple[Any, ...]:
-    """Congela una vez los datos estáticos compartidos por la búsqueda."""
+    """Congelar partes invariantes de mapa/costos/bases para búsquedas repetidas.
+    
+    Purpose: Congelar partes invariantes de mapa/costos/bases para búsquedas repetidas.
+    Preconditions: Escenario interno preparado.
+    Postconditions: Tupla inmutable del componente estático.
+    Complexity: O(S), con S tamaño de la descripción estática del tablero.
+    AI usage: Yes.
+    AI intervention: IA asistió reducción del trabajo repetido al calcular claves.
+    Student validation: Pruebas de determinismo y búsqueda; revisión personal pendiente.
+    """
     return _freeze_state_value(
         {
             key: state.get(key)
@@ -164,23 +193,15 @@ def static_state_key(state: dict[str, Any]) -> tuple[Any, ...]:
 def state_key(
     state: dict[str, Any], *, static_key: tuple[Any, ...] | None = None
 ) -> tuple[Any, ...]:
-    """Produce una clave inmutable y determinista para estados equivalentes.
-
-    Preconditions: el estado contiene estructuras JSON válidas y unidades con IDs.
-    Postconditions: la clave considera escenario, turno, unidades/spawns y datos
-    adicionales, reina, reyes y fase/resultado; ignora identidades Python y orden
-    de claves.
-    `static_key`, si se entrega, debe proceder del mismo escenario inmutable.
-    Complexity: O(S + U log U + K log K), o O(U log U + K log K) con `static_key`.
+    """Codificar deterministamente un estado compuesto para visitados y comparación.
     
-
-    Purpose: Identificar estados compuestos equivalentes para deduplicación.
-    Preconditions: Estado con unidades identificadas y JSON preparado.
-    Postconditions: Retorna clave determinista que incluye turno, recurso, actividad y posiciones.
-    Complexity: O(S+U log U+K log K), o sin componente estática si ya está calculada.
+    Purpose: Codificar deterministamente un estado compuesto para visitados y comparación.
+    Preconditions: Estado interno preparado con unidades identificadas.
+    Postconditions: Tupla estable diferenciando turno, posesión, actividad, reyes y resultado.
+    Complexity: O(S+U log U+K log K), o excluyendo parte estática precomputada.
     AI usage: Yes.
-    AI intervention: apoyo de IA en diseño, revisión, documentación o pruebas; verificar el alcance preciso en el informe.
-    Student validation: hay pruebas automatizadas; la comprobación y defensa personal de los integrantes sigue pendiente.
+    AI intervention: IA ayudó a diseñar clave de estados y su reutilización en búsqueda.
+    Student validation: Caso 6 de estado compuesto y tests de claves; revisión individual pendiente.
     """
     units = tuple(
         sorted(
@@ -273,7 +294,16 @@ def state_key(
 def _apply_move_effects(
     state: dict[str, Any], unit_id: str, destination: Position
 ) -> None:
-    """Aplica movimiento, capturas y recogida de reina sobre una copia mutable."""
+    """Aplicar en una copia movimiento, captura, eventual recogida y respawn sin alternar turno.
+    
+    Purpose: Aplicar en una copia movimiento, captura, eventual recogida y respawn sin alternar turno.
+    Preconditions: Destino legal y unidad existente activa.
+    Postconditions: Copia con efectos completos, conservando spawn de unidades y reina.
+    Complexity: O(U+T_respawn) más comprobación de regla de recogida.
+    AI usage: Yes.
+    AI intervention: IA ayudó a integrar las consecuencias de acciones para navegación y turnos reales.
+    Student validation: Pruebas de efectos hipotéticos y motores; revisión humana pendiente.
+    """
     mover = _unit_by_id(state, unit_id)
     if mover is None:
         raise ValueError(f"No existe la unidad {unit_id!r}")
@@ -305,19 +335,15 @@ def _apply_move_effects(
 def hypothetical_move(
     state: dict[str, Any], unit_id: str, destination: dict[str, int] | Position
 ) -> dict[str, Any]:
-    """Devuelve una copia tras un movimiento legal, sin consumir ni alternar turnos.
-
-    Conserva los efectos compartidos de captura, reina y reaparición; no comprueba
-    el turno activo ni resuelve el resultado de una partida hipotética.
+    """Aplicar sobre una copia el movimiento completo de una unidad sin alternar turnos.
     
-
-    Purpose: Simular un movimiento de una ficha para algoritmos de ruta.
-    Preconditions: Destino legal, ficha activa y estado coherente.
-    Postconditions: Devuelve copia sin alternar turno ni afectar partida oficial.
-    Complexity: O(T) tiempo y O(S) memoria, T costo de efectos y validación parcial.
+    Purpose: Aplicar sobre una copia el movimiento completo de una unidad sin alternar turnos.
+    Preconditions: Movimiento legal para la unidad dada.
+    Postconditions: Estado hipotético con capturas/recogida resueltas y estado de origen intacto.
+    Complexity: O(S+T_move+T_respawn) incluyendo copia y efectos.
     AI usage: Yes.
-    AI intervention: apoyo de IA en diseño, revisión, documentación o pruebas; verificar el alcance preciso en el informe.
-    Student validation: hay pruebas automatizadas; la comprobación y defensa personal de los integrantes sigue pendiente.
+    AI intervention: IA ayudó a separar navegación hipotética de jugadas adversariales completas.
+    Student validation: Pruebas de rutas/capturas; revisión personal pendiente.
     """
     target = _position(destination)
     unit = _unit_by_id(state, unit_id)
@@ -333,24 +359,15 @@ def hypothetical_move(
 
 
 def transition(state: dict[str, Any], action: dict[str, Any]) -> dict[str, Any]:
-    """Aplica una acción legal sobre una copia y devuelve el estado resultante.
-
-    Preconditions: `state` cumple `validate_state`; action es un movimiento o una
-    recogida explícita del bando activo.
-    Postconditions: la entrada no cambia; el resultado resuelve captura, reina,
-    reapariciones, turno y finalización, y vuelve a pasar `validate_state`.
-    Complexity: O(U + K*U*max(F,C) + R*C) por turno, dominada por movimiento,
-    jaque y validación; espacio O(S + U + K) por la copia independiente.
-
+    """Aplicar una acción real completa y comprobar turno/estado final.
     
-
-    Purpose: Aplicar acciones legales y todos sus efectos con alternancia real de turno.
-    Preconditions: Estado válido y acción aprobada por validate_action.
-    Postconditions: Devuelve copia validada con capturas, reina, reaparición, resultado y turno.
-    Complexity: O(T) tiempo, O(S) espacio por deepcopy y verificaciones.
+    Purpose: Aplicar una acción real completa y comprobar turno/estado final.
+    Preconditions: Estado y acción validados conforme al motor.
+    Postconditions: Nuevo estado correcto, anterior intacto, turno actualizado o final terminal.
+    Complexity: O(S+U+T_move+T_validate), incluye copia y validación.
     AI usage: Yes.
-    AI intervention: apoyo de IA en diseño, revisión, documentación o pruebas; verificar el alcance preciso en el informe.
-    Student validation: hay pruebas automatizadas; la comprobación y defensa personal de los integrantes sigue pendiente.
+    AI intervention: IA participó en implementación/refinamiento de transiciones, jaques, reina y finales.
+    Student validation: Pruebas de atomicidad, turnos y capturas; revisión individual pendiente.
     """
     validate_action(state, action)
     kind = action.get("type", action.get("tipo", action.get("action")))
@@ -395,11 +412,15 @@ def transition(state: dict[str, Any], action: dict[str, Any]) -> dict[str, Any]:
 def apply_move(
     state: dict[str, Any], unit_id: str, destination: dict[str, int] | tuple[int, int]
 ) -> dict[str, Any]:
-    """Ejecuta el movimiento usando la transición común del motor.
-
-    Preconditions: unidad activa del turno y destino en `legal_moves`.
-    Postconditions: devuelve un estado independiente o falla sin alterar la entrada.
-    Complexity: la misma que `transition`; no duplica reglas.
+    """Exponer la aplicación de un movimiento completo del motor.
+    
+    Purpose: Exponer la aplicación de un movimiento completo del motor.
+    Preconditions: ID de unidad y destino legales.
+    Postconditions: Nuevo estado sin tocar original; turno actualizado.
+    Complexity: Costo de transición del motor incluyendo copia y validación.
+    AI usage: Yes.
+    AI intervention: IA asistió integración de movimiento y control de turno.
+    Student validation: Pruebas de transiciones; revisión personal pendiente.
     """
     return transition(
         state,
@@ -408,13 +429,15 @@ def apply_move(
 
 
 def capture(state: dict[str, Any], attacker_id: str, victim_id: str) -> dict[str, Any]:
-    """Captura una unidad coincidente y procesa los intentos de reaparición.
-
-    Preconditions: atacante y víctima activos, enemigos y en la misma casilla.
-    Postconditions: retorna una copia con víctima inactiva o reaparecida; si era
-    portadora, la reina vuelve a su spawn original sin recogida automática y el
-    spawn de la víctima permanece intacto.
-    Complexity: O(U log U + K) en tiempo y O(S + U) en espacio.
+    """Aplicar una captura explícita cuando es legal mediante el motor.
+    
+    Purpose: Aplicar una captura explícita cuando es legal mediante el motor.
+    Preconditions: Atacante, víctima y estado válidos.
+    Postconditions: Nuevo estado con consecuencias de captura y reaparición.
+    Complexity: Costo dominado por transición y validación de estado.
+    AI usage: Yes.
+    AI intervention: IA contribuyó a implementación y reglas de capturas.
+    Student validation: Pruebas de captura y retorno de reina al spawn; revisión humana pendiente.
     """
     candidate = deepcopy(state)
     attacker = _unit_by_id(candidate, attacker_id)
@@ -431,12 +454,15 @@ def capture(state: dict[str, Any], attacker_id: str, victim_id: str) -> dict[str
 
 
 def respawn(state: dict[str, Any]) -> dict[str, Any]:
-    """Intenta reactivar las unidades inactivas en orden determinista por ID.
-
-    Preconditions: unidades inactivas conservan un `spawn` válido.
-    Postconditions: devuelve una copia; reaparecen solo las que encuentran su
-    spawn transitable y libre de unidades activas y reyes.
-    Complexity: O(U log U + K) en tiempo y O(U + K) en espacio.
+    """Resolver reapariciones sin mutar el estado de entrada.
+    
+    Purpose: Resolver reapariciones sin mutar el estado de entrada.
+    Preconditions: Estado con spawns originales válidos.
+    Postconditions: Nuevo estado con unidades reactivadas cuando procede.
+    Complexity: O(S+U log U) aproximadamente por copia y comprobación de ocupación.
+    AI usage: Yes.
+    AI intervention: IA asistió reglas deterministas de reaparición y sus tests.
+    Student validation: Casos spawn ocupado y libre; revisión humana pendiente.
     """
     candidate = deepcopy(state)
     _respawn_in_place(candidate)
@@ -445,21 +471,15 @@ def respawn(state: dict[str, Any]) -> dict[str, Any]:
 
 
 def collect_queen(state: dict[str, Any], unit_id: str) -> dict[str, Any]:
-    """Ejecuta la recogida explícita como una acción que consume turno.
-
-    Preconditions: unidad activa del bando en turno ocupa la reina disponible y
-    su rey no está en jaque.
-    Postconditions: devuelve una copia con la unidad como portadora, sin desplazarla.
-    Complexity: la misma que `transition`.
+    """Ejecutar recogida explícita legal de reina y consumir turno.
     
-
-    Purpose: Recoger explícitamente la reina consumiendo un turno.
-    Preconditions: Unidad activa sobre recurso y rey propio sin jaque.
-    Postconditions: Devuelve transición legal conservando spawn original.
-    Complexity: Misma complejidad que transition.
+    Purpose: Ejecutar recogida explícita legal de reina y consumir turno.
+    Preconditions: Unidad autorizada, recurso libre y rey propio sin jaque.
+    Postconditions: Nuevo estado con portador y turno correspondiente; sin mutar anterior.
+    Complexity: Dominada por transición completa del motor O(S+T_validate).
     AI usage: Yes.
-    AI intervention: apoyo de IA en diseño, revisión, documentación o pruebas; verificar el alcance preciso en el informe.
-    Student validation: hay pruebas automatizadas; la comprobación y defensa personal de los integrantes sigue pendiente.
+    AI intervention: IA participó en diseño/revisión de acción especial y su integración.
+    Student validation: Tests de recogida/jaque; validación personal pendiente.
     """
     return transition(state, {"type": "collect", "unit_id": unit_id})
 
@@ -475,21 +495,15 @@ def check_status(state: dict[str, Any]) -> dict[str, bool]:
 
 
 def check_winner(state: dict[str, Any]) -> str | None:
-    """Devuelve ganador, empate o `None` según el estado de partida.
-
-    Preconditions: `state` está preparado para el motor.
-    Postconditions: no modifica el estado; detecta portador en su base y empate
-    cuando el bando inicial o activo carece de movimiento y recogida legales.
-    Complexity: O(U*(U+K*max(F,C))) en el peor caso.
+    """Consultar victoria, derrota o empate terminal del estado.
     
-
-    Purpose: Identificar victoria por entrega o empate por falta de jugadas.
-    Preconditions: Estado preparado.
-    Postconditions: Retorna bando ganador, empate o None sin mutación.
-    Complexity: O(U*(U+K*max(F,C))) en peor caso.
+    Purpose: Consultar victoria, derrota o empate terminal del estado.
+    Preconditions: Estado preparado y juego coherente.
+    Postconditions: Identificador del ganador, empate o None si continúa.
+    Complexity: O(U) para localizar portador/meta o lectura de resultado según estado.
     AI usage: Yes.
-    AI intervention: apoyo de IA en diseño, revisión, documentación o pruebas; verificar el alcance preciso en el informe.
-    Student validation: hay pruebas automatizadas; la comprobación y defensa personal de los integrantes sigue pendiente.
+    AI intervention: IA ayudó a revisar reglas terminales y verificación de portador.
+    Student validation: Partida 6x6 terminada y pruebas de victoria/empate; revisión personal pendiente.
     """
     game = state.get("juego", {})
     if not isinstance(game, dict):
@@ -513,21 +527,15 @@ def check_winner(state: dict[str, Any]) -> str | None:
 def action_successors(
     state: dict[str, Any],
 ) -> list[tuple[dict[str, Any], dict[str, Any]]]:
-    """Genera pares acción/estado usando las reglas y transiciones existentes.
-
-    Preconditions: estado configurado o en curso y con unidades identificadas.
-    Postconditions: cada par corresponde a una acción legal del bando activo;
-    el estado de entrada no cambia y se incluye la recogida explícita si procede.
-    Complexity: O(A*T), con A acciones candidatas y T el costo de `transition`.
+    """Generar pares acción-estado legal de todas las unidades del bando activo.
     
-
-    Purpose: Enumerar acciones y estados sucesores completos para adversarios.
-    Preconditions: Estado no terminal y bando activo válido.
-    Postconditions: Devuelve pares acción/estado sin mutar el estado de entrada.
-    Complexity: O(b*T) tiempo y O(b*S) espacio.
+    Purpose: Generar pares acción-estado legal de todas las unidades del bando activo.
+    Preconditions: Estado interno válido; partida no terminada.
+    Postconditions: Acciones reales y siguientes estados listos para árbol MAX/MIN.
+    Complexity: O(b*(S+T_transition)) para b acciones legales.
     AI usage: Yes.
-    AI intervention: apoyo de IA en diseño, revisión, documentación o pruebas; verificar el alcance preciso en el informe.
-    Student validation: hay pruebas automatizadas; la comprobación y defensa personal de los integrantes sigue pendiente.
+    AI intervention: IA asistió adaptación del motor para Minimax/alfa-beta sin duplicar movimientos.
+    Student validation: Experimentos adversariales y pruebas de acciones legales; revisión personal pendiente.
     """
     game = state.get("juego", {})
     if not isinstance(game, dict) or game.get("estado") == "finalizado":
@@ -557,17 +565,29 @@ def action_successors(
 
 
 def successors(state: dict[str, Any]) -> list[dict[str, Any]]:
-    """Compatibilidad histórica: devuelve solo los estados sucesores."""
+    """Entregar estados sucesores oficiales sin necesidad de conservar descripción de acción.
+    
+    Purpose: Entregar estados sucesores oficiales sin necesidad de conservar descripción de acción.
+    Preconditions: Estado válido.
+    Postconditions: Lista de estados producidos por acciones legales, sin mutar origen.
+    Complexity: O(b*(S+T_transition)) según número de acciones.
+    AI usage: Yes.
+    AI intervention: IA apoyó diseño de expansión común del motor.
+    Student validation: Tests del motor y comparación con action_successors; validación personal pendiente.
+    """
     return [next_state for _, next_state in action_successors(state)]
 
 
 def is_goal(state: dict[str, Any], goal: str | dict[str, Any]) -> bool:
-    """Comprueba exclusivamente un resultado de partida, no una meta de ruta.
-
-    Preconditions: `goal` es un bando/resultado o un objeto con `bando`,
-    `resultado` o `ganador`.
-    Postconditions: compara el resultado terminal solicitado sin modificar datos.
-    Complexity: O(1) tiempo y espacio.
+    """Comprobar si una posición o condición objetivo se satisface.
+    
+    Purpose: Comprobar si una posición o condición objetivo se satisface.
+    Preconditions: Estado y objetivo bajo contrato admitido.
+    Postconditions: Booleano sin efectos secundarios.
+    Complexity: O(U) para buscar unidad/portador según forma de la meta.
+    AI usage: Yes.
+    AI intervention: IA intervino en definición de condiciones meta de navegación y victoria.
+    Student validation: Pruebas de goal y rutas; revisión personal pendiente.
     """
     requested = goal if isinstance(goal, str) else None
     if isinstance(goal, dict):
@@ -581,12 +601,15 @@ def is_goal(state: dict[str, Any], goal: str | dict[str, Any]) -> bool:
 def configure_kings(
     state: dict[str, Any], kings: dict[str, list[dict[str, Any]]]
 ) -> dict[str, Any]:
-    """Reemplaza posiciones de reyes durante la configuración previa al juego.
-
-    Preconditions: la partida está en `configuracion` y las posiciones satisfacen
-    las reglas de terreno, ocupación, bases y conectividad.
-    Postconditions: devuelve una copia validada; un fallo no altera el original.
-    Complexity: O(R*C + U + K) en tiempo/espacio.
+    """Instalar reyes opcionales válidos antes de iniciar movimientos.
+    
+    Purpose: Instalar reyes opcionales válidos antes de iniciar movimientos.
+    Preconditions: Posiciones y cantidades compatibles con terreno y unidades.
+    Postconditions: Estado con reyes fijos configurados o error atómico.
+    Complexity: Dominada por copia y validación O(S+F*C+K).
+    AI usage: Yes.
+    AI intervention: IA asistió pruebas de reyes opcionales y configuración.
+    Student validation: Regresiones de reyes y bloqueo de base; revisión personal pendiente.
     """
     game = state.get("juego", {})
     if not isinstance(game, dict) or game.get("estado") != "configuracion":
@@ -604,25 +627,15 @@ def configure_kings(
 def generate_kings(
     state: dict[str, Any], counts: dict[str, int]
 ) -> dict[str, Any]:
-    """Genera ubicaciones de reyes válidas y deterministas según cantidades.
-
-    Preconditions: estado en configuración; `counts` especifica cantidades no
-    negativas para A y B.
-    Postconditions: reemplaza reyes en una copia usando celdas transitables en
-    orden fila-columna. Es determinista y devuelve exactamente las cantidades
-    pedidas si su selección voraz encuentra una ubicación; si no, lanza `ValueError`
-    sin mutar la entrada. No garantiza encontrar una solución existente.
-    Complexity: O(K*(R*C)^2) en el peor caso por las pruebas de configuración;
-    espacio O(R*C + U + K).
+    """Elegir deterministamente ubicaciones legales de reyes según configuración.
     
-
-    Purpose: Configurar reyes automáticamente bajo reglas deterministas.
-    Preconditions: Configuración inicial, cantidades válidas por bando.
-    Postconditions: Devuelve disposición legal o error sin cambiar el estado original.
-    Complexity: O(F*C*(U+K)) aproximadamente según candidatos examinados.
+    Purpose: Elegir deterministamente ubicaciones legales de reyes según configuración.
+    Preconditions: Estado sin inicio de jugadas y cantidades válidas.
+    Postconditions: Reyes estáticos no superpuestos ni colocados en bases u obstáculos.
+    Complexity: Dependiente de F*C y candidatos evaluados por selección.
     AI usage: Yes.
-    AI intervention: apoyo de IA en diseño, revisión, documentación o pruebas; verificar el alcance preciso en el informe.
-    Student validation: hay pruebas automatizadas; la comprobación y defensa personal de los integrantes sigue pendiente.
+    AI intervention: IA contribuyó a algoritmo de asignación y testeo de coherencia.
+    Student validation: Tests de reyes y configuraciones; validación personal pendiente.
     """
     game = state.get("juego", {})
     if not isinstance(game, dict) or game.get("estado") != "configuracion":
