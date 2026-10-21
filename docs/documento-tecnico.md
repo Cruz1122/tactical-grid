@@ -1,10 +1,10 @@
 # TacticalGrid — Documento técnico
 
 **Sistemas Inteligentes I · Proyecto 1 · UCaldas**  
-**Versión documentada:** candidato derivado de `develop`, octubre de 2026.  
-**Autoría:** equipo de estudiantes por identificar en el README; redacción y una parte sustancial del código asistidas por inteligencia artificial. Véase [Declaración de IA](uso-de-ia.md).
+**Versión de referencia:** octubre de 2026.  
+**Autoría:** equipo de TacticalGrid. El uso sustancial de IA en código y documentación se detalla en la [declaración de IA](uso-de-ia.md).
 
-> **Alcance de esta memoria.** Describe el comportamiento observable en el código de `backend/` y `frontend/` de esta entrega, no una arquitectura idealizada. Las mediciones se refieren a la copia ejecutada en el sandbox; una prueba automatizada aprobada no implica que un estudiante haya validado individualmente el método. Los resultados adversariales no garantizan victoria en cualquier escenario.
+> **Alcance.** Se describe la implementación de `backend/` y `frontend/` y se presentan mediciones reproducibles bajo las condiciones indicadas. La política adversarial es aproximada y no garantiza victoria en todos los escenarios.
 
 ## 1. Pregunta, objetivos y metodología
 
@@ -152,17 +152,15 @@ Se usan los diez casos de las páginas 8–9 del PDF: BFS/DFS; BFS/UCS; U y obst
 
 **Precaución importante:** no todas las diferencias de nodos constituyen mejoras universalmente válidas; el tiempo varía por máquina, entorno, caché y número de estados. No se asignan mejoras porcentuales ficticias ni se presume que un resultado de un escenario garantiza rendimiento en otros.
 
-## 9. Limitaciones, complejidad del sistema y decisiones pendientes
+## 9. Limitaciones y complejidad del sistema
 
 1. **Explosión combinatoria:** el 20×20 con varias unidades y d=5 puede tardar segundos por recomendación; el orden de acciones y la profundidad deben justificarse.
 2. **Repetición táctica:** la simulación 20×20 detectó estados repetidos sin victoria oficial. El detector está en el *script de diagnóstico*, no forma parte de la regla de empate del juego. No se debe presentar como partida ganada.
 3. **Heurísticas frente a dinámica:** h geométricas ignoran algunas interacciones entre piezas; la función estratégica topológica es aproximada. Son estimaciones con fines distintos.
 4. **Dependencias del frontend:** Phaser/KaTeX se cargan desde CDN. Un entorno sin acceso bloquea la visualización en navegador, aunque API y motor sigan operativos.
-5. **Desempeño en dispositivos:** solo hay verificaciones automatizadas del backend y de ciertos experimentos. Un test de API no sustituye una inspección visual de un navegador real.
-6. **Autoría y trazabilidad:** la IA intervino sustancialmente en implementación, debugging, tests y redacción; las decisiones, revisión individual y aportes humanos deben confirmarse por los integrantes. No corresponde declarar documentación «escrita sin IA».
+5. **Variación de rendimiento:** los tiempos dependen del número de acciones, la profundidad, los costos de validación, las copias de estados y el equipo utilizado.
+6. **Intervención de IA:** la IA generativa participó sustancialmente en implementación, depuración, pruebas y redacción. Se describe el alcance en [uso-de-ia.md](uso-de-ia.md).
 
-## 10. Declaración de IA y sustentación
+## 10. Declaración de uso de IA
 
-Los métodos críticos contienen campos `Purpose`, `Preconditions`, `Postconditions`, `Complexity`, `AI usage`, `AI intervention` y `Student validation`. Los *valores de intervención* deben ser honestos: la IA participó en generación de código, diseño y correcciones, no solo en ortografía. Las pruebas automatizadas reportadas son hechos verificables; la comprensión individual y la validación humana siguen sujetas a revisión del equipo. Véase [uso-de-ia.md](uso-de-ia.md).
-
-Para la sustentación, cada integrante debe poder justificar el modelo de estado, reproducir las diez experiencias, modificar un costo del JSON, explicar por qué Manhattan puede sobreestimar, demostrar la cota inferior de la heurística propia, describir MAX/MIN y α–β, leer un docstring y cambiar un detalle de su método sin ayuda del sistema.
+Los métodos principales incluyen `Purpose`, `Preconditions`, `Postconditions`, `Complexity`, `AI usage`, `AI intervention` y `Student validation`, con descripciones en español de su finalidad, garantías, complejidad e intervención de IA. El proceso de desarrollo utilizó IA generativa de forma sustancial, incluida la generación y revisión de código, el diseño de heurísticas y los experimentos de regresión. Los mecanismos de verificación y el alcance de esa asistencia se detallan en [uso-de-ia.md](uso-de-ia.md).

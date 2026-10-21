@@ -1,6 +1,6 @@
 # TacticalGrid — Casos 7–10: decisión adversarial, poda y profundidad
 
-**Conjunto de experimentos para sustentación, no un resumen inventado.** Las mediciones se almacenaron en `outputs/adversarial_comparacion.json`, generadas sobre el estado de `backend.tests.test_adversarial.tactical_state` después de modificar la función de utilidad para incluir distancias topológicas. El objetivo de los cuatro casos es comparar **decisiones bajo un adversario**, no rutas independientes de una sola ficha.
+**Resultados de los casos 7–10.** Las mediciones se almacenaron en `outputs/adversarial_comparacion.json`, generadas sobre el estado de `backend.tests.test_adversarial.tactical_state` después de modificar la función de utilidad para incluir distancias topológicas. El objetivo de los cuatro casos es comparar **decisiones bajo un adversario**, no rutas independientes de una sola ficha.
 
 ## Escenario táctico compartido
 
@@ -8,7 +8,7 @@ Tablero 6×6, turno A (MAX): reina libre en `(3,3)`; `A1` tipo `estandar` en `(3
 
 ### Caso 7 — No siempre conviene avanzar a la reina
 
-Con profundidad 1, Minimax recomendó mover `A1` a `(3,3)` (valor **362**); el algoritmo ve solo la primera acción, que parece favorable por cercanía. Con profundidad 2, al considerar una respuesta rival, recomendó `A2` a `(3,1)` y capturar a `B1` (valor **315**). **Qué demuestra:** una amenaza táctica del rival puede volver preferible interceptar o capturar. No compares 362 con 315 como si fueran puntuaciones obtenidas bajo el mismo horizonte: proceden de profundidades distintas.
+Con profundidad 1, Minimax recomendó mover `A1` a `(3,3)` (valor **362**); el algoritmo ve solo la primera acción, que parece favorable por cercanía. Con profundidad 2, al considerar una respuesta rival, recomendó `A2` a `(3,1)` y capturar a `B1` (valor **315**). **Interpretación:** una amenaza táctica del rival puede volver preferible interceptar o capturar. Los valores corresponden a horizontes distintos, por lo que no constituyen una comparación directa de calidad.
 
 ### Caso 8 — Equivalencia Minimax/alfa-beta
 
@@ -36,11 +36,11 @@ Mismo estado, misma utilidad, misma profundidad 3, dos órdenes de exploración:
 
 La acción cambia al considerar la respuesta del rival. Pasar de profundidad 3 a 4 multiplicó las hojas evaluadas en la muestra, sin cambiar la acción. El valor de la utilidad no crece monótonamente: el horizonte cambia qué amenazas y ventajas se observan.
 
-## Cómo repetir y qué mostrar en la presentación
+## Reproducción de los experimentos
 
-Partir del mismo estado táctico y configurar el algoritmo (`minimax`/`alpha_beta`), la profundidad y el orden en el panel de decisión. Registrar acción, valor, nodos generados, evaluados, podados, profundidad alcanzada y tiempo. Para verificar automáticamente usar el script de experimentos existente cuando esté disponible y consultar el JSON serializado. **No reemplazar los parámetros entre experimentos sin registrarlo.**
+Partir del mismo estado táctico y configurar el algoritmo (`minimax`/`alpha_beta`), la profundidad y el orden en el panel de decisión. Registrar acción, valor, nodos generados, evaluados, podados, profundidad alcanzada y tiempo. Para verificar automáticamente usar el script de experimentos existente cuando esté disponible y consultar el JSON serializado. La comparación requiere mantener los parámetros no analizados constantes.
 
-Para el profesor: identificar quién es MAX, por qué MIN no está en desventaja, qué representa `α ≥ β`, qué significa evaluación de hoja y cómo cambia la respuesta cuando el horizonte pasa de una acción a la respuesta rival. La función de utilidad y sus pesos se explican con fórmula y origen en [documento-tecnico.md](documento-tecnico.md).
+La función de utilidad, la semántica de MAX/MIN y la condición de poda `α ≥ β` se describen en el [documento técnico](documento-tecnico.md).
 
 ## Límite: buenas decisiones locales no garantizan terminar una partida
 

@@ -2,7 +2,7 @@
 <rect width="852" height="582" fill="#f7f9fc"/>
 <style>text{font-family:Inter,Arial,sans-serif}.head{font-weight:700;fill:#173752}.med{fill:#53697d}.small{fill:#53697d;font-size:13px}</style>
 <text class="head" x="30" y="40" font-size="25">TacticalGrid  /  Diagrama de estado</text>
-<text class="med" x="30" y="70" font-size="17">6 × 6 celdas · Turno A · Esquema derivado del JSON, no captura del navegador</text>
+<text class="med" x="30" y="70" font-size="17">6 × 6 celdas · Turno A · Distribución del tablero</text>
 <rect x="30" y="105" width="71" height="71" fill="#e6eef4" stroke="#c9d4df" stroke-width=".6"/>
 <rect x="102" y="105" width="71" height="71" fill="#e6eef4" stroke="#c9d4df" stroke-width=".6"/>
 <rect x="174" y="105" width="71" height="71" fill="#e6eef4" stroke="#c9d4df" stroke-width=".6"/>

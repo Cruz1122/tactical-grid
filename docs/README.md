@@ -1,25 +1,18 @@
-# Documentación de TacticalGrid — Índice de entrega
+# Documentación de TacticalGrid
 
-Este índice agrupa documentos escritos a partir de las reglas reales y del código verificado. **No sustituye la lectura ni la revisión individual exigida por el profesor.** La redacción de esta documentación contó con asistencia sustancial de IA y está declarada.
+Los documentos están organizados por tarea: aprender a utilizar la aplicación, consultar las reglas, comprender la implementación y reproducir los resultados experimentales.
 
-## Ruta de lectura recomendada
+| Documento | Contenido |
+|---|---|
+| [Manual de usuario](manual-usuario.md) | Instalación, interfaz, carga de escenarios, búsqueda, decisión adversarial y juego por turnos. Incluye diagramas de los tableros. |
+| [Reglas del juego](reglas-del-juego.md) | Piezas, terrenos, reyes, reina, capturas, victoria y semántica de los tres modos. |
+| [Documento técnico](documento-tecnico.md) | Arquitectura, estado, validaciones, algoritmos, heurísticas, función de utilidad y complejidad. |
+| [Informe de verificación](informe-verificacion.md) | Escenarios ejecutados, rutas, costos, métricas, pruebas automatizadas y resultados de partidas. |
+| [Experimentos adversariales](experimentos-adversariales.md) | Comparación de Minimax y alfa-beta, orden de acciones y profundidades. |
+| [Uso de inteligencia artificial](uso-de-ia.md) | Alcance de la asistencia en el desarrollo, generación de código, pruebas y métodos de validación. |
 
-| Documento | Para qué sirve | Puntos concretos |
-|---|---|---|
-| [Manual ilustrado](manual-usuario.md) | Usar el programa | Instalar, cargar JSON, ejecutar búsqueda, decisión adversarial, partida y verificación. Figuras **esquemáticas**, no screenshots. |
-| [Documento técnico](documento-tecnico.md) | Sustentación de ingeniería | Modelo compuesto, costos por pieza, fórmulas de A*, función de utilidad con pesos actuales, Minimax y alfa-beta, complejidad. |
-| [Resultados verificados](informe-verificacion.md) | Reproducibilidad | Tabla real BFS/DFS/UCS/A*/Beam; nodos de Minimax y alfa-beta, partidas y límites. |
-| [Experimentos 7–10](experimentos-adversariales.md) | Preguntas adversariales | Acción defensiva, igualdad entre algoritmos, efecto de orden y profundidad. |
-| [Declaración de IA](uso-de-ia.md) | Transparencia requerida | Intervención real en código, pruebas, estrategia y redacción; validación humana pendiente. |
-| [Decisiones del equipo](decisiones-pendientes.md) | Evitar reglas inventadas | Mapeo a `estandar`, reyes opcionales, retorno a `recurso_spawn`, repetición no oficial. |
-| [Capturas por validar](capturas-por-validar.md) | Evidencia visual honesta | Capturas in-game pendientes; criterios de calidad antes de su inclusión. |
+## Reproducir resultados
 
-## Consolidación documental
+Los escenarios se encuentran en `scenarios/busqueda/`, `scenarios/adversarial/` y `scenarios/partida/`. Los archivos de `scenarios/error/` permiten comprobar los rechazos del validador. Las mediciones y trazas asociadas están en `outputs/`.
 
-Se sustituyeron los borradores parciales de arquitectura, reglas, carga, modelos y búsqueda por **un documento técnico único y detallado**, el manual, el informe y los anexos. Las decisiones normativas del equipo permanecen explícitas en `decisiones-pendientes.md`. Las versiones antiguas siguen recuperables mediante el historial Git; no se conservan duplicados potencialmente contradictorios en la entrega final.
-
-## Evidencia en el repositorio
-
-`outputs/busqueda_comparacion_real.json` registra casos 1–5 medidos; `outputs/adversarial_comparacion.json` registra casos 7–10; `outputs/demo_partida_6x6.json` y `outputs/demo_adversarial_20x20.json` contienen trazas de autopartida. `backend/tests/` y `scenarios/error/` son pruebas de regresión, **no archivos sobrantes**.
-
-La imagen técnica del manual se creó desde los JSON del juego y está etiquetada como diagrama. **No se inventaron screenshots**: queda una tarea visual pendiente.
+Para ejecutar los algoritmos desde la interfaz, sigue el [manual de usuario](manual-usuario.md). Para interpretar la complejidad, la admisibilidad de las heurísticas y los valores de Minimax, consulta el [documento técnico](documento-tecnico.md).

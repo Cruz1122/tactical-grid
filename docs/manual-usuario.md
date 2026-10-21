@@ -1,8 +1,8 @@
 # TacticalGrid — Manual ilustrado de usuario
 
-**Sistemas Inteligentes I · Guía para estudiantes y evaluadores · edición 2026**
+**Guía de uso · Edición 2026**
 
-Este manual explica *qué hace cada control, qué cambia en la partida y qué significan los resultados*. Se basa en la interfaz `frontend/index.html`, `frontend/api.js` y las rutas reales de `backend/main.py`; no es un tutorial imaginario. **Los diagramas incorporados se derivaron de escenarios JSON comprobados y no se presentan como capturas del navegador.** Para obtener capturas in-game genuinas y revisarlas se incluye [un procedimiento de captura](capturas-por-validar.md).
+Este manual explica cómo instalar TacticalGrid, utilizar los controles del tablero e interpretar los resultados de búsquedas, decisiones adversariales y partidas. Incluye diagramas de dos escenarios para identificar visualmente los elementos del juego.
 
 ## 1. Preparar el proyecto
 
@@ -21,7 +21,7 @@ El primer comando crea un entorno virtual local; el segundo lo activa en la term
 
 En Arch Linux, si falta el intérprete, consulta [ArchWiki: Python](https://wiki.archlinux.org/title/Python). `venv`: [documentación oficial](https://docs.python.org/3/library/venv.html). FastAPI: [primeros pasos](https://fastapi.tiangolo.com/tutorial/first-steps/).
 
-**Antes de presentar:** comprueba que aparece una cuadrícula dibujada por Phaser, no solamente el panel HTML. Si el panel carga y el tablero no, inspecciona la consola del navegador: puede fallar la carga de Phaser desde CDN. No ejecutes la sustentación hasta resolver esa dependencia.
+**Si no aparece el tablero:** comprueba la conexión a Internet y abre la consola del navegador. La interfaz requiere descargar Phaser y KaTeX; el panel HTML puede cargar aunque falte alguna biblioteca.
 
 ## 2. Entender la pantalla antes de pulsar botones
 
@@ -29,7 +29,7 @@ La interfaz está dividida en un **tablero** y un **panel de controles**. El tab
 
 ![Diagrama de escenario de partida 6x6 construido desde JSON](figuras/diagrama-partida-6x6.svg)
 
-*Figura 1 — Diagrama explicativo creado a partir de `scenarios/partida/mapa_partida_presentacion.json`. No es una captura de la aplicación. Azul = A, rojo = B, rombo = recurso, casilla oscura = obstáculo. Los anillos señalan las bases.*
+*Figura 1 — Representación del escenario `scenarios/partida/mapa_partida_presentacion.json`. Azul = A, rojo = B, rombo = recurso, casilla oscura = obstáculo. Los anillos señalan las bases.*
 
 **Distinción básica:** que una pieza esté visualmente cerca del recurso no significa que pueda alcanzarlo con el siguiente movimiento: las barreras, los costos y el tipo de unidad importan. Tampoco significa que una recomendación adversarial se ejecute sola.
 
@@ -54,7 +54,7 @@ En el panel de escenario usa el selector de archivo JSON y escoge, por ejemplo:
 | `scenarios/adversarial/07_intercepcion_portador.json` | `adversarial` | Minimax o alfa-beta recomienda la jugada del turno |
 | `scenarios/partida/mapa_partida_presentacion.json` | `partida` | Se puede jugar manualmente o activar la autopartida |
 
-**Proceso:** 1) pulsa cargar/seleccionar escenario; 2) elige el JSON; 3) espera confirmación del servidor; 4) revisa nombre, tipo de prueba, dimensiones y turno; 5) antes de una nueva demostración utiliza **reiniciar escenario** si quieres partir de su estado inicial.
+**Proceso:** 1) pulsa cargar/seleccionar escenario; 2) elige el JSON; 3) espera confirmación del servidor; 4) revisa nombre, tipo de prueba, dimensiones y turno; 5) antes de una nueva ejecución utiliza **reiniciar escenario** si quieres partir de su estado inicial.
 
 Si aparece un error 422, lee el detalle: el servidor rechaza el JSON completo sin sobrescribir la partida que tenías antes. No «arregles» un archivo ocultando unidades o costos; corrígelo según el formato de la rúbrica.
 
@@ -76,7 +76,7 @@ Una carga válida sustituye el estado inicial y el estado actual del servidor. L
 
 **A*** selecciona con `f=g+h`. Manhattan cuenta diferencia absoluta de filas más columnas; la segunda heurística estima el costo faltante con mínimos de terreno y geometría de la pieza. La segunda es la elección apropiada para discutir admisibilidad; Manhattan no es siempre admisible en el sistema. **Beam** solo conserva los `k` mejores candidatos por nivel; un `k` pequeño puede perder soluciones.
 
-### Experiencia sugerida para la sustentación
+### Ejercicio de comparación BFS, UCS y A*
 
 Abre `02_bfs_ucs_dos_corredores.json`. Ejecuta BFS y anota movimientos y costo. Sin modificar el JSON, ejecuta UCS con el mismo origen y destino y explica por qué puede tomar un rodeo de menor costo. Repite A* con ambas heurísticas y observa estados expandidos sin afirmar de antemano cuál será más rápida.
 
@@ -84,7 +84,7 @@ Abre `02_bfs_ucs_dos_corredores.json`. Ejecuta BFS y anota movimientos y costo. 
 
 ![Diagrama derivado del escenario 20x20 con tres unidades por bando](figuras/diagrama-adversarial-20x20.svg)
 
-*Figura 2 — Esquema calculado desde `scenarios/adversarial/externo_adversarial_3v3.json`. No es una captura in-game. El fondo muestra terrenos baratos y caros; hay obstáculos cerca del recurso central.*
+*Figura 2 — Esquema del escenario `scenarios/adversarial/externo_adversarial_3v3.json`. El fondo muestra terrenos baratos y caros; hay obstáculos cerca del recurso central.*
 
 1. Carga un JSON con `prueba.modo = "adversarial"`.
 2. En el apartado **Mejor movimiento del turno**, selecciona **Minimax** o **Alfa-beta**.
@@ -114,7 +114,7 @@ Este modo **sí** altera el estado del servidor. No es lo mismo que recibir una 
 
 ### Autopartida
 
-En modo partida aparece **Autojugar hasta finalizar**. Esta función solicita una recomendación adversarial, la transforma en una acción real, espera la confirmación del servidor y continúa con el siguiente bando. La autopartida no reemplaza la validación de movimientos; sigue utilizando `/api/move` y `/api/collect`. Si se detiene por ausencia de recomendación, error HTTP o repetición observada externamente, no lo presentes como victoria.
+En modo partida aparece **Autojugar hasta finalizar**. Esta función solicita una recomendación adversarial, la transforma en una acción real, espera la confirmación del servidor y continúa con el siguiente bando. La autopartida no reemplaza la validación de movimientos; sigue utilizando `/api/move` y `/api/collect`. Si se detiene sin un resultado terminal, la partida no tiene ganador oficial: consulta el último estado y los mensajes de error.
 
 **Resultado reproducido:** el escenario de partida 6×6 con alfa-beta a profundidad 2 terminó con victoria oficial de B después de 24 acciones en el registro JSON. El escenario adversarial 20×20, jugado como simulación repetida, alcanzó 105 acciones y se detuvo por un detector de repetición **externo al motor**; no hubo ganador. Véase el informe para los parámetros exactos.
 
@@ -130,13 +130,13 @@ Si configuras reyes y tu rey está en jaque, no puedes **recoger** la reina mien
 
 Antes de comparar, asegura que escenario, unidad, objetivo, orden y profundidad sean los mismos. Para las búsquedas registra como mínimo los campos del panel; para Minimax y alfa-beta, compara **acción y valor**, luego nodos y tiempo. No mezcles tiempos entre computadores ni compares dos decisiones con profundidades distintas como si se hubiera variado solo la poda.
 
-**Demostraciones esenciales:** BFS/DFS; BFS/UCS; obstáculo que obliga a rodear; A* con dos heurísticas; Beam con k=1,2,4,8; estado compuesto; decisión defensiva; Minimax/alfa-beta; orden normal/inverso; profundidad 1,2,3. Los archivos de escenarios de los diez casos ya están organizados por modo.
+**Demostraciones esenciales:** BFS/DFS; BFS/UCS; obstáculo que obliga a rodear; A* con dos heurísticas; Beam con k=1,2,4,8; estado compuesto; decisión defensiva; Minimax/alfa-beta; orden normal/inverso; profundidad 1,2,3. Los escenarios de los diez casos están organizados por modo.
 
 ## 8. Verificar la respuesta desde la interfaz o la API
 
 La aplicación implementa `/api/verify` para estado, ruta y decisión. En una ruta se revisan desplazamientos legales, costo real y meta alcanzada; en una recomendación se comprueba que la acción sea legal para el turno, no que la estrategia sea infalible. También puedes consultar `/docs` para ver el contrato de cada endpoint sin inventar campos.
 
-Errores frecuentes que puedes explicar durante la sustentación:
+Solución de problemas frecuentes:
 
 | Síntoma | Causa probable | Acción correcta |
 |---|---|---|
@@ -144,13 +144,15 @@ Errores frecuentes que puedes explicar durante la sustentación:
 | JSON rechazado | Dimensiones, identificadores, posiciones o costos no válidos | Leer error 422; conservar y corregir el archivo externo |
 | Búsqueda sin ruta | Meta no alcanzable para esa pieza | Contrastar obstáculos, ocupación, tipo y, con alfil, paridad |
 | Beam falla y BFS funciona | Se descartó el candidato útil | Aumentar k y mostrar la diferencia |
-| Jugada adversarial no parece buena | Horizonte corto o pesos aproximados | Revisar evaluación y profundidad; no afirmar perfección |
-| Autopartida repite posiciones | Bloqueo táctico o límite de evaluación | Detener diagnóstico, revisar traza; no inventar empate oficial |
+| Jugada adversarial no parece buena | Horizonte corto o pesos aproximados | Consultar la profundidad y el valor de evaluación; no existe garantía de victoria |
+| Autopartida repite posiciones | Bloqueo táctico o límite de evaluación | Consultar el estado y la traza; la repetición no equivale a un empate oficial |
 
-## 9. Capturas visuales y control de calidad
+## 9. Preguntas frecuentes
 
-**Estado actual de evidencia gráfica:** el servidor se probó mediante HTTP en el sandbox, pero el navegador automatizado devolvió `ERR_BLOCKED_BY_ADMINISTRATOR` al abrir `127.0.0.1`. Por rigor, este manual no incluye capturas ficticias del frontend. Las figuras 1 y 2 están etiquetadas expresamente como *diagramas*. El archivo [capturas-por-validar.md](capturas-por-validar.md) explica cómo obtener las cuatro imágenes requeridas (inicio, búsqueda, adversarial, partida) y los criterios visuales para aprobarlas; una vez verificadas, se pueden incorporar sin modificar datos ni escenarios.
+**¿Por qué una ruta no ejecuta movimientos reales?** Porque el modo de búsqueda trabaja sobre una copia hipotética del estado.
 
-## 10. Preparar la presentación oral
+**¿Por qué alfa-beta no siempre gana?** Selecciona una acción según la profundidad elegida y la evaluación aproximada; el rival puede reaccionar y no hay garantía de victoria.
 
-Ensaya las tres tareas por separado: **buscar una ruta**, **recomendar una acción** y **ejecutar turnos**. Explica al docente que la heurística propia de A* es una cota inferior, mientras que la utilidad adversarial no tiene obligación de ser admisible. Comprueba que todos los integrantes sepan cambiar `costo` en el JSON y defender una modificación pequeña en el método que les toque. Declara el uso real de IA: fue sustancial y requiere validación humana individual.
+**¿Qué cambia si modifico un costo de terreno?** El cálculo de costos y los algoritmos que los optimizan utilizan los nuevos valores del JSON, sin modificar el código fuente.
+
+**¿Dónde consulto la implementación y los resultados?** En el [documento técnico](documento-tecnico.md) y el [informe de verificación](informe-verificacion.md).

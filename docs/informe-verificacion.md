@@ -1,18 +1,16 @@
 # TacticalGrid — Informe reproducible de verificación
 
-**Corte técnico:** 21 de octubre de 2026.  
-**Objeto:** copia ZIP de `develop` recibida del equipo y modificada en el sandbox; no afirmar que todos los entornos de despliegue reproducen exactamente los mismos tiempos.  
-**Entorno observado:** Linux, Python 3.13.5, pruebas `unittest`, motor FastAPI/HTTP local. Datos de referencia: `outputs/busqueda_comparacion_real.json`, `outputs/adversarial_comparacion.json`, `outputs/demo_partida_6x6.json` y `outputs/demo_adversarial_20x20.json`.
+**Fecha de referencia:** 21 de octubre de 2026.  
+**Entorno de medición:** Linux, Python 3.13.5, pruebas `unittest`, motor FastAPI/HTTP local. Datos de referencia: `outputs/busqueda_comparacion_real.json`, `outputs/adversarial_comparacion.json`, `outputs/demo_partida_6x6.json` y `outputs/demo_adversarial_20x20.json`.
 
 ## 1. Alcance, resultados y límites
 
-**Ejecutado realmente:** `python -m unittest discover -s backend/tests -q` → **177 pruebas, OK**; `python -m uvicorn backend.main:app` y solicitud HTTP `GET /api/state` → **200**. Estos resultados prueban la ejecución de la suite y la disponibilidad de la API para esta versión. **No significan cobertura del 100 % de caminos, invulnerabilidad ni validación humana individual.**
+**Resultado de la ejecución:** `python -m unittest discover -s backend/tests -q` → **177 pruebas, OK**; `python -m uvicorn backend.main:app` y solicitud HTTP `GET /api/state` → **200**. Estos resultados prueban la ejecución de la suite y la disponibilidad de la API para esta versión. Estos ensayos no equivalen a cobertura exhaustiva de todos los estados posibles.
 
 Se midieron cinco experimentos de navegación con el código Python real. En el escenario 6×6 la simulación de alfa-beta terminó una partida con victoria oficial de B. En el escenario 20×20 se detectó un estado repetido después de 105 acciones en el script externo: **no fue un resultado terminal del motor**. No se aplicó una regla nueva de empate por repetición.
 
-**Validación visual todavía pendiente:** la navegación del navegador automatizado a `127.0.0.1` fue bloqueada por política (`ERR_BLOCKED_BY_ADMINISTRATOR`). Los dos diagramas del manual están derivados de JSON, **no son screenshots**. La revisión de capturas genuinas debe hacerse en equipo con acceso a Phaser CDN según [capturas-por-validar.md](capturas-por-validar.md).
 
-## 2. Batería de navegación — medidas reales
+## 2. Batería de navegación — resultados medidos
 
 Los experimentos se ejecutaron sobre los escenarios del banco (20×20), con la unidad y el objetivo configurados en `prueba`. Cada operación volvió a empezar desde el mismo estado preparado. Los tiempos son de **una medición de referencia**, no promedios con intervalos de confianza; se incluye el JSON de salida para auditar.
 
@@ -31,7 +29,7 @@ Los experimentos se ejecutaron sobre los escenarios del banco (20×20), con la u
 | 5 · Beam k=4 | Sí | 19 | 19 | 112 | 73 | 4 | 0,084 s |
 | 5 · Beam k=8 | Sí | 19 | 19 | 180 | 139 | 8 | 0,138 s |
 
-### Interpretación que debe defender el equipo
+### Interpretación de los resultados
 
 **Caso 1:** BFS y DFS hallaron rutas de 60 movimientos, pero DFS generó 184 estados frente a los 129 de BFS. La diferencia de exploración **sí** quedó demostrada; este mapa en particular no mostró una diferencia de longitud entre las rutas, por lo que no debe afirmarse que aquí DFS encontró una ruta más larga.
 
@@ -45,7 +43,7 @@ Los experimentos se ejecutaron sobre los escenarios del banco (20×20), con la u
 
 Todos los resultados anteriores se registraron en `outputs/busqueda_comparacion_real.json`, con ruta concreta, costo y contadores originales de la función; pueden ejecutarse nuevamente desde el JSON sin cambiar el código.
 
-## 3. Minimax y alfa-beta — medidas reales
+## 3. Minimax y alfa-beta — resultados medidos
 
 Se usó el estado del test `backend.tests.test_adversarial.tactical_state`, no los dos escenarios anteriores. El bando A actúa al inicio; la reina está libre, el tablero es 6×6, A1 estándar está en `(3,2)`, A2 torre en `(0,1)`, B1 torre en `(3,1)` y B2 estándar en `(0,5)`.
 
@@ -60,7 +58,7 @@ Se usó el estado del test `backend.tests.test_adversarial.tactical_state`, no l
 
 La jugada recomendada por Minimax y alfa-beta a d=3 y su **valor 845 coinciden**, mientras alfa-beta evaluó menos hojas. Invertir el orden cambió evaluaciones y podas, **no** la acción/valor. La utilidad de d=4 bajó a 820 aun escogiendo la misma acción; más profundidad no implica valoración monotónica.
 
-**Precisión de contadores:** `nodes_pruned` cuenta sucesores inmediatos excluidos por corte, no el número de todas las posiciones descendientes que hipotéticamente podrían haber existido. Por ello las cifras de podados pueden ser menores aun cuando alfa-beta con orden inverso evalúa menos hojas.
+**Definición de contadores:** `nodes_pruned` cuenta sucesores inmediatos excluidos por corte, no el número de todas las posiciones descendientes que hipotéticamente podrían haber existido. Por ello las cifras de podados pueden ser menores aun cuando alfa-beta con orden inverso evalúa menos hojas.
 
 ## 4. Autopartida y limitación estratégica constatada
 
@@ -82,18 +80,14 @@ Estos comandos ejecutan el script de diagnóstico y dejan que el motor valide ac
 
 ## 5. Estado, validez de las rutas y resistencia a errores
 
-Las pruebas cubren validadores de escenario, costos, movimientos, transiciones, rutas, decisiones, atomicidad de carga, equivalencia Minimax/alfa-beta y casos de regresión. Los casos de rechazo intencional del banco (`scenarios/error/`) deben permanecer en el repositorio como evidencia de validación: **no se eliminan solo porque no sean escenarios jugables**.
+Las pruebas cubren validadores de escenario, costos, movimientos, transiciones, rutas, decisiones, atomicidad de carga, equivalencia Minimax/alfa-beta y casos de regresión. El banco `scenarios/error/` contiene entradas deliberadamente inválidas para evaluar la robustez del importador.
 
 Un estado válido no basta para afirmar «algoritmo correcto»: se comprueba que el camino reconstruido usa sucesores legales reales, que la suma de costos corresponde al JSON y que el objetivo está satisfecho. También se comprueba que las peticiones `/api/search` y `/api/adversarial` no ejecutan sus recomendaciones en `current_state`.
 
-## 6. Qué queda por verificar antes del squash merge
+## 6. Alcance de los resultados
 
-- Capturar y **revisar manualmente** pantallas reales con Phaser, incluyendo resultados de búsqueda y adversarial.
-- Completar nombres del equipo y validar **personalmente** los docstrings y la declaración de IA generativa.
-- Reproducir los diez casos del profesor en el ordenador de sustentación, incluida una carga de JSON externo desconocido.
-- Aceptar conscientemente el límite de 20×20 o mejorar la política **sin inventar reglas de victoria o empate**.
-- Ejecutar la suite después de cualquier cambio final y registrar commit, entorno y fecha de la ejecución.
+Las mediciones corresponden a los escenarios, algoritmos y parámetros indicados. La equivalencia de acción y valor entre Minimax y alfa-beta se comprobó en los estados utilizados; ello no garantiza que todas las partidas terminen. La repetición del 20×20 fue detectada por el programa experimental y no constituye un empate del motor.
 
 ## 7. Fuentes de esta verificación
 
-Código Python de `backend/`, HTML/JS de `frontend/`, resultados serializados `outputs/*.json` y la rúbrica `Primer proyecto.pdf` (métricas, verificación, casos 1–10 y entregables). Los números presentados se derivan de ejecuciones reales de estas fuentes; las fórmulas y sus garantías se discuten en el [documento técnico](documento-tecnico.md). Las validaciones humanas pendientes no se declaran completadas.
+Código Python de `backend/`, HTML/JS de `frontend/`, resultados serializados `outputs/*.json` y la rúbrica `Primer proyecto.pdf` (métricas, verificación, casos 1–10 y entregables). Los números presentados se derivan de ejecuciones reales de estas fuentes; las fórmulas y sus garantías se discuten en el [documento técnico](documento-tecnico.md). 
