@@ -1,36 +1,20 @@
-# TacticalGrid — documentación de diseño
+# Documentación de TacticalGrid
 
-TacticalGrid es un juego táctico 2D por turnos y un banco de pruebas para algoritmos de búsqueda y toma de decisiones. **El juego proporciona los estados y las reglas; lo que se estudia es cómo decide el sistema inteligente.**
+**Juan Camilo Cruz Parra · Sistemas Inteligentes I**
 
-Estos documentos describen el **comportamiento esperado**, no funcionalidades comprobadas en el código. No organizan el proyecto por fases: cada archivo responde a una cuestión de diseño.
+Los documentos están organizados por tarea: aprender a utilizar la aplicación, consultar las reglas, comprender la implementación y reproducir los resultados experimentales.
 
-## Guía de lectura
+| Documento | Contenido |
+|---|---|
+| [Manual de usuario](manual-usuario.md) | Instalación, interfaz, carga de escenarios, búsqueda, decisión adversarial y juego por turnos. Incluye diagramas de los tableros. |
+| [Reglas del juego](reglas-del-juego.md) | Piezas, terrenos, reyes, reina, capturas, victoria y semántica de los tres modos. |
+| [Documento técnico](documento-tecnico.md) | Arquitectura, estado, validaciones, algoritmos, heurísticas, función de utilidad y complejidad. |
+| [Informe de verificación](informe-verificacion.md) | Escenarios ejecutados, rutas, costos, métricas, pruebas automatizadas y resultados de partidas. |
+| [Experimentos adversariales](experimentos-adversariales.md) | Comparación de Minimax y alfa-beta, orden de acciones y profundidades. |
+| [Uso de inteligencia artificial](uso-de-ia.md) | Alcance de la asistencia en el desarrollo, generación de código, pruebas y métodos de validación. |
 
-| Documento | Qué explica |
-| --- | --- |
-| [contexto.md](contexto.md) | Problema académico, alcance, restricciones y propósito de los experimentos. |
-| [reglas-del-juego.md](reglas-del-juego.md) | Unidades, movimientos, costos, turnos, capturas, jaque, reina, victoria y empate. |
-| [estado-y-json.md](estado-y-json.md) | Estado completo, invariantes, contrato JSON y ejemplo compatible. |
-| [configuracion-de-reyes.md](configuracion-de-reyes.md) | Reyes opcionales, colocación manual o automática y bloqueo de la configuración. |
-| [carga-y-validacion.md](carga-y-validacion.md) | Validaciones, normalización y carga atómica de escenarios. |
-| [arquitectura.md](arquitectura.md) | Separación de responsabilidades y comunicación entre backend, API e interfaz. |
-| [motor-del-juego.md](motor-del-juego.md) | Contratos de transición, acciones, resultados y configuración de reyes implementados. |
-| [busqueda-y-decision.md](busqueda-y-decision.md) | Diferencia entre planificar una ruta y escoger una jugada; métricas y verificaciones. |
-| [decisiones-pendientes.md](decisiones-pendientes.md) | Ambigüedades y contradicciones aún no resueltas; no fingir que hay reglas acordadas. |
+## Reproducir resultados
 
-## Criterios transversales
+Los escenarios se encuentran en `scenarios/busqueda/`, `scenarios/adversarial/` y `scenarios/partida/`. Los archivos de `scenarios/error/` permiten comprobar los rechazos del validador. Las mediciones y trazas asociadas están en `outputs/`.
 
-- El mapa, los costos, las posiciones y los objetivos proceden del JSON: no se incrustan en los algoritmos.
-- Ambos bandos usan exactamente las mismas reglas.
-- Las operaciones inválidas no alteran una partida ni consumen turno.
-- Las búsquedas consultan el motor; no mantienen versiones paralelas de sus reglas.
-- La interfaz representa el estado y los resultados reales; no genera resultados simulados.
-- Se prioriza código pequeño, explícito y legible; no se crean abstracciones sin una responsabilidad concreta.
-
-## Fuentes y precedencia
-
-1. `Primer proyecto.pdf`: requisitos del profesor y contrato de interoperabilidad.
-2. `TacticalGrid_Reglas.md`: definición original de mecánicas propias.
-3. Decisiones acordadas para este proyecto: `estandar` ortogonal de un paso; `spawn` inicial; reyes opcionales, configurables antes del primer movimiento; empate si no hay movimiento ni recogida explícita legal.
-
-Cuando una decisión propia parece entrar en tensión con el PDF, se deja visible en [decisiones-pendientes.md](decisiones-pendientes.md), en vez de afirmar que está resuelta. El estado de implementación y las pruebas automatizadas se documentan en [motor-del-juego.md](motor-del-juego.md); la validación personal del estudiante se declara por separado.
+Para ejecutar los algoritmos desde la interfaz, sigue el [manual de usuario](manual-usuario.md). Para interpretar la complejidad, la admisibilidad de las heurísticas y los valores de Minimax, consulta el [documento técnico](documento-tecnico.md).

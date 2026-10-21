@@ -3,77 +3,361 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>TacticalGrid — Laboratorio de sistemas inteligentes</title>
-  <link rel="stylesheet" href="/styles.css">
+  <meta name="theme-color" content="#131a1d">
+  <title>TacticalGrid</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <link rel="stylesheet" href="/styles.css?v=40">
   <script defer src="https://cdn.jsdelivr.net/npm/phaser@4.2.1/dist/phaser.min.js"></script>
-  <script defer src="/api.js"></script>
-  <script defer src="/scene.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="/api.js?v=39"></script>
+  <script defer src="/scene.js?v=28"></script>
 </head>
 <body>
-  <div id="game" aria-label="Tablero TacticalGrid"></div>
-  <button id="audioToggle" type="button" data-on="false">SONIDO · OFF</button>
-  <button id="panelToggle" type="button" aria-expanded="false" aria-controls="uiPanel">CONTROLES</button>
-  <aside id="uiPanel" class="collapsed" aria-label="Controles de TacticalGrid">
-    <h1>TACTICALGRID</h1>
-    <div class="subhead">Sistemas Inteligentes I · Laboratorio</div>
-    <div id="connection" class="status">Conectando con Python…</div>
-    <div class="state-summary"><span id="turn">Turno · —</span><span id="boardDimensions">— × —</span></div>
-    <div id="source" class="caption">Escenario: —</div>
-    <div class="button-pair">
-      <button id="loadScenario" type="button">Cargar JSON</button>
-      <button id="restart" type="button">Reiniciar</button>
+  <header class="topbar">
+    <div class="brand" aria-label="TacticalGrid">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <span>TACTICAL<span>GRID</span></span>
     </div>
-    <input id="scenarioFile" type="file" accept=".json,application/json" hidden>
+    <div class="topbar-actions">
+      <button id="audioToggle" class="icon-button" type="button" data-on="false" aria-pressed="false" aria-label="Activar sonido" title="Activar sonido">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5 6.8 8.5H3v7h3.8L11 19V5Zm4.2 4.2a4 4 0 0 1 0 5.6M18 6.5a7.7 7.7 0 0 1 0 11"/></svg>
+      </button>
+      <button id="panelToggle" class="icon-button" type="button" aria-expanded="true" aria-controls="uiPanel" aria-label="Ocultar controles" title="Ocultar controles">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+      </button>
+    </div>
+  </header>
 
-    <h2>Búsqueda</h2>
-    <label for="unit">Unidad de inicio</label>
-    <select id="unit"></select>
-    <label for="algorithm">Algoritmo</label>
-    <select id="algorithm">
-      <option value="bfs">BFS</option>
-      <option value="dfs">DFS</option>
-      <option value="ucs">Costo uniforme (UCS)</option>
-      <option value="astar">A*</option>
-      <option value="beam">Beam Search</option>
-    </select>
-    <label>Objetivo (fila, columna)</label>
-    <div class="target-row">
-      <input id="targetRow" type="number" min="0" value="10" aria-label="Fila objetivo">
-      <input id="targetCol" type="number" min="0" value="10" aria-label="Columna objetivo">
-      <button id="pickTarget" type="button" title="Elegir celda en tablero">Elegir</button>
+  <main>
+    <div id="game" tabindex="0" role="application" aria-label="Tablero TacticalGrid" aria-describedby="gameHelp"></div>
+    <div id="actionHint" class="action-hint" aria-live="polite">
+      <span class="action-hint-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"></circle><path d="M12 11v5m0-8v.1"></path></svg></span>
+      <span class="action-hint-copy">Selecciona una ficha de tu turno.</span>
     </div>
-    <div class="button-pair">
-      <select id="heuristic" title="Heurística">
-        <option value="manhattan">Manhattan</option>
-        <option value="second">Segunda</option>
-      </select>
-      <select id="beamK" title="Ancho Beam">
-        <option value="1">k = 1</option><option value="2" selected>k = 2</option>
-        <option value="4">k = 4</option><option value="8">k = 8</option>
-      </select>
-    </div>
-    <button id="runSearch" class="primary" type="button">Ejecutar búsqueda</button>
+  </main>
 
-    <h2>Decisión adversarial</h2>
-    <div class="button-pair">
-      <select id="adversarial" aria-label="Algoritmo adversarial">
-        <option value="minimax">Minimax</option>
-        <option value="alpha_beta">Alfa-beta</option>
-      </select>
-      <input id="depth" type="number" min="0" max="12" value="4" aria-label="Profundidad">
-    </div>
-    <select id="order" aria-label="Orden de sucesores">
-      <option value="normal">Orden normal</option><option value="reverse">Orden invertido</option>
-    </select>
-    <button id="runAdversarial" type="button">Evaluar estado</button>
-    <div class="button-pair">
-      <button id="runVerify" type="button">Verificar estado</button>
-      <button id="runTest" type="button">Prueba del JSON</button>
-    </div>
-    <h2>Resultado</h2>
-    <pre id="result" aria-live="polite">Esperando resultado.</pre>
-    <p class="help">Clic en pieza propia, luego en destino: solicita un movimiento al backend. </p>
+  <aside id="uiPanel" aria-label="Controles del escenario">
+    <div id="connection" class="connection-indicator" hidden></div>
+    <section class="panel-section scenario-section" aria-labelledby="scenarioTitle">
+      <div class="section-heading">
+        <div><span class="eyebrow" id="scenarioModeLabel">MODO · —</span><h1 id="scenarioTitle">Escenario</h1></div>
+        <span id="boardDimensions" class="dimension-badge">— × —</span>
+      </div>
+      <p id="source" class="scenario-name">Cargando escenario…</p>
+      <div class="button-pair">
+        <button id="loadScenario" class="button secondary" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v3h16v-3"/></svg>Cargar</button>
+        <button id="restart" class="button secondary" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10a8 8 0 1 1 2 7.7M4 10V5m0 5h5"/></svg>Reiniciar</button>
+      </div>
+      <button id="syncState" class="button warning" type="button" disabled>Sincronizar partida</button>
+      <input id="scenarioFile" type="file" accept=".json,application/json" hidden>
+    </section>
+
+    <section id="searchSection" class="panel-section search-section" aria-labelledby="searchTitle">
+      <div class="section-heading compact">
+        <div><span class="eyebrow">BÚSQUEDA</span><h2 id="searchTitle">Algoritmo de búsqueda</h2></div>
+      </div>
+      <p class="section-copy">Elige un método y ajusta sus parámetros para calcular una ruta hipotética.</p>
+      <div id="searchAlgorithmSelect" class="algorithm-select">
+        <span id="searchAlgorithmLabel" class="field-caption">Método</span>
+        <button id="searchAlgorithmButton" class="algorithm-select-trigger" type="button" role="combobox" aria-haspopup="listbox" aria-expanded="false" aria-controls="searchAlgorithmMenu" aria-labelledby="searchAlgorithmLabel searchAlgorithmValue">
+          <span class="algorithm-select-copy">
+            <strong id="searchAlgorithmValue">BFS</strong>
+            <small id="searchAlgorithmHint">Anchura · mínimos pasos</small>
+          </span>
+          <svg class="algorithm-select-caret" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+        <div id="searchAlgorithmMenu" class="algorithm-select-menu" role="listbox" aria-labelledby="searchAlgorithmLabel" hidden>
+          <button type="button" class="algorithm-select-option is-selected" role="option" data-search-algorithm="bfs" aria-selected="true">
+            <span><strong>BFS</strong><small>Anchura · mínimos pasos</small></span>
+            <svg class="algorithm-select-check" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>
+          </button>
+          <button type="button" class="algorithm-select-option" role="option" data-search-algorithm="dfs" aria-selected="false">
+            <span><strong>DFS</strong><small>Profundidad · primera rama</small></span>
+            <svg class="algorithm-select-check" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>
+          </button>
+          <button type="button" class="algorithm-select-option" role="option" data-search-algorithm="ucs" aria-selected="false">
+            <span><strong>UCS</strong><small>Costo mínimo · sin heurística</small></span>
+            <svg class="algorithm-select-check" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>
+          </button>
+          <button type="button" class="algorithm-select-option" role="option" data-search-algorithm="astar" aria-selected="false">
+            <span><strong>A*</strong><small>Prioridad f = g + h</small></span>
+            <svg class="algorithm-select-check" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>
+          </button>
+          <button type="button" class="algorithm-select-option" role="option" data-search-algorithm="beam" aria-selected="false">
+            <span><strong>Beam</strong><small>Haz limitado · heurística</small></span>
+            <svg class="algorithm-select-check" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div id="astarSearchOptions" class="search-algorithm-options" hidden>
+        <label class="search-field" for="searchHeuristic">
+          <span>Heurística de A*</span>
+          <select id="searchHeuristic">
+            <option value="second" selected>Estimación de costo restante</option>
+            <option value="manhattan">Distancia Manhattan</option>
+          </select>
+        </label>
+      </div>
+      <div id="beamSearchOptions" class="search-algorithm-options" hidden>
+        <div class="beam-width-field">
+          <span id="beamWidthLabel" class="field-caption">Ancho del haz · k</span>
+          <div class="beam-stepper" role="group" aria-labelledby="beamWidthLabel">
+            <button id="beamWidthDecrease" class="beam-stepper-button" type="button" aria-label="Reducir ancho del haz">−</button>
+            <input id="searchBeamWidth" class="beam-stepper-input" type="text" value="4" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" spellcheck="false" aria-labelledby="beamWidthLabel" aria-describedby="beamWidthHelp">
+            <button id="beamWidthIncrease" class="beam-stepper-button" type="button" aria-label="Aumentar ancho del haz">+</button>
+          </div>
+          <p id="beamWidthHelp" class="search-parameter-note">Conserva hasta k estados por nivel. Ordena por la heurística de costo restante.</p>
+        </div>
+      </div>
+
+      <section id="searchAlgorithmInfo" class="algorithm-info" aria-labelledby="searchAlgorithmInfoName">
+        <button id="searchAlgorithmInfoToggle" class="algorithm-info-toggle" type="button" aria-expanded="false" aria-controls="searchAlgorithmInfoBody">
+          <span class="algorithm-info-head">
+            <span class="algorithm-info-title-wrap">
+              <span class="algorithm-info-eyebrow">CÓMO FUNCIONA</span>
+              <span id="searchAlgorithmInfoName" class="algorithm-info-title">BFS</span>
+            </span>
+            <span class="algorithm-info-head-right">
+              <span id="searchAlgorithmInfoKind" class="algorithm-info-pill">Anchura</span>
+              <svg class="algorithm-info-caret" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+            </span>
+          </span>
+        </button>
+        <div id="searchAlgorithmInfoBody" class="algorithm-info-body" hidden>
+          <p id="searchAlgorithmInfoSummary" class="algorithm-info-summary"></p>
+          <dl id="searchAlgorithmFacts" class="algorithm-facts"></dl>
+          <div id="searchAlgorithmEquation" class="algorithm-equation">
+            <div id="searchAlgorithmEquationText" class="math-equation"></div>
+            <small id="searchAlgorithmEquationNote"></small>
+          </div>
+          <p id="searchAlgorithmInfoNote" class="algorithm-info-note"></p>
+          <div id="searchHeuristicDetail" class="heuristic-detail" hidden>
+            <div class="heuristic-detail-head">
+              <span id="searchHeuristicName">Costo restante</span>
+              <span id="searchHeuristicTag" class="heuristic-detail-tag">Heurística</span>
+            </div>
+            <div id="searchHeuristicEquation" class="math-equation heuristic-main-equation"></div>
+            <div id="searchHeuristicBranches" class="heuristic-branches" hidden></div>
+            <div id="searchHeuristicDefinitions" class="heuristic-definitions" hidden></div>
+            <div id="searchHeuristicAdmissibility" class="heuristic-admissibility" hidden>
+              <span class="heuristic-section-label">¿Por qué es admisible?</span>
+              <p id="searchHeuristicAdmissibilityText"></p>
+            </div>
+            <p id="searchHeuristicNote" class="heuristic-detail-note"></p>
+          </div>
+        </div>
+      </section>
+
+      <div id="searchUnitSelect" class="unit-select">
+        <span id="searchUnitLabel" class="field-caption">Unidad de inicio</span>
+        <button id="searchUnitButton" class="unit-select-trigger" type="button" role="combobox" aria-haspopup="listbox" aria-expanded="false" aria-controls="searchUnitMenu" aria-labelledby="searchUnitLabel searchUnitValue">
+          <span class="unit-select-preview">
+            <span class="unit-select-icon"><img id="searchUnitIcon" src="/assets/pieces/rook_a.png" alt="" hidden></span>
+            <span class="unit-select-copy">
+              <strong id="searchUnitValue">—</strong>
+              <small id="searchUnitMeta">—</small>
+            </span>
+          </span>
+          <svg class="unit-select-caret" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+        <div id="searchUnitMenu" class="unit-select-menu" role="listbox" aria-labelledby="searchUnitLabel" hidden></div>
+        <input id="searchUnit" type="hidden" value="">
+      </div>
+      <div class="search-target">
+        <span class="field-caption">Objetivo · fila, columna</span>
+        <div class="target-row">
+          <input id="searchTargetRow" type="number" min="0" step="1" inputmode="numeric" placeholder="Fila" aria-label="Fila objetivo">
+          <input id="searchTargetCol" type="number" min="0" step="1" inputmode="numeric" placeholder="Columna" aria-label="Columna objetivo">
+          <button id="pickSearchTarget" class="button secondary target-picker" type="button" aria-pressed="false">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s7-5.4 7-11a7 7 0 1 0-14 0c0 5.6 7 11 7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg>
+            <span id="pickSearchTargetLabel">Elegir</span>
+          </button>
+        </div>
+      </div>
+      <button id="runSearch" class="button primary search-run" type="button" disabled>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V9m7 10V5m7 14v-7"/><path d="m3 19 17-13"/></svg>
+        <span id="runSearchLabel">Ejecutar búsqueda</span>
+      </button>
+      <section id="searchResult" class="search-result" hidden aria-live="polite" aria-labelledby="searchResultTitle">
+        <div class="search-result-head">
+          <div><span class="eyebrow">RESULTADO</span><h3 id="searchResultTitle">—</h3></div>
+          <button id="clearSearch" class="search-clear" type="button" aria-label="Limpiar ruta" title="Limpiar ruta">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
+          </button>
+        </div>
+        <p id="searchMessage" class="search-message"></p>
+        <div id="searchMetrics" class="search-metrics" hidden>
+          <div><small>Movimientos</small><strong id="searchMoves">—</strong></div>
+          <div><small>Costo</small><strong id="searchCost">—</strong></div>
+          <div><small>Generados</small><strong id="searchGenerated">—</strong></div>
+          <div><small>Expandidos</small><strong id="searchExpanded">—</strong></div>
+          <div><small>Frontera máx.</small><strong id="searchFrontier">—</strong></div>
+          <div id="searchDiscardedMetric" hidden><small>Candidatos descartados</small><strong id="searchDiscarded">—</strong></div>
+          <div><small>Tiempo</small><strong id="searchElapsed">—</strong></div>
+        </div>
+        <p id="searchPath" class="search-path" hidden></p>
+      </section>
+    </section>
+
+    <section id="adversarialSection" class="panel-section adversarial-section" aria-labelledby="adversarialTitle">
+      <div class="section-heading compact">
+        <div><span class="eyebrow" id="adversarialEyebrow">DECISIÓN ADVERSARIAL</span><h2 id="adversarialTitle">Mejor movimiento del turno</h2></div>
+        <span id="adversarialBadge" class="search-algorithm-badge">1 turno</span>
+      </div>
+      <p id="adversarialCopy" class="section-copy">Calcula la mejor acción para el bando en turno. No avanza turnos ni juega la partida completa.</p>
+      <div id="adversarialAlgorithmSelect" class="algorithm-select">
+        <span id="adversarialAlgorithmLabel" class="field-caption">Algoritmo</span>
+        <button id="adversarialAlgorithmButton" class="algorithm-select-trigger" type="button" role="combobox" aria-haspopup="listbox" aria-expanded="false" aria-controls="adversarialAlgorithmMenu" aria-labelledby="adversarialAlgorithmLabel adversarialAlgorithmValue">
+          <span class="algorithm-select-copy">
+            <strong id="adversarialAlgorithmValue" data-dropdown-label>Alfa-beta</strong>
+            <small data-dropdown-hint>Con poda</small>
+          </span>
+          <svg class="algorithm-select-caret" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+        <div id="adversarialAlgorithmMenu" class="algorithm-select-menu" role="listbox" aria-labelledby="adversarialAlgorithmLabel" hidden>
+          <button type="button" class="algorithm-select-option" role="option" data-value="minimax" data-label="Minimax" data-hint="Sin poda" aria-selected="false">
+            <span><strong>Minimax</strong><small>Sin poda</small></span>
+            <svg class="algorithm-select-check" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>
+          </button>
+          <button type="button" class="algorithm-select-option is-selected" role="option" data-value="alpha_beta" data-label="Alfa-beta" data-hint="Con poda" aria-selected="true">
+            <span><strong>Alfa-beta</strong><small>Con poda</small></span>
+            <svg class="algorithm-select-check" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>
+          </button>
+        </div>
+        <select id="adversarialAlgorithm" hidden>
+          <option value="minimax">Minimax</option>
+          <option value="alpha_beta" selected>Alfa-beta</option>
+        </select>
+      </div>
+      <div class="adversarial-parameters">
+        <div class="search-field">
+          <span id="adversarialDepthLabel" class="field-caption">Profundidad</span>
+          <div class="beam-stepper" role="group" aria-labelledby="adversarialDepthLabel">
+            <button id="adversarialDepthDecrease" class="beam-stepper-button" type="button" aria-label="Reducir profundidad">−</button>
+            <input id="adversarialDepth" class="beam-stepper-input" type="text" value="2" inputmode="numeric" pattern="[0-9]*" maxlength="1" autocomplete="off" spellcheck="false" aria-labelledby="adversarialDepthLabel" aria-describedby="adversarialDepthHelp">
+            <button id="adversarialDepthIncrease" class="beam-stepper-button" type="button" aria-label="Aumentar profundidad">+</button>
+          </div>
+        </div>
+        <div id="adversarialOrderSelect" class="algorithm-select adversarial-order-select">
+          <span id="adversarialOrderLabel" class="field-caption">Orden de acciones</span>
+          <button id="adversarialOrderButton" class="algorithm-select-trigger" type="button" role="combobox" aria-haspopup="listbox" aria-expanded="false" aria-controls="adversarialOrderMenu" aria-labelledby="adversarialOrderLabel adversarialOrderValue">
+            <span class="algorithm-select-copy">
+              <strong id="adversarialOrderValue" data-dropdown-label>Normal</strong>
+              <small data-dropdown-hint>Orden del motor</small>
+            </span>
+            <svg class="algorithm-select-caret" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+          </button>
+          <div id="adversarialOrderMenu" class="algorithm-select-menu" role="listbox" aria-labelledby="adversarialOrderLabel" hidden>
+            <button type="button" class="algorithm-select-option is-selected" role="option" data-value="normal" data-label="Normal" data-hint="Orden del motor" aria-selected="true">
+              <span><strong>Normal</strong><small>Orden del motor</small></span>
+              <svg class="algorithm-select-check" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>
+            </button>
+            <button type="button" class="algorithm-select-option" role="option" data-value="reverse" data-label="Inverso" data-hint="Orden invertido" aria-selected="false">
+              <span><strong>Inverso</strong><small>Orden invertido</small></span>
+              <svg class="algorithm-select-check" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>
+            </button>
+          </div>
+          <select id="adversarialOrder" hidden>
+            <option value="normal" selected>Normal</option>
+            <option value="reverse">Inverso</option>
+          </select>
+        </div>
+      </div>
+      <p id="adversarialDepthHelp" class="search-parameter-note">Cada nivel representa una acción completa de un jugador. Profundidad 2 incluye la respuesta rival; el máximo por solicitud es 5.</p>
+      <button id="runAdversarial" class="button primary search-run" type="button">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h5l3-8 4 16 3-8h1"/></svg>
+        <span id="runAdversarialLabel">Calcular mejor movimiento</span>
+      </button>
+      <button id="autoPlayToggle" class="button secondary adversarial-autoplay" type="button" aria-pressed="false" hidden>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 5 12 7-12 7V5Z"/></svg>
+        <span id="autoPlayLabel">Autojugar hasta finalizar</span>
+      </button>
+      <p id="autoPlayStatus" class="adversarial-autoplay-status" hidden aria-live="polite"></p>
+      <section id="adversarialResult" class="adversarial-result" hidden aria-live="polite" aria-labelledby="adversarialResultTitle">
+        <div class="search-result-head">
+          <div><span class="eyebrow">ANÁLISIS</span><h3 id="adversarialResultTitle">Resultado</h3></div>
+          <button id="clearAdversarial" class="search-clear" type="button" aria-label="Limpiar análisis adversarial" title="Limpiar análisis">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
+          </button>
+        </div>
+        <p id="adversarialStatus" class="search-message"></p>
+        <p id="adversarialActionSummary" class="adversarial-action-summary"></p>
+        <button id="applyAdversarial" class="button primary adversarial-apply" type="button" disabled>Ejecutar jugada recomendada</button>
+        <div id="adversarialMetrics" class="search-metrics adversarial-metrics" hidden>
+          <div><small id="adversarialValueLabel">Valor</small><strong id="adversarialValue">—</strong></div>
+          <div><small>Profundidad pedida / alcanzada</small><strong><span id="adversarialDepthRequested">—</span> / <span id="adversarialDepthReached">—</span></strong></div>
+          <div><small>Generados</small><strong id="adversarialGenerated">—</strong></div>
+          <div><small>Visitados</small><strong id="adversarialVisited">—</strong></div>
+          <div><small>Evaluados</small><strong id="adversarialEvaluated">—</strong></div>
+          <div><small>Podados</small><strong id="adversarialPruned">—</strong></div>
+          <div><small>Tiempo</small><strong id="adversarialElapsed">—</strong></div>
+        </div>
+        <p class="adversarial-options-note">Generados cuenta sucesores materializados (sin la raíz); visitados incluye la raíz; evaluados son hojas; podados cuenta solo sucesores inmediatos omitidos por alfa-beta.</p>
+        <div class="adversarial-stepper" aria-label="Recorrido de opciones legales">
+          <button id="adversarialPrevious" class="button secondary" type="button" aria-label="Acción legal anterior">Anterior</button>
+          <span id="adversarialPosition" aria-live="polite">0 / 0</span>
+          <button id="adversarialNext" class="button secondary" type="button" aria-label="Siguiente acción legal">Siguiente</button>
+        </div>
+        <p class="adversarial-options-note">Recorrido visual de las opciones legales del turno. El tablero solo marca origen y destino; no muestra una secuencia interna de ramas del algoritmo.</p>
+        <ol id="adversarialOptions" class="adversarial-options" aria-label="Acciones legales disponibles"></ol>
+      </section>
+    </section>
+
+    <section id="kingSection" class="panel-section king-section" aria-labelledby="kingsTitle">
+      <div class="section-heading compact"><div><span class="eyebrow">REGLAS</span><h2 id="kingsTitle">Configuración de reyes</h2></div></div>
+      <p class="section-copy">Elige cómo entran los reyes antes del primer movimiento.</p>
+      <input id="kingMode" type="hidden" value="none">
+      <div class="king-mode-grid" role="radiogroup" aria-label="Modo de reyes">
+        <button class="king-mode-card is-selected" type="button" data-king-mode="none" role="radio" aria-checked="true"><span class="empty-piece-icon" aria-hidden="true">×</span><span>Sin reyes</span></button>
+        <button class="king-mode-card" type="button" data-king-mode="manual" role="radio" aria-checked="false"><span class="mode-piece-wrap"><img src="/assets/pieces/king_a.png" alt=""></span><span>Manual</span></button>
+        <button class="king-mode-card" type="button" data-king-mode="automatic" role="radio" aria-checked="false"><span class="mode-piece-wrap"><img src="/assets/pieces/king_a.png" alt=""><svg class="auto-badge" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v3m0 12v3M3 12h3m12 0h3M5.6 5.6l2.1 2.1m8.6 8.6 2.1 2.1m0-12.8-2.1 2.1M7.7 16.3l-2.1 2.1"/><circle cx="12" cy="12" r="3"/></svg></span><span>Automático</span></button>
+      </div>
+      <div id="automaticKings" class="king-fields" hidden>
+        <p class="field-caption">Cantidad por equipo</p>
+        <div class="count-grid">
+          <label><span><i class="team-dot team-a"></i>Blancas</span><input id="kingCountA" type="number" min="0" step="1" value="1"></label>
+          <label><span><i class="team-dot team-b"></i>Negras</span><input id="kingCountB" type="number" min="0" step="1" value="1"></label>
+        </div>
+      </div>
+      <div id="manualKings" class="king-fields" hidden>
+        <p class="field-caption">Coloca reyes en el tablero</p>
+        <div class="manual-king-side" role="group" aria-label="Bando para colocar reyes">
+          <button id="manualKingSideA" class="manual-king-side-button is-active" type="button" data-king-side="A" aria-pressed="true"><i class="team-dot team-a"></i>Blancas</button>
+          <button id="manualKingSideB" class="manual-king-side-button" type="button" data-king-side="B" aria-pressed="false"><i class="team-dot team-b"></i>Negras</button>
+        </div>
+        <p id="manualKingHelp" class="search-parameter-note">Haz clic en una celda para colocar o quitar un rey del bando activo.</p>
+        <p class="field-caption">Coordenadas · fila,columna;…</p>
+        <label class="coordinate-field"><span><i class="team-dot team-a"></i>Blancas</span><input id="manualKingsA" type="text" inputmode="numeric" placeholder="1,1; 2,2"></label>
+        <label class="coordinate-field"><span><i class="team-dot team-b"></i>Negras</span><input id="manualKingsB" type="text" inputmode="numeric" placeholder="17,17"></label>
+        <p id="manualKingStatus" class="search-parameter-note">Blancas: 0 · Negras: 0</p>
+      </div>
+      <button id="configureKings" class="button primary" type="button">Aplicar configuración</button>
+    </section>
+    <section id="historySection" class="panel-section history-section" aria-labelledby="historyTitle">
+      <div class="section-heading compact">
+        <div><span class="eyebrow">CRONOLOGÍA</span><h2 id="historyTitle">Movimientos</h2></div>
+        <span id="historyCount" class="history-count">0</span>
+      </div>
+      <p id="historyEmpty" class="history-empty">La partida todavía no ha comenzado.</p>
+      <ol id="moveHistory" class="move-history" aria-live="polite"></ol>
+    </section>
   </aside>
-  <div id="toast" role="status" aria-live="polite">El tablero representa el escenario cargado en Python.</div>
+
+  <p id="gameHelp" class="sr-only">Selecciona una ficha del equipo en turno y luego elige uno de sus destinos resaltados.</p>
+  <div id="toastRegion" class="toast-region" role="region" aria-label="Notificaciones" aria-live="polite" aria-atomic="false"></div>
+
+  <section id="resultScreen" hidden role="dialog" aria-modal="true" aria-labelledby="resultTitle" aria-describedby="resultMessage">
+    <div class="result-card">
+      <div class="result-rays" aria-hidden="true"></div>
+      <h2 id="resultTitle">Victoria</h2>
+      <div id="winnerPieces" class="winner-pieces" aria-label="Fichas de la partida"></div>
+      <p id="resultMessage"></p>
+      <div class="result-actions">
+        <button id="resultRestart" class="button primary" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10a8 8 0 1 1 2 7.7M4 10V5m0 5h5"/></svg>Jugar de nuevo</button>
+        <button id="resultClose" class="button ghost" type="button">Ver tablero</button>
+      </div>
+    </div>
+  </section>
 </body>
 </html>

@@ -1,0 +1,1441 @@
+[
+  {
+    "scenario": "01_bfs_dfs_laberinto_perfecto.json",
+    "method": "bfs",
+    "result": {
+      "found": true,
+      "input_valid": true,
+      "error": null,
+      "path": [
+        {
+          "fila": 1,
+          "columna": 1
+        },
+        {
+          "fila": 1,
+          "columna": 2
+        },
+        {
+          "fila": 1,
+          "columna": 3
+        },
+        {
+          "fila": 1,
+          "columna": 4
+        },
+        {
+          "fila": 1,
+          "columna": 5
+        },
+        {
+          "fila": 2,
+          "columna": 5
+        },
+        {
+          "fila": 3,
+          "columna": 5
+        },
+        {
+          "fila": 3,
+          "columna": 4
+        },
+        {
+          "fila": 3,
+          "columna": 3
+        },
+        {
+          "fila": 4,
+          "columna": 3
+        },
+        {
+          "fila": 5,
+          "columna": 3
+        },
+        {
+          "fila": 5,
+          "columna": 4
+        },
+        {
+          "fila": 5,
+          "columna": 5
+        },
+        {
+          "fila": 5,
+          "columna": 6
+        },
+        {
+          "fila": 5,
+          "columna": 7
+        },
+        {
+          "fila": 4,
+          "columna": 7
+        },
+        {
+          "fila": 3,
+          "columna": 7
+        },
+        {
+          "fila": 2,
+          "columna": 7
+        },
+        {
+          "fila": 1,
+          "columna": 7
+        },
+        {
+          "fila": 1,
+          "columna": 8
+        },
+        {
+          "fila": 1,
+          "columna": 9
+        },
+        {
+          "fila": 1,
+          "columna": 10
+        },
+        {
+          "fila": 1,
+          "columna": 11
+        },
+        {
+          "fila": 2,
+          "columna": 11
+        },
+        {
+          "fila": 3,
+          "columna": 11
+        },
+        {
+          "fila": 4,
+          "columna": 11
+        },
+        {
+          "fila": 5,
+          "columna": 11
+        },
+        {
+          "fila": 6,
+          "columna": 11
+        },
+        {
+          "fila": 7,
+          "columna": 11
+        },
+        {
+          "fila": 7,
+          "columna": 10
+        },
+        {
+          "fila": 7,
+          "columna": 9
+        },
+        {
+          "fila": 8,
+          "columna": 9
+        },
+        {
+          "fila": 9,
+          "columna": 9
+        },
+        {
+          "fila": 10,
+          "columna": 9
+        },
+        {
+          "fila": 11,
+          "columna": 9
+        },
+        {
+          "fila": 12,
+          "columna": 9
+        },
+        {
+          "fila": 13,
+          "columna": 9
+        },
+        {
+          "fila": 14,
+          "columna": 9
+        },
+        {
+          "fila": 15,
+          "columna": 9
+        },
+        {
+          "fila": 16,
+          "columna": 9
+        },
+        {
+          "fila": 17,
+          "columna": 9
+        },
+        {
+          "fila": 17,
+          "columna": 10
+        },
+        {
+          "fila": 17,
+          "columna": 11
+        },
+        {
+          "fila": 16,
+          "columna": 11
+        },
+        {
+          "fila": 15,
+          "columna": 11
+        },
+        {
+          "fila": 15,
+          "columna": 12
+        },
+        {
+          "fila": 15,
+          "columna": 13
+        },
+        {
+          "fila": 15,
+          "columna": 14
+        },
+        {
+          "fila": 15,
+          "columna": 15
+        },
+        {
+          "fila": 14,
+          "columna": 15
+        },
+        {
+          "fila": 13,
+          "columna": 15
+        },
+        {
+          "fila": 12,
+          "columna": 15
+        },
+        {
+          "fila": 11,
+          "columna": 15
+        },
+        {
+          "fila": 11,
+          "columna": 16
+        },
+        {
+          "fila": 11,
+          "columna": 17
+        },
+        {
+          "fila": 12,
+          "columna": 17
+        },
+        {
+          "fila": 13,
+          "columna": 17
+        },
+        {
+          "fila": 14,
+          "columna": 17
+        },
+        {
+          "fila": 15,
+          "columna": 17
+        },
+        {
+          "fila": 16,
+          "columna": 17
+        },
+        {
+          "fila": 17,
+          "columna": 17
+        }
+      ],
+      "moves": 60,
+      "cost": 60.0,
+      "states_generated": 129,
+      "states_expanded": 124,
+      "max_frontier": 5,
+      "elapsed_seconds": 0.09582530500006214
+    }
+  },
+  {
+    "scenario": "01_bfs_dfs_laberinto_perfecto.json",
+    "method": "dfs",
+    "result": {
+      "found": true,
+      "input_valid": true,
+      "error": null,
+      "path": [
+        {
+          "fila": 1,
+          "columna": 1
+        },
+        {
+          "fila": 1,
+          "columna": 2
+        },
+        {
+          "fila": 1,
+          "columna": 3
+        },
+        {
+          "fila": 1,
+          "columna": 4
+        },
+        {
+          "fila": 1,
+          "columna": 5
+        },
+        {
+          "fila": 2,
+          "columna": 5
+        },
+        {
+          "fila": 3,
+          "columna": 5
+        },
+        {
+          "fila": 3,
+          "columna": 4
+        },
+        {
+          "fila": 3,
+          "columna": 3
+        },
+        {
+          "fila": 4,
+          "columna": 3
+        },
+        {
+          "fila": 5,
+          "columna": 3
+        },
+        {
+          "fila": 5,
+          "columna": 4
+        },
+        {
+          "fila": 5,
+          "columna": 5
+        },
+        {
+          "fila": 5,
+          "columna": 6
+        },
+        {
+          "fila": 5,
+          "columna": 7
+        },
+        {
+          "fila": 4,
+          "columna": 7
+        },
+        {
+          "fila": 3,
+          "columna": 7
+        },
+        {
+          "fila": 2,
+          "columna": 7
+        },
+        {
+          "fila": 1,
+          "columna": 7
+        },
+        {
+          "fila": 1,
+          "columna": 8
+        },
+        {
+          "fila": 1,
+          "columna": 9
+        },
+        {
+          "fila": 1,
+          "columna": 10
+        },
+        {
+          "fila": 1,
+          "columna": 11
+        },
+        {
+          "fila": 2,
+          "columna": 11
+        },
+        {
+          "fila": 3,
+          "columna": 11
+        },
+        {
+          "fila": 4,
+          "columna": 11
+        },
+        {
+          "fila": 5,
+          "columna": 11
+        },
+        {
+          "fila": 6,
+          "columna": 11
+        },
+        {
+          "fila": 7,
+          "columna": 11
+        },
+        {
+          "fila": 7,
+          "columna": 10
+        },
+        {
+          "fila": 7,
+          "columna": 9
+        },
+        {
+          "fila": 8,
+          "columna": 9
+        },
+        {
+          "fila": 9,
+          "columna": 9
+        },
+        {
+          "fila": 10,
+          "columna": 9
+        },
+        {
+          "fila": 11,
+          "columna": 9
+        },
+        {
+          "fila": 12,
+          "columna": 9
+        },
+        {
+          "fila": 13,
+          "columna": 9
+        },
+        {
+          "fila": 14,
+          "columna": 9
+        },
+        {
+          "fila": 15,
+          "columna": 9
+        },
+        {
+          "fila": 16,
+          "columna": 9
+        },
+        {
+          "fila": 17,
+          "columna": 9
+        },
+        {
+          "fila": 17,
+          "columna": 10
+        },
+        {
+          "fila": 17,
+          "columna": 11
+        },
+        {
+          "fila": 16,
+          "columna": 11
+        },
+        {
+          "fila": 15,
+          "columna": 11
+        },
+        {
+          "fila": 15,
+          "columna": 12
+        },
+        {
+          "fila": 15,
+          "columna": 13
+        },
+        {
+          "fila": 15,
+          "columna": 14
+        },
+        {
+          "fila": 15,
+          "columna": 15
+        },
+        {
+          "fila": 14,
+          "columna": 15
+        },
+        {
+          "fila": 13,
+          "columna": 15
+        },
+        {
+          "fila": 12,
+          "columna": 15
+        },
+        {
+          "fila": 11,
+          "columna": 15
+        },
+        {
+          "fila": 11,
+          "columna": 16
+        },
+        {
+          "fila": 11,
+          "columna": 17
+        },
+        {
+          "fila": 12,
+          "columna": 17
+        },
+        {
+          "fila": 13,
+          "columna": 17
+        },
+        {
+          "fila": 14,
+          "columna": 17
+        },
+        {
+          "fila": 15,
+          "columna": 17
+        },
+        {
+          "fila": 16,
+          "columna": 17
+        },
+        {
+          "fila": 17,
+          "columna": 17
+        }
+      ],
+      "moves": 60,
+      "cost": 60.0,
+      "states_generated": 184,
+      "states_expanded": 183,
+      "max_frontier": 5,
+      "elapsed_seconds": 0.18310785499988924
+    }
+  },
+  {
+    "scenario": "02_bfs_ucs_dos_corredores.json",
+    "method": "bfs",
+    "result": {
+      "found": true,
+      "input_valid": true,
+      "error": null,
+      "path": [
+        {
+          "fila": 8,
+          "columna": 2
+        },
+        {
+          "fila": 8,
+          "columna": 3
+        },
+        {
+          "fila": 8,
+          "columna": 4
+        },
+        {
+          "fila": 8,
+          "columna": 5
+        },
+        {
+          "fila": 8,
+          "columna": 6
+        },
+        {
+          "fila": 8,
+          "columna": 7
+        },
+        {
+          "fila": 8,
+          "columna": 8
+        },
+        {
+          "fila": 8,
+          "columna": 9
+        },
+        {
+          "fila": 8,
+          "columna": 10
+        },
+        {
+          "fila": 8,
+          "columna": 11
+        },
+        {
+          "fila": 8,
+          "columna": 12
+        }
+      ],
+      "moves": 10,
+      "cost": 64.0,
+      "states_generated": 173,
+      "states_expanded": 152,
+      "max_frontier": 23,
+      "elapsed_seconds": 0.21050375499999063
+    }
+  },
+  {
+    "scenario": "02_bfs_ucs_dos_corredores.json",
+    "method": "ucs",
+    "result": {
+      "found": true,
+      "input_valid": true,
+      "error": null,
+      "path": [
+        {
+          "fila": 8,
+          "columna": 2
+        },
+        {
+          "fila": 7,
+          "columna": 2
+        },
+        {
+          "fila": 7,
+          "columna": 3
+        },
+        {
+          "fila": 7,
+          "columna": 4
+        },
+        {
+          "fila": 7,
+          "columna": 5
+        },
+        {
+          "fila": 7,
+          "columna": 6
+        },
+        {
+          "fila": 7,
+          "columna": 7
+        },
+        {
+          "fila": 7,
+          "columna": 8
+        },
+        {
+          "fila": 7,
+          "columna": 9
+        },
+        {
+          "fila": 7,
+          "columna": 10
+        },
+        {
+          "fila": 7,
+          "columna": 11
+        },
+        {
+          "fila": 7,
+          "columna": 12
+        },
+        {
+          "fila": 8,
+          "columna": 12
+        }
+      ],
+      "moves": 12,
+      "cost": 12.0,
+      "states_generated": 201,
+      "states_expanded": 174,
+      "max_frontier": 29,
+      "elapsed_seconds": 0.1982345300000361
+    }
+  },
+  {
+    "scenario": "03_trampa_U_manhattan.json",
+    "method": "astar_manhattan",
+    "result": {
+      "found": true,
+      "input_valid": true,
+      "error": null,
+      "path": [
+        {
+          "fila": 14,
+          "columna": 10
+        },
+        {
+          "fila": 14,
+          "columna": 9
+        },
+        {
+          "fila": 14,
+          "columna": 8
+        },
+        {
+          "fila": 14,
+          "columna": 7
+        },
+        {
+          "fila": 14,
+          "columna": 6
+        },
+        {
+          "fila": 13,
+          "columna": 6
+        },
+        {
+          "fila": 12,
+          "columna": 6
+        },
+        {
+          "fila": 11,
+          "columna": 6
+        },
+        {
+          "fila": 10,
+          "columna": 6
+        },
+        {
+          "fila": 9,
+          "columna": 6
+        },
+        {
+          "fila": 8,
+          "columna": 6
+        },
+        {
+          "fila": 7,
+          "columna": 6
+        },
+        {
+          "fila": 6,
+          "columna": 6
+        },
+        {
+          "fila": 5,
+          "columna": 6
+        },
+        {
+          "fila": 5,
+          "columna": 7
+        },
+        {
+          "fila": 5,
+          "columna": 8
+        },
+        {
+          "fila": 6,
+          "columna": 8
+        },
+        {
+          "fila": 7,
+          "columna": 8
+        },
+        {
+          "fila": 8,
+          "columna": 8
+        },
+        {
+          "fila": 9,
+          "columna": 8
+        },
+        {
+          "fila": 10,
+          "columna": 8
+        },
+        {
+          "fila": 10,
+          "columna": 9
+        },
+        {
+          "fila": 10,
+          "columna": 10
+        }
+      ],
+      "moves": 22,
+      "cost": 22.0,
+      "states_generated": 307,
+      "states_expanded": 245,
+      "max_frontier": 63,
+      "elapsed_seconds": 0.39550302800012105
+    }
+  },
+  {
+    "scenario": "03_trampa_U_manhattan.json",
+    "method": "astar_second",
+    "result": {
+      "found": true,
+      "input_valid": true,
+      "error": null,
+      "path": [
+        {
+          "fila": 14,
+          "columna": 10
+        },
+        {
+          "fila": 14,
+          "columna": 9
+        },
+        {
+          "fila": 14,
+          "columna": 8
+        },
+        {
+          "fila": 14,
+          "columna": 7
+        },
+        {
+          "fila": 14,
+          "columna": 6
+        },
+        {
+          "fila": 13,
+          "columna": 6
+        },
+        {
+          "fila": 12,
+          "columna": 6
+        },
+        {
+          "fila": 11,
+          "columna": 6
+        },
+        {
+          "fila": 10,
+          "columna": 6
+        },
+        {
+          "fila": 9,
+          "columna": 6
+        },
+        {
+          "fila": 8,
+          "columna": 6
+        },
+        {
+          "fila": 7,
+          "columna": 6
+        },
+        {
+          "fila": 6,
+          "columna": 6
+        },
+        {
+          "fila": 5,
+          "columna": 6
+        },
+        {
+          "fila": 5,
+          "columna": 7
+        },
+        {
+          "fila": 5,
+          "columna": 8
+        },
+        {
+          "fila": 6,
+          "columna": 8
+        },
+        {
+          "fila": 7,
+          "columna": 8
+        },
+        {
+          "fila": 8,
+          "columna": 8
+        },
+        {
+          "fila": 9,
+          "columna": 8
+        },
+        {
+          "fila": 10,
+          "columna": 8
+        },
+        {
+          "fila": 10,
+          "columna": 9
+        },
+        {
+          "fila": 10,
+          "columna": 10
+        }
+      ],
+      "moves": 22,
+      "cost": 22.0,
+      "states_generated": 307,
+      "states_expanded": 245,
+      "max_frontier": 63,
+      "elapsed_seconds": 0.39631657699987954
+    }
+  },
+  {
+    "scenario": "04_heuristicas_franjas_costosas.json",
+    "method": "astar_manhattan",
+    "result": {
+      "found": true,
+      "input_valid": true,
+      "error": null,
+      "path": [
+        {
+          "fila": 2,
+          "columna": 2
+        },
+        {
+          "fila": 3,
+          "columna": 2
+        },
+        {
+          "fila": 4,
+          "columna": 2
+        },
+        {
+          "fila": 5,
+          "columna": 2
+        },
+        {
+          "fila": 6,
+          "columna": 2
+        },
+        {
+          "fila": 6,
+          "columna": 3
+        },
+        {
+          "fila": 6,
+          "columna": 4
+        },
+        {
+          "fila": 6,
+          "columna": 5
+        },
+        {
+          "fila": 6,
+          "columna": 6
+        },
+        {
+          "fila": 6,
+          "columna": 7
+        },
+        {
+          "fila": 6,
+          "columna": 8
+        },
+        {
+          "fila": 6,
+          "columna": 9
+        },
+        {
+          "fila": 6,
+          "columna": 10
+        },
+        {
+          "fila": 6,
+          "columna": 11
+        },
+        {
+          "fila": 6,
+          "columna": 12
+        },
+        {
+          "fila": 6,
+          "columna": 13
+        },
+        {
+          "fila": 6,
+          "columna": 14
+        },
+        {
+          "fila": 7,
+          "columna": 14
+        },
+        {
+          "fila": 8,
+          "columna": 14
+        },
+        {
+          "fila": 8,
+          "columna": 15
+        },
+        {
+          "fila": 8,
+          "columna": 16
+        },
+        {
+          "fila": 9,
+          "columna": 16
+        },
+        {
+          "fila": 10,
+          "columna": 16
+        },
+        {
+          "fila": 11,
+          "columna": 16
+        },
+        {
+          "fila": 12,
+          "columna": 16
+        },
+        {
+          "fila": 13,
+          "columna": 16
+        },
+        {
+          "fila": 14,
+          "columna": 16
+        },
+        {
+          "fila": 15,
+          "columna": 16
+        }
+      ],
+      "moves": 27,
+      "cost": 32.0,
+      "states_generated": 303,
+      "states_expanded": 257,
+      "max_frontier": 60,
+      "elapsed_seconds": 0.5579382030000488
+    }
+  },
+  {
+    "scenario": "04_heuristicas_franjas_costosas.json",
+    "method": "astar_second",
+    "result": {
+      "found": true,
+      "input_valid": true,
+      "error": null,
+      "path": [
+        {
+          "fila": 2,
+          "columna": 2
+        },
+        {
+          "fila": 3,
+          "columna": 2
+        },
+        {
+          "fila": 4,
+          "columna": 2
+        },
+        {
+          "fila": 5,
+          "columna": 2
+        },
+        {
+          "fila": 6,
+          "columna": 2
+        },
+        {
+          "fila": 7,
+          "columna": 2
+        },
+        {
+          "fila": 8,
+          "columna": 2
+        },
+        {
+          "fila": 9,
+          "columna": 2
+        },
+        {
+          "fila": 10,
+          "columna": 2
+        },
+        {
+          "fila": 11,
+          "columna": 2
+        },
+        {
+          "fila": 12,
+          "columna": 2
+        },
+        {
+          "fila": 12,
+          "columna": 3
+        },
+        {
+          "fila": 12,
+          "columna": 4
+        },
+        {
+          "fila": 12,
+          "columna": 5
+        },
+        {
+          "fila": 12,
+          "columna": 6
+        },
+        {
+          "fila": 12,
+          "columna": 7
+        },
+        {
+          "fila": 12,
+          "columna": 8
+        },
+        {
+          "fila": 12,
+          "columna": 9
+        },
+        {
+          "fila": 12,
+          "columna": 10
+        },
+        {
+          "fila": 12,
+          "columna": 11
+        },
+        {
+          "fila": 12,
+          "columna": 12
+        },
+        {
+          "fila": 12,
+          "columna": 13
+        },
+        {
+          "fila": 12,
+          "columna": 14
+        },
+        {
+          "fila": 13,
+          "columna": 14
+        },
+        {
+          "fila": 14,
+          "columna": 14
+        },
+        {
+          "fila": 15,
+          "columna": 14
+        },
+        {
+          "fila": 15,
+          "columna": 15
+        },
+        {
+          "fila": 15,
+          "columna": 16
+        }
+      ],
+      "moves": 27,
+      "cost": 32.0,
+      "states_generated": 254,
+      "states_expanded": 197,
+      "max_frontier": 68,
+      "elapsed_seconds": 0.298848616999976
+    }
+  },
+  {
+    "scenario": "05_beam_callejon_engañoso.json",
+    "method": "beam_1",
+    "result": {
+      "found": false,
+      "input_valid": true,
+      "error": null,
+      "path": [],
+      "moves": null,
+      "cost": null,
+      "states_generated": 13,
+      "states_expanded": 10,
+      "max_frontier": 1,
+      "elapsed_seconds": 0.010368097999844395,
+      "candidates_discarded": 3
+    }
+  },
+  {
+    "scenario": "05_beam_callejon_engañoso.json",
+    "method": "beam_2",
+    "result": {
+      "found": true,
+      "input_valid": true,
+      "error": null,
+      "path": [
+        {
+          "fila": 9,
+          "columna": 4
+        },
+        {
+          "fila": 8,
+          "columna": 4
+        },
+        {
+          "fila": 7,
+          "columna": 4
+        },
+        {
+          "fila": 7,
+          "columna": 5
+        },
+        {
+          "fila": 7,
+          "columna": 6
+        },
+        {
+          "fila": 7,
+          "columna": 7
+        },
+        {
+          "fila": 7,
+          "columna": 8
+        },
+        {
+          "fila": 7,
+          "columna": 9
+        },
+        {
+          "fila": 7,
+          "columna": 10
+        },
+        {
+          "fila": 7,
+          "columna": 11
+        },
+        {
+          "fila": 7,
+          "columna": 12
+        },
+        {
+          "fila": 7,
+          "columna": 13
+        },
+        {
+          "fila": 7,
+          "columna": 14
+        },
+        {
+          "fila": 6,
+          "columna": 14
+        },
+        {
+          "fila": 6,
+          "columna": 15
+        },
+        {
+          "fila": 6,
+          "columna": 16
+        },
+        {
+          "fila": 7,
+          "columna": 16
+        },
+        {
+          "fila": 8,
+          "columna": 16
+        },
+        {
+          "fila": 9,
+          "columna": 16
+        },
+        {
+          "fila": 9,
+          "columna": 17
+        }
+      ],
+      "moves": 19,
+      "cost": 19.0,
+      "states_generated": 59,
+      "states_expanded": 37,
+      "max_frontier": 2,
+      "elapsed_seconds": 0.030228117999968163,
+      "candidates_discarded": 22
+    }
+  },
+  {
+    "scenario": "05_beam_callejon_engañoso.json",
+    "method": "beam_4",
+    "result": {
+      "found": true,
+      "input_valid": true,
+      "error": null,
+      "path": [
+        {
+          "fila": 9,
+          "columna": 4
+        },
+        {
+          "fila": 8,
+          "columna": 4
+        },
+        {
+          "fila": 7,
+          "columna": 4
+        },
+        {
+          "fila": 7,
+          "columna": 5
+        },
+        {
+          "fila": 7,
+          "columna": 6
+        },
+        {
+          "fila": 7,
+          "columna": 7
+        },
+        {
+          "fila": 7,
+          "columna": 8
+        },
+        {
+          "fila": 7,
+          "columna": 9
+        },
+        {
+          "fila": 7,
+          "columna": 10
+        },
+        {
+          "fila": 7,
+          "columna": 11
+        },
+        {
+          "fila": 7,
+          "columna": 12
+        },
+        {
+          "fila": 7,
+          "columna": 13
+        },
+        {
+          "fila": 7,
+          "columna": 14
+        },
+        {
+          "fila": 6,
+          "columna": 14
+        },
+        {
+          "fila": 6,
+          "columna": 15
+        },
+        {
+          "fila": 6,
+          "columna": 16
+        },
+        {
+          "fila": 7,
+          "columna": 16
+        },
+        {
+          "fila": 8,
+          "columna": 16
+        },
+        {
+          "fila": 9,
+          "columna": 16
+        },
+        {
+          "fila": 9,
+          "columna": 17
+        }
+      ],
+      "moves": 19,
+      "cost": 19.0,
+      "states_generated": 112,
+      "states_expanded": 73,
+      "max_frontier": 4,
+      "elapsed_seconds": 0.08447657100009565,
+      "candidates_discarded": 41
+    }
+  },
+  {
+    "scenario": "05_beam_callejon_engañoso.json",
+    "method": "beam_8",
+    "result": {
+      "found": true,
+      "input_valid": true,
+      "error": null,
+      "path": [
+        {
+          "fila": 9,
+          "columna": 4
+        },
+        {
+          "fila": 8,
+          "columna": 4
+        },
+        {
+          "fila": 7,
+          "columna": 4
+        },
+        {
+          "fila": 7,
+          "columna": 5
+        },
+        {
+          "fila": 7,
+          "columna": 6
+        },
+        {
+          "fila": 7,
+          "columna": 7
+        },
+        {
+          "fila": 7,
+          "columna": 8
+        },
+        {
+          "fila": 7,
+          "columna": 9
+        },
+        {
+          "fila": 7,
+          "columna": 10
+        },
+        {
+          "fila": 7,
+          "columna": 11
+        },
+        {
+          "fila": 7,
+          "columna": 12
+        },
+        {
+          "fila": 7,
+          "columna": 13
+        },
+        {
+          "fila": 7,
+          "columna": 14
+        },
+        {
+          "fila": 6,
+          "columna": 14
+        },
+        {
+          "fila": 6,
+          "columna": 15
+        },
+        {
+          "fila": 6,
+          "columna": 16
+        },
+        {
+          "fila": 7,
+          "columna": 16
+        },
+        {
+          "fila": 8,
+          "columna": 16
+        },
+        {
+          "fila": 9,
+          "columna": 16
+        },
+        {
+          "fila": 9,
+          "columna": 17
+        }
+      ],
+      "moves": 19,
+      "cost": 19.0,
+      "states_generated": 180,
+      "states_expanded": 139,
+      "max_frontier": 8,
+      "elapsed_seconds": 0.13845648400001664,
+      "candidates_discarded": 39
+    }
+  }
+]

@@ -1,0 +1,2217 @@
+{
+  "scenario": "externo_adversarial_3v3.json",
+  "algorithm": "alpha_beta",
+  "depth": 2,
+  "turns": 105,
+  "stop_reason": "repetition_detected",
+  "winner": null,
+  "elapsed_seconds": 8.147897614000158,
+  "total_nodes": 6176,
+  "trace": [
+    {
+      "turn": 1,
+      "side": "A",
+      "action": {
+        "type": "move",
+        "unit_id": "A3",
+        "destination": {
+          "fila": 1,
+          "columna": 2
+        }
+      },
+      "value": -109.26315789473688,
+      "nodes_visited": 40,
+      "elapsed_seconds": 0.0387721929998861,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 2,
+      "side": "B",
+      "action": {
+        "type": "move",
+        "unit_id": "B3",
+        "destination": {
+          "fila": 17,
+          "columna": 18
+        }
+      },
+      "value": 71.63157894736855,
+      "nodes_visited": 63,
+      "elapsed_seconds": 0.06250612700000602,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 3,
+      "side": "A",
+      "action": {
+        "type": "move",
+        "unit_id": "A3",
+        "destination": {
+          "fila": 1,
+          "columna": 3
+        }
+      },
+      "value": -109.26315789473688,
+      "nodes_visited": 78,
+      "elapsed_seconds": 0.08559973999990689,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 4,
+      "side": "B",
+      "action": {
+        "type": "move",
+        "unit_id": "B3",
+        "destination": {
+          "fila": 16,
+          "columna": 18
+        }
+      },
+      "value": 71.63157894736833,
+      "nodes_visited": 87,
+      "elapsed_seconds": 0.09438331700016533,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 5,
+      "side": "A",
+      "action": {
+        "type": "move",
+        "unit_id": "A3",
+        "destination": {
+          "fila": 1,
+          "columna": 4
+        }
+      },
+      "value": -109.26315789473688,
+      "nodes_visited": 78,
+      "elapsed_seconds": 0.08682765300000028,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 6,
+      "side": "B",
+      "action": {
+        "type": "move",
+        "unit_id": "B3",
+        "destination": {
+          "fila": 15,
+          "columna": 18
+        }
+      },
+      "value": 71.63157894736855,
+      "nodes_visited": 87,
+      "elapsed_seconds": 0.09898431999999957,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 7,
+      "side": "A",
+      "action": {
+        "type": "move",
+        "unit_id": "A3",
+        "destination": {
+          "fila": 1,
+          "columna": 5
+        }
+      },
+      "value": -109.26315789473688,
+      "nodes_visited": 78,
+      "elapsed_seconds": 0.0916219150001325,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 8,
+      "side": "B",
+      "action": {
+        "type": "move",
+        "unit_id": "B3",
+        "destination": {
+          "fila": 14,
+          "columna": 18
+        }
+      },
+      "value": 71.63157894736833,
+      "nodes_visited": 87,
+      "elapsed_seconds": 0.09721518499986814,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 9,
+      "side": "A",
+      "action": {
+        "type": "move",
+        "unit_id": "A3",
+        "destination": {
+          "fila": 1,
+          "columna": 6
+        }
+      },
+      "value": -109.26315789473665,
+      "nodes_visited": 78,
+      "elapsed_seconds": 0.09055395299992597,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 10,
+      "side": "B",
+      "action": {
+        "type": "move",
+        "unit_id": "B3",
+        "destination": {
+          "fila": 13,
+          "columna": 18
+        }
+      },
+      "value": 71.63157894736833,
+      "nodes_visited": 87,
+      "elapsed_seconds": 0.09737546499991367,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 11,
+      "side": "A",
+      "action": {
+        "type": "move",
+        "unit_id": "A3",
+        "destination": {
+          "fila": 1,
+          "columna": 7
+        }
+      },
+      "value": -109.26315789473688,
+      "nodes_visited": 78,
+      "elapsed_seconds": 0.09241025699998318,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 12,
+      "side": "B",
+      "action": {
+        "type": "move",
+        "unit_id": "B3",
+        "destination": {
+          "fila": 12,
+          "columna": 18
+        }
+      },
+      "value": 71.63157894736855,
+      "nodes_visited": 87,
+      "elapsed_seconds": 0.09768034299986539,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 13,
+      "side": "A",
+      "action": {
+        "type": "move",
+        "unit_id": "A3",
+        "destination": {
+          "fila": 1,
+          "columna": 8
+        }
+      },
+      "value": -109.26315789473688,
+      "nodes_visited": 78,
+      "elapsed_seconds": 0.09415429400019093,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 14,
+      "side": "B",
+      "action": {
+        "type": "move",
+        "unit_id": "B3",
+        "destination": {
+          "fila": 11,
+          "columna": 18
+        }
+      },
+      "value": 71.63157894736833,
+      "nodes_visited": 93,
+      "elapsed_seconds": 0.10132202599993434,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 15,
+      "side": "A",
+      "action": {
+        "type": "move",
+        "unit_id": "A3",
+        "destination": {
+          "fila": 2,
+          "columna": 8
+        }
+      },
+      "value": -109.26315789473688,
+      "nodes_visited": 72,
+      "elapsed_seconds": 0.08536800299998504,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 16,
+      "side": "B",
+      "action": {
+        "type": "move",
+        "unit_id": "B3",
+        "destination": {
+          "fila": 10,
+          "columna": 18
+        }
+      },
+      "value": 71.63157894736855,
+      "nodes_visited": 93,
+      "elapsed_seconds": 0.102439583999967,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 17,
+      "side": "A",
+      "action": {
+        "type": "move",
+        "unit_id": "A3",
+        "destination": {
+          "fila": 3,
+          "columna": 8
+        }
+      },
+      "value": -109.26315789473688,
+      "nodes_visited": 76,
+      "elapsed_seconds": 0.08638913999993747,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 18,
+      "side": "B",
+      "action": {
+        "type": "move",
+        "unit_id": "B3",
+        "destination": {
+          "fila": 10,
+          "columna": 17
+        }
+      },
+      "value": 71.63157894736833,
+      "nodes_visited": 84,
+      "elapsed_seconds": 0.09116993199995704,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 19,
+      "side": "A",
+      "action": {
+        "type": "move",
+        "unit_id": "A3",
+        "destination": {
+          "fila": 4,
+          "columna": 8
+        }
+      },
+      "value": -109.26315789473665,
+      "nodes_visited": 76,
+      "elapsed_seconds": 0.08574091099990255,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 20,
+      "side": "B",
+      "action": {
+        "type": "move",
+        "unit_id": "B3",
+        "destination": {
+          "fila": 10,
+          "columna": 16
+        }
+      },
+      "value": 71.63157894736833,
+      "nodes_visited": 84,
+      "elapsed_seconds": 0.09093346399981783,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 21,
+      "side": "A",
+      "action": {
+        "type": "move",
+        "unit_id": "A3",
+        "destination": {
+          "fila": 5,
+          "columna": 8
+        }
+      },
+      "value": -109.26315789473688,
+      "nodes_visited": 76,
+      "elapsed_seconds": 0.08348913300005734,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 22,
+      "side": "B",
+      "action": {
+        "type": "move",
+        "unit_id": "B3",
+        "destination": {
+          "fila": 10,
+          "columna": 15
+        }
+      },
+      "value": 71.63157894736855,
+      "nodes_visited": 77,
+      "elapsed_seconds": 0.08458876300005613,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 23,
+      "side": "A",
+      "action": {
+        "type": "move",
+        "unit_id": "A3",
+        "destination": {
+          "fila": 6,
+          "columna": 8
+        }
+      },
+      "value": -109.26315789473688,
+      "nodes_visited": 74,
+      "elapsed_seconds": 0.08075242500012791,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 24,
+      "side": "B",
+      "action": {
+        "type": "move",
+        "unit_id": "B3",
+        "destination": {
+          "fila": 10,
+          "columna": 14
+        }
+      },
+      "value": 71.63157894736833,
+      "nodes_visited": 79,
+      "elapsed_seconds": 0.11204304099987894,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 25,
+      "side": "A",
+      "action": {
+        "type": "move",
+        "unit_id": "A3",
+        "destination": {
+          "fila": 6,
+          "columna": 9
+        }
+      },
+      "value": -109.26315789473688,
+      "nodes_visited": 83,
+      "elapsed_seconds": 0.08903486100007285,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 26,
+      "side": "B",
+      "action": {
+        "type": "move",
+        "unit_id": "B3",
+        "destination": {
+          "fila": 10,
+          "columna": 13
+        }
+      },
+      "value": 71.63157894736855,
+      "nodes_visited": 72,
+      "elapsed_seconds": 0.07911394300003849,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 27,
+      "side": "A",
+      "action": {
+        "type": "move",
+        "unit_id": "A3",
+        "destination": {
+          "fila": 6,
+          "columna": 10
+        }
+      },
+      "value": -109.26315789473688,
+      "nodes_visited": 81,
+      "elapsed_seconds": 0.08306924100020296,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 28,
+      "side": "B",
+      "action": {
+        "type": "move",
+        "unit_id": "B3",
+        "destination": {
+          "fila": 10,
+          "columna": 12
+        }
+      },
+      "value": 71.63157894736833,
+      "nodes_visited": 77,
+      "elapsed_seconds": 0.07817653899996913,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 29,
+      "side": "A",
+      "action": {
+        "type": "move",
+        "unit_id": "A3",
+        "destination": {
+          "fila": 7,
+          "columna": 10
+        }
+      },
+      "value": -109.26315789473688,
+      "nodes_visited": 74,
+      "elapsed_seconds": 0.07716496399984862,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 30,
+      "side": "B",
+      "action": {
+        "type": "move",
+        "unit_id": "B3",
+        "destination": {
+          "fila": 10,
+          "columna": 11
+        }
+      },
+      "value": 71.63157894736855,
+      "nodes_visited": 84,
+      "elapsed_seconds": 0.08870872800002871,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 31,
+      "side": "A",
+      "action": {
+        "type": "move",
+        "unit_id": "A3",
+        "destination": {
+          "fila": 8,
+          "columna": 10
+        }
+      },
+      "value": -83.63157894736855,
+      "nodes_visited": 48,
+      "elapsed_seconds": 0.06205691099989963,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 32,
+      "side": "B",
+      "action": {
+        "type": "move",
+        "unit_id": "B1",
+        "destination": {
+          "fila": 18,
+          "columna": 18
+        }
+      },
+      "value": 46.0,
+      "nodes_visited": 75,
+      "elapsed_seconds": 0.0834393600000567,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 33,
+      "side": "A",
+      "action": {
+        "type": "move",
+        "unit_id": "A3",
+        "destination": {
+          "fila": 9,
+          "columna": 10
+        }
+      },
+      "value": -58.0,
+      "nodes_visited": 45,
+      "elapsed_seconds": 0.060571740000114005,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 34,
+      "side": "B",
+      "action": {
+        "type": "move",
+        "unit_id": "B1",
+        "destination": {
+          "fila": 17,
+          "columna": 18
+        }
+      },
+      "value": 46.0,
+      "nodes_visited": 30,
+      "elapsed_seconds": 0.04967099500004224,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 35,
+      "side": "A",
+      "action": {
+        "type": "move",
+        "unit_id": "A1",
+        "destination": {
+          "fila": 0,
+          "columna": 2
+        }
+      },
+      "value": -58.0,
+      "nodes_visited": 41,
+      "elapsed_seconds": 0.06424906799998098,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 36,
+      "side": "B",
+      "action": {
+        "type": "move",
+        "unit_id": "B1",
+        "destination": {
+          "fila": 16,
+          "columna": 18
+        }
+      },
+      "value": 46.0,
+      "nodes_visited": 36,
+      "elapsed_seconds": 0.0753178760000992,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 37,
+      "side": "A",
+      "action": {
+        "type": "move",
+        "unit_id": "A1",
+        "destination": {
+          "fila": 0,
+          "columna": 3
+        }
+      },
+      "value": -58.0,
+      "nodes_visited": 41,
+      "elapsed_seconds": 0.06654274800007443,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 38,
+      "side": "B",
+      "action": {
+        "type": "move",
+        "unit_id": "B1",
+        "destination": {
+          "fila": 15,
+          "columna": 18
+        }
+      },
+      "value": 46.0,
+      "nodes_visited": 36,
+      "elapsed_seconds": 0.05893420999996124,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 39,
+      "side": "A",
+      "action": {
+        "type": "move",
+        "unit_id": "A1",
+        "destination": {
+          "fila": 0,
+          "columna": 4
+        }
+      },
+      "value": -58.0,
+      "nodes_visited": 41,
+      "elapsed_seconds": 0.12849887600009424,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 40,
+      "side": "B",
+      "action": {
+        "type": "move",
+        "unit_id": "B1",
+        "destination": {
+          "fila": 14,
+          "columna": 18
+        }
+      },
+      "value": 46.0,
+      "nodes_visited": 36,
+      "elapsed_seconds": 0.06160256600014691,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 41,
+      "side": "A",
+      "action": {
+        "type": "move",
+        "unit_id": "A1",
+        "destination": {
+          "fila": 0,
+          "columna": 5
+        }
+      },
+      "value": -58.0,
+      "nodes_visited": 41,
+      "elapsed_seconds": 0.06439525800010415,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 42,
+      "side": "B",
+      "action": {
+        "type": "move",
+        "unit_id": "B1",
+        "destination": {
+          "fila": 13,
+          "columna": 18
+        }
+      },
+      "value": 46.0,
+      "nodes_visited": 36,
+      "elapsed_seconds": 0.06220642600010251,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 43,
+      "side": "A",
+      "action": {
+        "type": "move",
+        "unit_id": "A1",
+        "destination": {
+          "fila": 0,
+          "columna": 6
+        }
+      },
+      "value": -58.0,
+      "nodes_visited": 41,
+      "elapsed_seconds": 0.0645248339999398,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 44,
+      "side": "B",
+      "action": {
+        "type": "move",
+        "unit_id": "B1",
+        "destination": {
+          "fila": 12,
+          "columna": 18
+        }
+      },
+      "value": 46.0,
+      "nodes_visited": 36,
+      "elapsed_seconds": 0.06018839099988327,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 45,
+      "side": "A",
+      "action": {
+        "type": "move",
+        "unit_id": "A1",
+        "destination": {
+          "fila": 0,
+          "columna": 7
+        }
+      },
+      "value": -58.0,
+      "nodes_visited": 41,
+      "elapsed_seconds": 0.06552594400000089,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 46,
+      "side": "B",
+      "action": {
+        "type": "move",
+        "unit_id": "B1",
+        "destination": {
+          "fila": 11,
+          "columna": 18
+        }
+      },
+      "value": 46.0,
+      "nodes_visited": 36,
+      "elapsed_seconds": 0.08025304099987807,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 47,
+      "side": "A",
+      "action": {
+        "type": "move",
+        "unit_id": "A1",
+        "destination": {
+          "fila": 0,
+          "columna": 8
+        }
+      },
+      "value": -58.0,
+      "nodes_visited": 41,
+      "elapsed_seconds": 0.077418175000048,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 48,
+      "side": "B",
+      "action": {
+        "type": "move",
+        "unit_id": "B1",
+        "destination": {
+          "fila": 10,
+          "columna": 18
+        }
+      },
+      "value": 46.0,
+      "nodes_visited": 40,
+      "elapsed_seconds": 0.07290203200000178,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 49,
+      "side": "A",
+      "action": {
+        "type": "move",
+        "unit_id": "A1",
+        "destination": {
+          "fila": 1,
+          "columna": 8
+        }
+      },
+      "value": -58.0,
+      "nodes_visited": 45,
+      "elapsed_seconds": 0.07149831400010953,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 50,
+      "side": "B",
+      "action": {
+        "type": "move",
+        "unit_id": "B1",
+        "destination": {
+          "fila": 10,
+          "columna": 17
+        }
+      },
+      "value": 46.0,
+      "nodes_visited": 52,
+      "elapsed_seconds": 0.08172792599998502,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 51,
+      "side": "A",
+      "action": {
+        "type": "move",
+        "unit_id": "A1",
+        "destination": {
+          "fila": 2,
+          "columna": 8
+        }
+      },
+      "value": -58.0,
+      "nodes_visited": 48,
+      "elapsed_seconds": 0.08500959800016972,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 52,
+      "side": "B",
+      "action": {
+        "type": "move",
+        "unit_id": "B1",
+        "destination": {
+          "fila": 10,
+          "columna": 16
+        }
+      },
+      "value": 46.0,
+      "nodes_visited": 52,
+      "elapsed_seconds": 0.08886534499993104,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 53,
+      "side": "A",
+      "action": {
+        "type": "move",
+        "unit_id": "A1",
+        "destination": {
+          "fila": 3,
+          "columna": 8
+        }
+      },
+      "value": -58.0,
+      "nodes_visited": 48,
+      "elapsed_seconds": 0.07274771900006272,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 54,
+      "side": "B",
+      "action": {
+        "type": "move",
+        "unit_id": "B1",
+        "destination": {
+          "fila": 10,
+          "columna": 15
+        }
+      },
+      "value": 46.0,
+      "nodes_visited": 52,
+      "elapsed_seconds": 0.07697067999993124,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 55,
+      "side": "A",
+      "action": {
+        "type": "move",
+        "unit_id": "A1",
+        "destination": {
+          "fila": 4,
+          "columna": 8
+        }
+      },
+      "value": -58.0,
+      "nodes_visited": 48,
+      "elapsed_seconds": 0.07507282699998541,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 56,
+      "side": "B",
+      "action": {
+        "type": "move",
+        "unit_id": "B1",
+        "destination": {
+          "fila": 10,
+          "columna": 14
+        }
+      },
+      "value": 46.0,
+      "nodes_visited": 52,
+      "elapsed_seconds": 0.07535256899996057,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 57,
+      "side": "A",
+      "action": {
+        "type": "move",
+        "unit_id": "A1",
+        "destination": {
+          "fila": 5,
+          "columna": 8
+        }
+      },
+      "value": -58.0,
+      "nodes_visited": 48,
+      "elapsed_seconds": 0.07489692099989043,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 58,
+      "side": "B",
+      "action": {
+        "type": "move",
+        "unit_id": "B1",
+        "destination": {
+          "fila": 10,
+          "columna": 13
+        }
+      },
+      "value": 46.0,
+      "nodes_visited": 47,
+      "elapsed_seconds": 0.07006348899994919,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 59,
+      "side": "A",
+      "action": {
+        "type": "move",
+        "unit_id": "A1",
+        "destination": {
+          "fila": 6,
+          "columna": 8
+        }
+      },
+      "value": -58.0,
+      "nodes_visited": 45,
+      "elapsed_seconds": 0.06828004900012274,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 60,
+      "side": "B",
+      "action": {
+        "type": "move",
+        "unit_id": "B1",
+        "destination": {
+          "fila": 10,
+          "columna": 12
+        }
+      },
+      "value": 46.0,
+      "nodes_visited": 49,
+      "elapsed_seconds": 0.07582533200002217,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 61,
+      "side": "A",
+      "action": {
+        "type": "move",
+        "unit_id": "A1",
+        "destination": {
+          "fila": 6,
+          "columna": 9
+        }
+      },
+      "value": -51.0,
+      "nodes_visited": 51,
+      "elapsed_seconds": 0.07310882299998411,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 62,
+      "side": "B",
+      "action": {
+        "type": "move",
+        "unit_id": "B2",
+        "destination": {
+          "fila": 17,
+          "columna": 19
+        }
+      },
+      "value": 39.0,
+      "nodes_visited": 41,
+      "elapsed_seconds": 0.057952778999833754,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 63,
+      "side": "A",
+      "action": {
+        "type": "move",
+        "unit_id": "A1",
+        "destination": {
+          "fila": 6,
+          "columna": 10
+        }
+      },
+      "value": -44.0,
+      "nodes_visited": 46,
+      "elapsed_seconds": 0.061597687999892514,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 64,
+      "side": "B",
+      "action": {
+        "type": "move",
+        "unit_id": "B2",
+        "destination": {
+          "fila": 16,
+          "columna": 19
+        }
+      },
+      "value": 32.0,
+      "nodes_visited": 45,
+      "elapsed_seconds": 0.06509775799986528,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 65,
+      "side": "A",
+      "action": {
+        "type": "move",
+        "unit_id": "A1",
+        "destination": {
+          "fila": 7,
+          "columna": 10
+        }
+      },
+      "value": -37.0,
+      "nodes_visited": 46,
+      "elapsed_seconds": 0.06336754799986011,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 66,
+      "side": "B",
+      "action": {
+        "type": "move",
+        "unit_id": "B2",
+        "destination": {
+          "fila": 15,
+          "columna": 19
+        }
+      },
+      "value": 25.0,
+      "nodes_visited": 51,
+      "elapsed_seconds": 0.07711138200011192,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 67,
+      "side": "A",
+      "action": {
+        "type": "move",
+        "unit_id": "A1",
+        "destination": {
+          "fila": 8,
+          "columna": 10
+        }
+      },
+      "value": -30.0,
+      "nodes_visited": 51,
+      "elapsed_seconds": 0.07936597399998391,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 68,
+      "side": "B",
+      "action": {
+        "type": "move",
+        "unit_id": "B2",
+        "destination": {
+          "fila": 14,
+          "columna": 19
+        }
+      },
+      "value": 25.0,
+      "nodes_visited": 50,
+      "elapsed_seconds": 0.0671864099999766,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 69,
+      "side": "A",
+      "action": {
+        "type": "move",
+        "unit_id": "A2",
+        "destination": {
+          "fila": 1,
+          "columna": 1
+        }
+      },
+      "value": -30.0,
+      "nodes_visited": 52,
+      "elapsed_seconds": 0.06964803300002131,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 70,
+      "side": "B",
+      "action": {
+        "type": "move",
+        "unit_id": "B2",
+        "destination": {
+          "fila": 13,
+          "columna": 19
+        }
+      },
+      "value": 25.0,
+      "nodes_visited": 55,
+      "elapsed_seconds": 0.0767654600001606,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 71,
+      "side": "A",
+      "action": {
+        "type": "move",
+        "unit_id": "A2",
+        "destination": {
+          "fila": 1,
+          "columna": 2
+        }
+      },
+      "value": -30.0,
+      "nodes_visited": 57,
+      "elapsed_seconds": 0.07824489300014648,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 72,
+      "side": "B",
+      "action": {
+        "type": "move",
+        "unit_id": "B2",
+        "destination": {
+          "fila": 12,
+          "columna": 19
+        }
+      },
+      "value": 25.0,
+      "nodes_visited": 55,
+      "elapsed_seconds": 0.07460898699991958,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 73,
+      "side": "A",
+      "action": {
+        "type": "move",
+        "unit_id": "A2",
+        "destination": {
+          "fila": 1,
+          "columna": 3
+        }
+      },
+      "value": -30.0,
+      "nodes_visited": 57,
+      "elapsed_seconds": 0.07587675900003887,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 74,
+      "side": "B",
+      "action": {
+        "type": "move",
+        "unit_id": "B2",
+        "destination": {
+          "fila": 11,
+          "columna": 19
+        }
+      },
+      "value": 25.0,
+      "nodes_visited": 55,
+      "elapsed_seconds": 0.07459270300000753,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 75,
+      "side": "A",
+      "action": {
+        "type": "move",
+        "unit_id": "A2",
+        "destination": {
+          "fila": 1,
+          "columna": 4
+        }
+      },
+      "value": -30.0,
+      "nodes_visited": 57,
+      "elapsed_seconds": 0.07883173799996257,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 76,
+      "side": "B",
+      "action": {
+        "type": "move",
+        "unit_id": "B2",
+        "destination": {
+          "fila": 10,
+          "columna": 19
+        }
+      },
+      "value": 25.0,
+      "nodes_visited": 55,
+      "elapsed_seconds": 0.07338406899998517,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 77,
+      "side": "A",
+      "action": {
+        "type": "move",
+        "unit_id": "A2",
+        "destination": {
+          "fila": 1,
+          "columna": 5
+        }
+      },
+      "value": -30.0,
+      "nodes_visited": 61,
+      "elapsed_seconds": 0.07727799799999957,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 78,
+      "side": "B",
+      "action": {
+        "type": "move",
+        "unit_id": "B2",
+        "destination": {
+          "fila": 10,
+          "columna": 18
+        }
+      },
+      "value": 25.0,
+      "nodes_visited": 59,
+      "elapsed_seconds": 0.07663285500007078,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 79,
+      "side": "A",
+      "action": {
+        "type": "move",
+        "unit_id": "A2",
+        "destination": {
+          "fila": 1,
+          "columna": 6
+        }
+      },
+      "value": -30.0,
+      "nodes_visited": 64,
+      "elapsed_seconds": 0.08253325400005451,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 80,
+      "side": "B",
+      "action": {
+        "type": "move",
+        "unit_id": "B2",
+        "destination": {
+          "fila": 10,
+          "columna": 17
+        }
+      },
+      "value": 25.0,
+      "nodes_visited": 64,
+      "elapsed_seconds": 0.08037944600005176,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 81,
+      "side": "A",
+      "action": {
+        "type": "move",
+        "unit_id": "A2",
+        "destination": {
+          "fila": 1,
+          "columna": 7
+        }
+      },
+      "value": -30.0,
+      "nodes_visited": 64,
+      "elapsed_seconds": 0.08095108800011985,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 82,
+      "side": "B",
+      "action": {
+        "type": "move",
+        "unit_id": "B2",
+        "destination": {
+          "fila": 10,
+          "columna": 16
+        }
+      },
+      "value": 25.0,
+      "nodes_visited": 64,
+      "elapsed_seconds": 0.09157214899983046,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 83,
+      "side": "A",
+      "action": {
+        "type": "move",
+        "unit_id": "A2",
+        "destination": {
+          "fila": 1,
+          "columna": 8
+        }
+      },
+      "value": -30.0,
+      "nodes_visited": 64,
+      "elapsed_seconds": 0.08546381999985897,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 84,
+      "side": "B",
+      "action": {
+        "type": "move",
+        "unit_id": "B2",
+        "destination": {
+          "fila": 10,
+          "columna": 15
+        }
+      },
+      "value": 25.0,
+      "nodes_visited": 66,
+      "elapsed_seconds": 0.08597319800014702,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 85,
+      "side": "A",
+      "action": {
+        "type": "move",
+        "unit_id": "A2",
+        "destination": {
+          "fila": 2,
+          "columna": 8
+        }
+      },
+      "value": -30.0,
+      "nodes_visited": 64,
+      "elapsed_seconds": 0.08202024999991409,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 86,
+      "side": "B",
+      "action": {
+        "type": "move",
+        "unit_id": "B2",
+        "destination": {
+          "fila": 10,
+          "columna": 14
+        }
+      },
+      "value": 25.0,
+      "nodes_visited": 66,
+      "elapsed_seconds": 0.08576567900013288,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 87,
+      "side": "A",
+      "action": {
+        "type": "move",
+        "unit_id": "A2",
+        "destination": {
+          "fila": 3,
+          "columna": 8
+        }
+      },
+      "value": -30.0,
+      "nodes_visited": 64,
+      "elapsed_seconds": 0.08371036800008369,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 88,
+      "side": "B",
+      "action": {
+        "type": "move",
+        "unit_id": "B2",
+        "destination": {
+          "fila": 10,
+          "columna": 13
+        }
+      },
+      "value": 25.0,
+      "nodes_visited": 66,
+      "elapsed_seconds": 0.08337687499988533,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 89,
+      "side": "A",
+      "action": {
+        "type": "move",
+        "unit_id": "A2",
+        "destination": {
+          "fila": 4,
+          "columna": 8
+        }
+      },
+      "value": -20.0,
+      "nodes_visited": 50,
+      "elapsed_seconds": 0.06531753399985973,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 90,
+      "side": "B",
+      "action": {
+        "type": "move",
+        "unit_id": "B2",
+        "destination": {
+          "fila": 9,
+          "columna": 13
+        }
+      },
+      "value": 15.0,
+      "nodes_visited": 53,
+      "elapsed_seconds": 0.06488296599991372,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 91,
+      "side": "A",
+      "action": {
+        "type": "move",
+        "unit_id": "A2",
+        "destination": {
+          "fila": 5,
+          "columna": 8
+        }
+      },
+      "value": -20.0,
+      "nodes_visited": 64,
+      "elapsed_seconds": 0.07995217300003787,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 92,
+      "side": "B",
+      "action": {
+        "type": "move",
+        "unit_id": "B2",
+        "destination": {
+          "fila": 9,
+          "columna": 12
+        }
+      },
+      "value": 15.0,
+      "nodes_visited": 63,
+      "elapsed_seconds": 0.08304918799990446,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 93,
+      "side": "A",
+      "action": {
+        "type": "move",
+        "unit_id": "A2",
+        "destination": {
+          "fila": 6,
+          "columna": 8
+        }
+      },
+      "value": -20.0,
+      "nodes_visited": 49,
+      "elapsed_seconds": 0.06319242700010363,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 94,
+      "side": "B",
+      "action": {
+        "type": "move",
+        "unit_id": "B2",
+        "destination": {
+          "fila": 8,
+          "columna": 12
+        }
+      },
+      "value": 5.0,
+      "nodes_visited": 53,
+      "elapsed_seconds": 0.06515844699993067,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 95,
+      "side": "A",
+      "action": {
+        "type": "move",
+        "unit_id": "A2",
+        "destination": {
+          "fila": 6,
+          "columna": 9
+        }
+      },
+      "value": -10.0,
+      "nodes_visited": 64,
+      "elapsed_seconds": 0.08725720600000386,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 96,
+      "side": "B",
+      "action": {
+        "type": "move",
+        "unit_id": "B2",
+        "destination": {
+          "fila": 9,
+          "columna": 12
+        }
+      },
+      "value": 5.0,
+      "nodes_visited": 59,
+      "elapsed_seconds": 0.09323248700002296,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 97,
+      "side": "A",
+      "action": {
+        "type": "move",
+        "unit_id": "A2",
+        "destination": {
+          "fila": 6,
+          "columna": 10
+        }
+      },
+      "value": -10.0,
+      "nodes_visited": 49,
+      "elapsed_seconds": 0.062238335999836636,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 98,
+      "side": "B",
+      "action": {
+        "type": "move",
+        "unit_id": "B2",
+        "destination": {
+          "fila": 8,
+          "columna": 12
+        }
+      },
+      "value": -5.0,
+      "nodes_visited": 50,
+      "elapsed_seconds": 0.061341730999856736,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 99,
+      "side": "A",
+      "action": {
+        "type": "move",
+        "unit_id": "A2",
+        "destination": {
+          "fila": 7,
+          "columna": 10
+        }
+      },
+      "value": 0.0,
+      "nodes_visited": 58,
+      "elapsed_seconds": 0.07138875700002245,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 100,
+      "side": "B",
+      "action": {
+        "type": "move",
+        "unit_id": "B2",
+        "destination": {
+          "fila": 9,
+          "columna": 12
+        }
+      },
+      "value": 5.0,
+      "nodes_visited": 49,
+      "elapsed_seconds": 0.060634497000137344,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 101,
+      "side": "A",
+      "action": {
+        "type": "move",
+        "unit_id": "A2",
+        "destination": {
+          "fila": 6,
+          "columna": 10
+        }
+      },
+      "value": -10.0,
+      "nodes_visited": 40,
+      "elapsed_seconds": 0.04804415099988546,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 102,
+      "side": "B",
+      "action": {
+        "type": "move",
+        "unit_id": "B2",
+        "destination": {
+          "fila": 8,
+          "columna": 12
+        }
+      },
+      "value": -5.0,
+      "nodes_visited": 50,
+      "elapsed_seconds": 0.060120561999838174,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 103,
+      "side": "A",
+      "action": {
+        "type": "move",
+        "unit_id": "A2",
+        "destination": {
+          "fila": 7,
+          "columna": 10
+        }
+      },
+      "value": 0.0,
+      "nodes_visited": 58,
+      "elapsed_seconds": 0.07202661699989221,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 104,
+      "side": "B",
+      "action": {
+        "type": "move",
+        "unit_id": "B2",
+        "destination": {
+          "fila": 9,
+          "columna": 12
+        }
+      },
+      "value": 5.0,
+      "nodes_visited": 49,
+      "elapsed_seconds": 0.059227761000101964,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    },
+    {
+      "turn": 105,
+      "side": "A",
+      "action": {
+        "type": "move",
+        "unit_id": "A2",
+        "destination": {
+          "fila": 6,
+          "columna": 10
+        }
+      },
+      "value": -10.0,
+      "nodes_visited": 40,
+      "elapsed_seconds": 0.04569276799998079,
+      "queen_carrier_after": null,
+      "queen_after": {
+        "fila": 10,
+        "columna": 10
+      },
+      "winner_after": null
+    }
+  ]
+}

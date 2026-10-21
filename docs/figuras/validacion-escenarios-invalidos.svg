@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="950" height="370" viewBox="0 0 950 370">
+<rect width="100%" height="100%" fill="#f7fafb"/>
+<style>text{font-family:Inter,Arial,sans-serif;fill:#22394b}.title{font-size:21px;font-weight:750}.small{font-size:13px;fill:#55707a}.panel{font-size:15px;font-weight:700}</style>
+<text x="28" y="38" class="title">Validación · Dos JSON que deben rechazarse</text>
+<text x="28" y="60" class="small">Ambos se encuentran en scenarios/error/ y preservan la partida anterior ante una carga fallida</text>
+<text x="25" y="91" class="panel">Unidad sobre obstáculo</text>
+<rect x="21" y="104" width="204" height="204" fill="#fff" rx="7"/>
+<rect x="27.0" y="110.0" width="47" height="47" fill="#edf3f6" rx="1.2"/>
+<rect x="75.0" y="110.0" width="47" height="47" fill="#edf3f6" rx="1.2"/>
+<rect x="123.0" y="110.0" width="47" height="47" fill="#bfdfc7" rx="1.2"/>
+<rect x="171.0" y="110.0" width="47" height="47" fill="#bfdfc7" rx="1.2"/>
+<rect x="27.0" y="158.0" width="47" height="47" fill="#edf3f6" rx="1.2"/>
+<rect x="75.0" y="158.0" width="47" height="47" fill="#30485a" rx="1.2"/>
+<rect x="123.0" y="158.0" width="47" height="47" fill="#7fa98c" rx="1.2"/>
+<rect x="171.0" y="158.0" width="47" height="47" fill="#bfdfc7" rx="1.2"/>
+<rect x="27.0" y="206.0" width="47" height="47" fill="#edf3f6" rx="1.2"/>
+<rect x="75.0" y="206.0" width="47" height="47" fill="#edf3f6" rx="1.2"/>
+<rect x="123.0" y="206.0" width="47" height="47" fill="#8ba6b3" rx="1.2"/>
+<rect x="171.0" y="206.0" width="47" height="47" fill="#bfdfc7" rx="1.2"/>
+<rect x="27.0" y="254.0" width="47" height="47" fill="#bfdfc7" rx="1.2"/>
+<rect x="75.0" y="254.0" width="47" height="47" fill="#bfdfc7" rx="1.2"/>
+<rect x="123.0" y="254.0" width="47" height="47" fill="#edf3f6" rx="1.2"/>
+<rect x="171.0" y="254.0" width="47" height="47" fill="#edf3f6" rx="1.2"/>
+<rect x="31.799999999999997" y="114.8" width="38.400000000000006" height="38.400000000000006" rx="4" fill="none" stroke="#2086bd" stroke-width="2"/>
+<rect x="175.8" y="258.8" width="38.400000000000006" height="38.400000000000006" rx="4" fill="none" stroke="#c64d57" stroke-width="2"/>
+<polygon points="147.0,216.56 160.44,230.0 147.0,243.44 133.56,230.0" fill="#f7cf55" stroke="#8c6b1f" stroke-width="1.2"/>
+<circle cx="99.0" cy="182.0" r="12.96" fill="#2079b0" stroke="white" stroke-width="1.4"/>
+<text x="99.0" y="186.56" text-anchor="middle" font-size="13.0" font-weight="700" fill="white">A1</text>
+<circle cx="51.0" cy="182.0" r="12.96" fill="#2079b0" stroke="white" stroke-width="1.4"/>
+<text x="51.0" y="186.56" text-anchor="middle" font-size="13.0" font-weight="700" fill="white">A2</text>
+<circle cx="147.0" cy="278.0" r="12.96" fill="#bd485b" stroke="white" stroke-width="1.4"/>
+<text x="147.0" y="282.56" text-anchor="middle" font-size="13.0" font-weight="700" fill="white">B1</text>
+<circle cx="195.0" cy="230.0" r="12.96" fill="#bd485b" stroke="white" stroke-width="1.4"/>
+<text x="195.0" y="234.56" text-anchor="middle" font-size="13.0" font-weight="700" fill="white">B2</text>
+<circle cx="99.0" cy="182.0" r="23.04" stroke="#f04a35" fill="none" stroke-width="3.2"/>
+<text x="300" y="135" class="small">positions_07_unidad_en_muro.json</text>
+<text x="300" y="158" class="small">unidades[0] en (1,1): casilla muro</text>
+<text x="490" y="91" class="panel">Costo transitable no positivo</text>
+<rect x="484" y="104" width="204" height="204" fill="#fff" rx="7"/>
+<rect x="490.0" y="110.0" width="47" height="47" fill="#edf3f6" rx="1.2"/>
+<rect x="538.0" y="110.0" width="47" height="47" fill="#edf3f6" rx="1.2"/>
+<rect x="586.0" y="110.0" width="47" height="47" fill="#bfdfc7" rx="1.2"/>
+<rect x="634.0" y="110.0" width="47" height="47" fill="#bfdfc7" rx="1.2"/>
+<rect x="490.0" y="158.0" width="47" height="47" fill="#edf3f6" rx="1.2"/>
+<rect x="538.0" y="158.0" width="47" height="47" fill="#30485a" rx="1.2"/>
+<rect x="586.0" y="158.0" width="47" height="47" fill="#7fa98c" rx="1.2"/>
+<rect x="634.0" y="158.0" width="47" height="47" fill="#bfdfc7" rx="1.2"/>
+<rect x="490.0" y="206.0" width="47" height="47" fill="#edf3f6" rx="1.2"/>
+<rect x="538.0" y="206.0" width="47" height="47" fill="#edf3f6" rx="1.2"/>
+<rect x="586.0" y="206.0" width="47" height="47" fill="#8ba6b3" rx="1.2"/>
+<rect x="634.0" y="206.0" width="47" height="47" fill="#bfdfc7" rx="1.2"/>
+<rect x="490.0" y="254.0" width="47" height="47" fill="#bfdfc7" rx="1.2"/>
+<rect x="538.0" y="254.0" width="47" height="47" fill="#bfdfc7" rx="1.2"/>
+<rect x="586.0" y="254.0" width="47" height="47" fill="#edf3f6" rx="1.2"/>
+<rect x="634.0" y="254.0" width="47" height="47" fill="#edf3f6" rx="1.2"/>
+<rect x="494.8" y="114.8" width="38.400000000000006" height="38.400000000000006" rx="4" fill="none" stroke="#2086bd" stroke-width="2"/>
+<rect x="638.8" y="258.8" width="38.400000000000006" height="38.400000000000006" rx="4" fill="none" stroke="#c64d57" stroke-width="2"/>
+<polygon points="610.0,216.56 623.44,230.0 610.0,243.44 596.56,230.0" fill="#f7cf55" stroke="#8c6b1f" stroke-width="1.2"/>
+<circle cx="562.0" cy="134.0" r="12.96" fill="#2079b0" stroke="white" stroke-width="1.4"/>
+<text x="562.0" y="138.56" text-anchor="middle" font-size="13.0" font-weight="700" fill="white">A1</text>
+<circle cx="514.0" cy="182.0" r="12.96" fill="#2079b0" stroke="white" stroke-width="1.4"/>
+<text x="514.0" y="186.56" text-anchor="middle" font-size="13.0" font-weight="700" fill="white">A2</text>
+<circle cx="610.0" cy="278.0" r="12.96" fill="#bd485b" stroke="white" stroke-width="1.4"/>
+<text x="610.0" y="282.56" text-anchor="middle" font-size="13.0" font-weight="700" fill="white">B1</text>
+<circle cx="658.0" cy="230.0" r="12.96" fill="#bd485b" stroke="white" stroke-width="1.4"/>
+<text x="658.0" y="234.56" text-anchor="middle" font-size="13.0" font-weight="700" fill="white">B2</text>
+<text x="695" y="135" class="small">terrain_02_costo_cero.json</text>
+<text x="695" y="158" class="small">pantano.costo = 0: inválido</text>
+<text x="27" y="345" class="small">Otros rechazos: game_01_turno_C.json (turno distinto de A/B).</text>
+</svg>

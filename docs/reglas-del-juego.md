@@ -1,83 +1,38 @@
-# Reglas del juego
+# Reglas de TacticalGrid
 
-Este documento describe el comportamiento que debe implementar el motor; no es un conjunto de funciones ya implementadas. Las reglas son deterministas y simétricas para `A` y `B`.
+**Juan Camilo Cruz Parra · Sistemas Inteligentes I**
 
-## Objetivo
+TacticalGrid es un juego táctico de dos bandos, **A** y **B**. El objetivo consiste en recoger una reina neutral y transportarla legalmente hasta la base del propio equipo. El tablero, los terrenos, los costos, las posiciones iniciales y las bases se definen mediante un archivo JSON.
 
-La reina empieza como recurso neutral. Una unidad del bando que tiene el turno puede recogerla al llegar legalmente a su casilla, siempre que no tenga un rey propio en jaque. Si una unidad portadora llega legalmente a la base de su bando, ese bando gana **sin acción adicional de entrega**.
+## Unidades y movimientos
 
-## Unidades y desplazamientos
+- **`knight` / `caballo`:** salta en L (dos casillas en un eje y una en el otro); paga el costo de la casilla de destino.
+- **`rook` / `torre`:** se desplaza horizontal o verticalmente, sin atravesar obstáculos ni unidades; paga la suma de los costos de todas las casillas atravesadas, excluido el origen.
+- **`bishop` / `alfil`:** se desplaza en diagonal, sin atravesar obstáculos ni unidades; paga la suma de los costos de las casillas atravesadas, excluido el origen.
+- **`estandar`:** avanza una casilla horizontal o verticalmente; paga el costo del destino. También se aplica a nombres de tipo desconocidos que sean cadenas no vacías, conforme a la normalización del escenario.
 
-| Tipo interno | Movimiento permitido | Obstáculos intermedios | Costo |
-| --- | --- | --- | --- |
-| `knight` (caballo) | En L: dos casillas en un eje y una en el otro | Salta por encima; solo cuenta el destino | Terreno de destino |
-| `rook` (torre) | Recta horizontal o vertical, una o varias casillas | No puede atravesar bloqueos | Suma de casillas cruzadas, sin origen |
-| `bishop` (alfil) | Diagonal, una o varias casillas | No puede atravesar bloqueos | Suma de casillas cruzadas, sin origen |
-| `estandar` | **Una** casilla arriba, abajo, izquierda o derecha | No salta; solo hay destino adyacente | Terreno de destino |
+Las casillas no transitables, los reyes estáticos y las unidades aliadas impiden terminar un movimiento. No pueden coexistir dos unidades activas en la misma casilla.
 
-Los desplazamientos deben quedar dentro de la cuadrícula. No se puede terminar sobre un obstáculo, un rey ni una unidad propia. Puede terminarse en la casilla de un enemigo **si el patrón de movimiento permite capturarlo**.
+## Reina, captura y reaparición
 
-Para torre y alfil, otros actores, obstáculos y reyes bloquean las casillas intermedias. La reina en el suelo también bloquea el paso *a través* de su casilla; puede ser un destino para recogerla. Los terrenos transitables pueden tener costos diferentes; los algoritmos deben obtenerlos del escenario.
+La reina comienza en `recurso_spawn`. Una unidad puede recogerla al llegar legalmente a su posición, según las reglas del motor, o mediante la acción explícita `collect` cuando ya está sobre su casilla y está autorizada. Solo existe un portador a la vez.
 
-Los tipos internos de código se expresan en inglés por convención. El validador también admite los alias `caballo`, `torre` y `alfil` en JSON y el motor aplica sus mismos patrones de movimiento.
-
-## Turnos y acciones
-
-En cada turno se elige **una unidad móvil del bando activo** y se intenta realizar un desplazamiento completo. Un desplazamiento largo de torre o alfil consume una jugada, no un turno por casilla.
-
-Una transición de partida válida comprende, conceptualmente:
-
-1. Comprobar el bando, la unidad, su actividad y la legalidad del movimiento.
-2. Calcular costo real según el tipo de unidad y el terreno.
-3. Aplicar movimiento y captura, si corresponde.
-4. Actualizar reina, posibles reapariciones y estado de jaque derivado.
-5. Comprobar victoria o ausencia de movimientos legales; si continúa, alternar el turno.
-
-Una acción inválida no modifica ningún dato oficial, no consume turno y no genera costo. La secuencia exacta entre comprobación de victoria y reapariciones debe permanecer consistente; los casos terminales no deben cambiar de resultado por el orden interno de funciones.
-
-## Capturas y spawn
-
-Una captura ocurre cuando una unidad termina legalmente en la casilla de una unidad enemiga. La unidad capturada intenta reaparecer inmediatamente en su `spawn`, que por decisión del equipo es **su posición inicial cargada del JSON**.
-
-- Si la casilla `spawn` está transitable y libre de unidades activas, reyes y reina en el suelo, la unidad capturada reaparece allí.
-- Si no está disponible, queda inactiva fuera del tablero, conservando su `spawn`.
-- Después de cada acción se vuelve a comprobar si una unidad inactiva puede reaparecer.
-- La partida no puede tener dos unidades móviles activas ocupando la misma casilla.
-
-Si se captura al portador, la reina cae en la casilla donde ocurrió la captura. **El atacante no recoge la reina automáticamente**: hace falta una recogida posterior que cumpla las reglas. Si el atacante sigue en esa casilla, puede realizar una acción explícita de recogida que consume un turno. Esto permite que la reina esté en el suelo en una casilla ocupada temporalmente por el atacante; no equivale a dos unidades superpuestas.
+Una unidad puede capturar a un rival terminando un movimiento legal en su casilla. El capturado reaparece en su **spawn original** si está disponible; en caso contrario permanece inactivo hasta que pueda reaparecer. Si el capturado llevaba la reina, esta regresa a **`recurso_spawn`**. El atacante no la recoge automáticamente.
 
 ## Reyes y jaque
 
-Los reyes no se mueven, no pueden capturarse y no consumen turnos. Son **opcionales**: una partida sin reyes es válida y en ella no hay jaques.
+Los reyes son opcionales, permanecen inmóviles y no pueden capturarse. Si el rey propio está en jaque, el bando **no puede recoger la reina** hasta que deje de estarlo. El jaque **no impide mover ni entregar** una reina que ya se transportaba.
 
-Cuando existen, un rey está en jaque si una unidad enemiga lo amenaza según el patrón de movimiento aplicable:
+## Turnos y victoria
 
-- Caballo: las ocho posiciones en L, independientemente de obstáculos intermedios.
-- Torre: misma fila o columna, con línea de ataque sin bloqueos.
-- Alfil: misma diagonal, con línea de ataque sin bloqueos.
-- `estandar`: una casilla ortogonal adyacente (consecuencia del movimiento elegido para ese tipo).
+En una partida real, A y B alternan acciones completas. Gana el bando que entrega la reina en su base mediante un movimiento legal. Cuando el bando que debe actuar no dispone de acciones legales, el motor declara empate. No existe un empate automático por tres repeticiones ni por una cantidad fija de turnos.
 
-El jaque **solo impide recoger la reina**. No impide mover, capturar, bloquear, atacar o seguir transportando una reina que ya se tenía. No existe jaque mate. El jaque se **calcula** a partir de las posiciones: no debe guardarse como dato mutable independiente.
+## Tipos de escenario
 
-## Recogida, transporte y victoria
+| `prueba.modo` | Comportamiento |
+|---|---|
+| `busqueda` | BFS, DFS, UCS, A* o Beam calculan la ruta hipotética de **una** pieza, sin turnos enemigos y sin alterar el estado oficial. |
+| `adversarial` | Minimax y alfa-beta consideran las acciones legales de todas las unidades del bando activo y respuestas del rival; devuelven una recomendación sin ejecutarla. |
+| `partida` | Se ejecutan movimientos, capturas, recogida y entrega, con alternancia de turnos y actualización del estado oficial; incluye autopartida. |
 
-- Hay una sola reina y, como máximo, una unidad portadora.
-- Si no hay portador, la reina tiene una posición sobre el tablero.
-- Si existe portador, la reina no mantiene una segunda posición independiente en el estado interno.
-- Recogerla exige una llegada legal a su casilla, turno del bando y ausencia de jaque propio. Si la unidad ya ocupa la casilla, puede usar una acción explícita de recogida bajo las mismas condiciones; consume un turno y no desplaza la unidad.
-- Transportarla no cambia el patrón ni costo de movimiento de su unidad.
-- Si la unidad portadora llega a la base de su equipo: victoria inmediata.
-
-## Ausencia de movimientos y empate
-
-**Decisión del equipo:** si el bando al que corresponde actuar no tiene ninguna acción legal (movimiento ni recogida explícita) con sus unidades, la partida termina **en empate, sin ganador**. Deben considerarse las reapariciones correspondientes antes de declarar esa condición. No se deben inventar jugadas de «pasar turno».
-
-## Reglas de ocupación
-
-- Las unidades activas no se superponen entre sí.
-- Ninguna unidad activa ocupa obstáculo ni casilla de rey.
-- Los reyes no pueden bloquear bases y sus ubicaciones deben ser válidas.
-- La reina y una unidad pueden compartir posición en el caso excepcional de una captura de portador sin recogida automática; el estado debe distinguir posesión de mera coincidencia espacial.
-- Una partida terminada no acepta más acciones.
-
-**Referencias:** `TacticalGrid_Reglas.md`, secciones 1–6; `Primer proyecto.pdf`, pp. 2–3. Las normas de `estandar`, reyes opcionales y empate corresponden a decisiones posteriores del equipo.
+Los escenarios válidos pueden utilizar dimensiones rectangulares. El tablero de 20×20 se emplea como referencia experimental; no es el único tamaño admitido.

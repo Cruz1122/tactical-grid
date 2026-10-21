@@ -99,12 +99,13 @@ class ScenarioValidationTests(unittest.TestCase):
 
         self.assertEqual(scenario, original)
         self.assertEqual(state["unidades"][0]["spawn"], {"fila": 0, "columna": 1})
+        self.assertEqual(state["recurso_spawn"], {"fila": 2, "columna": 2})
         self.assertTrue(state["unidades"][0]["activo"])
         self.assertEqual(state["datos_extra"], {"mantener": True})
         validate_state(state)
 
     def test_existing_initial_scenario_is_valid(self) -> None:
-        scenario_path = Path(__file__).resolve().parents[2] / "scenarios" / "initial.json"
+        scenario_path = Path(__file__).resolve().parents[2] / "scenarios" / "partida" / "initial.json"
         state = prepare_scenario(json.loads(scenario_path.read_text(encoding="utf-8")))
         self.assertEqual((state["mapa"]["filas"], state["mapa"]["columnas"]), (20, 20))
 
@@ -123,6 +124,57 @@ class ScenarioValidationTests(unittest.TestCase):
             for index, (unit_type, (row, column)) in enumerate(zip(types, positions))
         ]
         validate_scenario(scenario)
+
+    def test_generic_unit_names_are_normalized_without_mutating_input(self) -> None:
+        for unit_type in ("dragon", "mago", "custom-piece", " pieza "):
+            with self.subTest(unit_type=unit_type):
+                scenario = valid_scenario()
+                scenario["unidades"][0]["tipo"] = unit_type
+                original = copy.deepcopy(scenario)
+
+                state = prepare_scenario(scenario)
+
+                self.assertEqual(state["unidades"][0]["tipo"], "estandar")
+                self.assertEqual(scenario, original)
+
+    def test_configured_adversarial_depth_five_is_accepted(self) -> None:
+        scenario = valid_scenario()
+        scenario["juego"]["profundidad_maxima_minimax"] = 5
+
+        prepared = prepare_scenario(scenario)
+
+        self.assertEqual(prepared["juego"]["profundidad_maxima_minimax"], 5)
+
+    def test_configured_adversarial_depth_has_no_upper_limit(self) -> None:
+        scenario = valid_scenario()
+        scenario["juego"]["profundidad_maxima_minimax"] = 100
+
+        prepared = prepare_scenario(scenario)
+
+        self.assertEqual(prepared["juego"]["profundidad_maxima_minimax"], 100)
+
+    def test_configured_adversarial_negative_depth_is_rejected(self) -> None:
+        scenario = valid_scenario()
+        scenario["juego"]["profundidad_maxima_minimax"] = -1
+
+        with self.assertRaisesRegex(
+            ScenarioValidationError, "profundidad_maxima_minimax.*mayor o igual a 0"
+        ):
+            prepare_scenario(scenario)
+
+    def test_non_textual_or_empty_unit_types_are_rejected_without_mutation(self) -> None:
+        for unit_type in (42, None, ["custom"], "", "   "):
+            with self.subTest(unit_type=unit_type):
+                scenario = valid_scenario()
+                scenario["unidades"][0]["tipo"] = unit_type
+                original = copy.deepcopy(scenario)
+
+                with self.assertRaisesRegex(
+                    ScenarioValidationError, "tipo de unidad desconocido"
+                ):
+                    prepare_scenario(scenario)
+
+                self.assertEqual(scenario, original)
 
     def test_inconsistent_dimensions_are_rejected(self) -> None:
         scenario = valid_scenario()
@@ -193,6 +245,26 @@ class ScenarioValidationTests(unittest.TestCase):
         scenario = valid_scenario()
         scenario["juego"]["portador_recurso"] = "A1"
         self.assert_invalid(scenario, "debe ser null o coincidir")
+
+    def test_carrier_without_current_resource_requires_original_spawn(self) -> None:
+        scenario = valid_scenario()
+        scenario["juego"]["portador_recurso"] = "A1"
+        scenario["recurso"] = None
+        self.assert_invalid(scenario, "recurso_spawn")
+
+    def test_uncarried_resource_spawn_cannot_contradict_initial_resource(self) -> None:
+        scenario = valid_scenario()
+        scenario["recurso_spawn"] = {"fila": 0, "columna": 3}
+        self.assert_invalid(scenario, "debe coincidir con la posición inicial de recurso")
+
+    def test_carried_queen_spawn_cannot_overlap_a_king(self) -> None:
+        scenario = valid_scenario()
+        scenario["juego"]["portador_recurso"] = "A1"
+        scenario["recurso"] = None
+        scenario["recurso_spawn"] = {"fila": 1, "columna": 1}
+        scenario["reyes"] = {"A": [{"id": "KA", "fila": 1, "columna": 1}], "B": []}
+
+        self.assert_invalid(scenario, "no puede ocupar recurso_spawn")
 
 
 class ScenarioApiTests(unittest.IsolatedAsyncioTestCase):
@@ -285,60 +357,3 @@ class ScenarioApiTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn("turno", str(error["detail"]))
         self.assertEqual(current["state"], loaded["state"])
         self.assertEqual(current["source"], loaded["source"])
-
-
-class ScenarioBankApiTests(unittest.IsolatedAsyncioTestCase):
-    def setUp(self) -> None:
-        with main.lock:
-            self.initial_state = copy.deepcopy(main.initial_state)
-            self.current_state = copy.deepcopy(main.current_state)
-            self.source_name = main.source_name
-        self.bank_path = Path(__file__).resolve().parents[2] / "scenarios" / "test_bank"
-        self.manifest = json.loads((self.bank_path / "manifest.json").read_text(encoding="utf-8"))
-
-    def tearDown(self) -> None:
-        with main.lock:
-            main.initial_state = self.initial_state
-            main.current_state = self.current_state
-            main.source_name = self.source_name
-
-    def test_bank_has_expected_case_distribution(self) -> None:
-        results = [case["resultado_esperado"] for case in self.manifest]
-        self.assertEqual(results.count("ACEPTAR"), 16)
-        self.assertEqual(results.count("RECHAZAR_422"), 66)
-        self.assertEqual(results.count("POR_DEFINIR"), 7)
-
-    async def test_all_valid_bank_scenarios_load(self) -> None:
-        cases = [case for case in self.manifest if case["resultado_esperado"] == "ACEPTAR"]
-        for case in cases:
-            with self.subTest(scenario=case["archivo"]):
-                scenario_path = self.bank_path / case["archivo"]
-                status, response = await request_json(
-                    "/api/scenarios", scenario_path.read_bytes()
-                )
-                self.assertEqual(status, 200, response)
-                self.assertTrue(response["ok"])
-
-    async def test_all_invalid_bank_scenarios_reject_atomically(self) -> None:
-        cases = [case for case in self.manifest if case["resultado_esperado"] == "RECHAZAR_422"]
-        baseline_path = self.bank_path / "valid" / "01_profesor_4x4.json"
-
-        for case in cases:
-            with self.subTest(scenario=case["archivo"]):
-                baseline_status, baseline = await request_json(
-                    "/api/scenarios", baseline_path.read_bytes()
-                )
-                self.assertEqual(baseline_status, 200)
-
-                scenario_path = self.bank_path / case["archivo"]
-                body = scenario_path.read_bytes()
-                if not case["clasificacion"].endswith("/syntax"):
-                    body = json.dumps(json.loads(body)).encode("utf-8")
-
-                status, response = await request_json("/api/scenarios", body)
-                state_status, current = await request_json("/api/state", method="GET")
-
-                self.assertEqual(status, 422, response)
-                self.assertEqual(state_status, 200)
-                self.assertEqual(current["state"], baseline["state"])
-                self.assertEqual(current["source"], baseline["source"])

@@ -2,17 +2,41 @@ from copy import deepcopy
 from typing import Any
 
 from backend.game.engine import check_winner
-from backend.game.validation import validate_scenario, validate_state
+from backend.game.validation import (
+    SUPPORTED_UNIT_TYPES,
+    validate_scenario,
+    validate_state,
+)
 
 
 def prepare_scenario(scenario: dict[str, Any]) -> dict[str, Any]:
-    """Prepara y valida una copia del estado inicial sin modificar la entrada.
-
-    Copia el escenario, asigna el spawn inicial y activa las unidades que no
-    declaran actividad. Recorre el escenario en O(n) tiempo y espacio.
+    """Copiar y preparar JSON externo, normalizando tipo genérico a estándar y preservando spawns.
+    
+    Purpose: Copiar y preparar JSON externo, normalizando tipo genérico a estándar y preservando spawns.
+    Preconditions: Objeto JSON acorde con campos obligatorios del profesor.
+    Postconditions: Estado interno validado y enriquecido o error sin mutar escenario original.
+    Complexity: O(F*C+U+K) más validaciones según conectividad.
+    AI usage: Yes.
+    AI intervention: IA asistió diseño/implementación de carga, normalización y prueba de escenarios.
+    Student validation: Validación del tipo genérico acordado por el usuario y tests de JSON; revisión individual pendiente.
     """
-    validate_scenario(scenario)
     state = deepcopy(scenario)
+    units = state.get("unidades") if isinstance(state, dict) else None
+    if isinstance(units, list):
+        for unit in units:
+            if not isinstance(unit, dict):
+                continue
+            unit_type = unit.get("tipo")
+            if (
+                isinstance(unit_type, str)
+                and unit_type.strip()
+                and unit_type not in SUPPORTED_UNIT_TYPES
+            ):
+                unit["tipo"] = "estandar"
+    validate_scenario(state)
+    resource_spawn = state.get("recurso_spawn") or state.get("recurso")
+    if resource_spawn is not None:
+        state["recurso_spawn"] = deepcopy(resource_spawn)
     for unit in state["unidades"]:
         initial_position = {"fila": unit["fila"], "columna": unit["columna"]}
         unit["spawn"] = initial_position

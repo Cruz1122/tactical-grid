@@ -35,6 +35,7 @@ def make_scenario(
     turn: str = "A",
     bases: dict[str, tuple[int, int]] | None = None,
     carrier: str | None = None,
+    queen_spawn: tuple[int, int] | None = None,
 ) -> dict[str, Any]:
     walls = walls or set()
     terrain = [["camino" for _ in range(columns)] for _ in range(rows)]
@@ -62,6 +63,12 @@ def make_scenario(
     }
     if carrier is None and queen is None:
         raise ValueError("Las pruebas requieren reina en tablero o portador")
+    if carrier is not None:
+        resource_spawn = queen_spawn or queen or (0, max(0, columns - 1))
+        scenario["recurso_spawn"] = {
+            "fila": resource_spawn[0],
+            "columna": resource_spawn[1],
+        }
     if kings is not None:
         scenario["reyes"] = copy.deepcopy(kings)
     return prepare_scenario(scenario)
@@ -208,17 +215,23 @@ class EngineTests(unittest.TestCase):
         self.assertTrue(victim["activo"])
         self.assertEqual((victim["fila"], victim["columna"]), (1, 2))
 
-    def test_capturing_carrier_drops_queen_under_attacker_without_pickup(self) -> None:
+    def test_capturing_carrier_returns_queen_to_original_spawn(self) -> None:
         state = make_scenario([
             {"id": "A1", "bando": "A", "tipo": "rook", "fila": 1, "columna": 1},
             {"id": "B1", "bando": "B", "tipo": "estandar", "fila": 1, "columna": 2},
         ], queen=None, carrier="B1")
+        original_queen_spawn = copy.deepcopy(state["recurso_spawn"])
+        original_victim_spawn = copy.deepcopy(state["unidades"][1]["spawn"])
         result = apply_move(state, "A1", {"fila": 1, "columna": 2})
         attacker = next(unit for unit in result["unidades"] if unit["id"] == "A1")
+        victim = next(unit for unit in result["unidades"] if unit["id"] == "B1")
 
         self.assertIsNone(result["juego"]["portador_recurso"])
-        self.assertEqual(result["recurso"], {"fila": 1, "columna": 2})
+        self.assertEqual(result["recurso"], original_queen_spawn)
+        self.assertEqual(result["recurso_spawn"], original_queen_spawn)
+        self.assertNotEqual(result["recurso"], {"fila": 1, "columna": 2})
         self.assertEqual((attacker["fila"], attacker["columna"]), (1, 2))
+        self.assertEqual(victim["spawn"], original_victim_spawn)
         validate_state(result)
 
     def test_normal_queen_pickup_and_explicit_pickup(self) -> None:
@@ -239,6 +252,23 @@ class EngineTests(unittest.TestCase):
         self.assertIsNone(collected["recurso"])
         self.assertEqual(collected["turno"], "B")
         self.assertEqual((collected["unidades"][0]["fila"], collected["unidades"][0]["columna"]), (2, 2))
+
+    def test_capturing_a_moved_carrier_does_not_move_queen_spawn(self) -> None:
+        state = make_scenario([
+            {"id": "A1", "bando": "A", "tipo": "estandar", "fila": 1, "columna": 1},
+            {"id": "B1", "bando": "B", "tipo": "rook", "fila": 4, "columna": 4},
+        ], queen=(1, 2))
+        queen_spawn = copy.deepcopy(state["recurso_spawn"])
+
+        carrier = apply_move(state, "A1", {"fila": 1, "columna": 2})
+        blocker_move = apply_move(carrier, "B1", {"fila": 4, "columna": 3})
+        moved_carrier = apply_move(blocker_move, "A1", {"fila": 1, "columna": 3})
+        captured = apply_move(moved_carrier, "B1", {"fila": 1, "columna": 3})
+
+        self.assertEqual(captured["recurso_spawn"], queen_spawn)
+        self.assertEqual(captured["recurso"], queen_spawn)
+        self.assertNotEqual(captured["recurso"], {"fila": 1, "columna": 3})
+        validate_state(captured)
 
     def test_explicit_pickup_is_rejected_while_in_check(self) -> None:
         state = make_scenario([
@@ -467,14 +497,14 @@ class EngineTests(unittest.TestCase):
         self.assertIsNone(main.initial_state["juego"]["resultado"])
         self.assertTrue(all("spawn" in unit for unit in main.initial_state["unidades"]))
 
-    def test_validate_state_accepts_queen_under_attacker_after_capture(self) -> None:
+    def test_validate_state_accepts_queen_reset_to_original_spawn_after_capture(self) -> None:
         state = make_scenario([
             {"id": "A1", "bando": "A", "tipo": "rook", "fila": 1, "columna": 1},
             {"id": "B1", "bando": "B", "tipo": "estandar", "fila": 1, "columna": 2},
         ], queen=None, carrier="B1")
         captured = apply_move(state, "A1", {"fila": 1, "columna": 2})
         validate_state(captured)
-        self.assertEqual(captured["recurso"], {"fila": 1, "columna": 2})
+        self.assertEqual(captured["recurso"], captured["recurso_spawn"])
 
 
 class EngineApiTests(unittest.IsolatedAsyncioTestCase):

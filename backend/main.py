@@ -4,7 +4,7 @@ from pathlib import Path
 from threading import RLock
 from typing import Any, Literal
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -25,12 +25,22 @@ from backend.game.engine import (
     configure_kings,
     generate_kings,
 )
-from backend.game.validation import ScenarioValidationError, validate_utf8_string
+from backend.game.presentation import (
+    build_presentation,
+    legal_move_descriptors,
+    state_revision,
+    transition_events,
+)
+from backend.game.validation import (
+    MAX_ADVERSARIAL_DEPTH,
+    ScenarioValidationError,
+    validate_utf8_string,
+)
 from backend.scenarios import prepare_scenario
 
 ROOT = Path(__file__).resolve().parent.parent
 FRONTEND = ROOT / "frontend"
-INITIAL = ROOT / "scenarios" / "initial.json"
+INITIAL = ROOT / "scenarios" / "partida" / "initial.json"
 
 with INITIAL.open(encoding="utf-8") as file:
     initial_state = prepare_scenario(json.load(file))
@@ -40,6 +50,27 @@ lock = RLock()
 
 app = FastAPI(title="TacticalGrid")
 app.mount("/assets", StaticFiles(directory=FRONTEND / "assets"), name="assets")
+
+MAX_SCENARIO_BYTES = 2 * 1024 * 1024
+MAX_BEAM_WIDTH = 64
+
+
+class DuplicateJsonKeyError(ValueError):
+    """Indica que un objeto JSON repite una clave y sería ambiguo importarlo."""
+
+
+def _load_json_without_duplicate_keys(raw: bytes) -> Any:
+    """Analiza JSON rechazando claves repetidas en cualquier objeto."""
+
+    def unique_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+        result: dict[str, Any] = {}
+        for key, value in pairs:
+            if key in result:
+                raise DuplicateJsonKeyError(f"Clave JSON duplicada: {key!r}")
+            result[key] = value
+        return result
+
+    return json.loads(raw, object_pairs_hook=unique_object)
 
 
 class Position(BaseModel):
@@ -55,10 +86,12 @@ class Position(BaseModel):
 class MoveRequest(BaseModel):
     unit_id: str = Field(min_length=1)
     destination: Position
+    revision: str | None = Field(default=None, min_length=1)
 
 
 class CollectRequest(BaseModel):
     unit_id: str = Field(min_length=1)
+    revision: str | None = Field(default=None, min_length=1)
 
 
 class KingConfigurationRequest(BaseModel):
@@ -72,12 +105,12 @@ class SearchRequest(BaseModel):
     unit_id: str = Field(min_length=1)
     goal: Position
     heuristic: Literal["manhattan", "second"] = "manhattan"
-    k: StrictInt = Field(default=2, ge=1)
+    k: StrictInt = Field(default=2, ge=1, le=MAX_BEAM_WIDTH)
 
 
 class AdversarialRequest(BaseModel):
     algorithm: Literal["minimax", "alpha_beta"]
-    depth: StrictInt | None = Field(default=None, ge=0)
+    depth: StrictInt | None = Field(default=None, ge=0, le=MAX_ADVERSARIAL_DEPTH)
     action_order: Literal["normal", "reverse"] = "normal"
 
 
@@ -89,8 +122,8 @@ class VerifyRequest(BaseModel):
 class TestRequest(BaseModel):
     algorithm: Literal["bfs", "dfs", "ucs", "astar", "beam", "minimax", "alpha_beta"] = "bfs"
     heuristic: Literal["manhattan", "second"] = "manhattan"
-    k: StrictInt = Field(default=2, ge=1)
-    depth: StrictInt | None = Field(default=None, ge=0)
+    k: StrictInt = Field(default=2, ge=1, le=MAX_BEAM_WIDTH)
+    depth: StrictInt | None = Field(default=None, ge=0, le=MAX_ADVERSARIAL_DEPTH)
     action_order: Literal["normal", "reverse"] = "normal"
 
 
@@ -146,11 +179,95 @@ def scene_script():
     return FileResponse(FRONTEND / "scene.js", media_type="text/javascript")
 
 
+def state_response(
+    state: dict[str, Any],
+    *,
+    source: str | None = None,
+    previous: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Project a state response without adding transient UI data to the state."""
+    response: dict[str, Any] = {
+        "state": deepcopy(state),
+        "presentation": build_presentation(
+            state,
+            transition_events(previous, state) if previous is not None else (),
+        ),
+    }
+    if source is not None:
+        response["source"] = source
+    return response
+
+
 @app.get("/api/state")
 def get_state():
     """Devuelve una copia del estado oficial y el nombre del escenario cargado."""
     with lock:
-        return {"state": deepcopy(current_state), "source": source_name}
+        return state_response(current_state, source=source_name)
+
+
+@app.get("/api/legal-moves")
+def get_legal_moves(unit_id: str = Query(min_length=1)):
+    """Exponer destinos legales y recogida permitida para unidad activa del turno.
+    
+    Purpose: Exponer destinos legales y recogida permitida para unidad activa del turno.
+    Preconditions: Petición con ID válido y estado oficial inicializado.
+    Postconditions: Respuesta de solo lectura con destinos, capturas y presentación.
+    Complexity: Dominada por generación de legal_moves y presentación del estado.
+    AI usage: Yes.
+    AI intervention: IA contribuyó a integración de controles/indicadores y comprobación de turno.
+    Student validation: Tests del frontend/backend y legalidad de destinos; revisión humana pendiente.
+    """
+    with lock:
+        state = deepcopy(current_state)
+        source = source_name
+
+    unit = next(
+        (
+            candidate
+            for candidate in state.get("unidades", [])
+            if isinstance(candidate, dict) and candidate.get("id") == unit_id
+        ),
+        None,
+    )
+    if unit is None:
+        raise HTTPException(status_code=404, detail=f"No existe la unidad {unit_id!r}")
+
+    game = state.get("juego", {})
+    reason: str | None = None
+    allowed = True
+    if isinstance(game, dict) and game.get("estado") == "finalizado":
+        allowed = False
+        reason = "finalizado"
+    elif unit.get("activo", True) is not True:
+        allowed = False
+        reason = "inactiva"
+    elif unit.get("bando") != state.get("turno"):
+        allowed = False
+        reason = "turno"
+
+    destinations = legal_move_descriptors(state, unit_id) if allowed else []
+    normal = [
+        {"row": item["row"], "column": item["column"]}
+        for item in destinations
+        if item["kind"] == "normal"
+    ]
+    captures = [
+        {"row": item["row"], "column": item["column"]}
+        for item in destinations
+        if item["kind"] == "capture"
+    ]
+    presentation = build_presentation(state)
+    return {
+        "unit_id": unit_id,
+        "allowed": allowed,
+        "reason": reason,
+        "destinations": destinations,
+        "normal": normal,
+        "captures": captures,
+        "collect_allowed": presentation["recogida_autorizada"].get(unit_id, False),
+        "presentation": presentation,
+        "source": source,
+    }
 
 
 @app.post(
@@ -182,19 +299,31 @@ def get_state():
     },
 )
 async def load_scenario(request: Request):
-    """Valida un escenario JSON o adjunto antes de sustituir el estado oficial.
-
-    Acepta JSON directo o un archivo multipart en el campo «file» y conserva
-    el formato envuelto del cliente. La validación es O(n); si falla, responde
-    HTTP 422 sin modificar la partida.
+    """Recibir JSON directo o multipart, validar y sustituir el estado de forma atómica.
+    
+    Purpose: Recibir JSON directo o multipart, validar y sustituir el estado de forma atómica.
+    Preconditions: Solicitud HTTP con JSON UTF-8 válido y dentro del límite de tamaño.
+    Postconditions: Nuevo escenario oficial solo tras validación total; errores HTTP sin reemplazo.
+    Complexity: O(B+F*C+U) en tamaño de payload y validaciones.
+    AI usage: Yes.
+    AI intervention: IA asistió integración de API, validación anti-claves duplicadas y atomicidad.
+    Student validation: Casos HTTP de carga y pruebas del backend; revisión individual pendiente.
     """
     global initial_state, current_state, source_name
     content_type = request.headers.get("content-type", "").split(";", 1)[0].strip().lower()
     candidate_source = "scenario.json"
 
     if content_type == "application/json":
+        raw_body = await request.body()
+        if len(raw_body) > MAX_SCENARIO_BYTES:
+            raise HTTPException(
+                status_code=413,
+                detail=f"El escenario no puede exceder {MAX_SCENARIO_BYTES} bytes.",
+            )
         try:
-            body = json.loads(await request.body())
+            body = _load_json_without_duplicate_keys(raw_body)
+        except DuplicateJsonKeyError as error:
+            raise HTTPException(status_code=422, detail=str(error)) from error
         except ValueError as error:
             raise HTTPException(
                 status_code=422,
@@ -209,8 +338,16 @@ async def load_scenario(request: Request):
                     status_code=422,
                     detail="Adjunta el escenario como archivo en el campo «file».",
                 )
+            raw_body = await uploaded_file.read(MAX_SCENARIO_BYTES + 1)
+            if len(raw_body) > MAX_SCENARIO_BYTES:
+                raise HTTPException(
+                    status_code=413,
+                    detail=f"El escenario no puede exceder {MAX_SCENARIO_BYTES} bytes.",
+                )
             try:
-                body = json.loads(await uploaded_file.read())
+                body = _load_json_without_duplicate_keys(raw_body)
+            except DuplicateJsonKeyError as error:
+                raise HTTPException(status_code=422, detail=str(error)) from error
             except ValueError as error:
                 raise HTTPException(
                     status_code=422,
@@ -242,8 +379,7 @@ async def load_scenario(request: Request):
         response_content = {
             "ok": True,
             "message": "Escenario cargado correctamente",
-            "state": deepcopy(candidate),
-            "source": candidate_source,
+            **state_response(candidate, source=candidate_source),
         }
         try:
             response = JSONResponse(content=response_content)
@@ -265,14 +401,29 @@ def reset():
     global current_state
     with lock:
         current_state = deepcopy(initial_state)
-        return {"state": deepcopy(current_state), "source": source_name}
+        return state_response(current_state, source=source_name)
 
 
 @app.post("/api/move")
 def move(body: MoveRequest):
-    """Ejecuta un movimiento legal y publica el resultado solo al completarse."""
+    """Aplicar por API un movimiento con control opcional de revisión de estado.
+    
+    Purpose: Aplicar por API un movimiento con control opcional de revisión de estado.
+    Preconditions: Petición válida y unidad del turno.
+    Postconditions: Nuevo estado oficial confirmado o error sin mutación parcial.
+    Complexity: Costo de validación y transición O(S+T_move).
+    AI usage: Yes.
+    AI intervention: IA asistió implementación de atomicidad y protección frente a revisiones obsoletas.
+    Student validation: Pruebas de API de movimiento y regresiones; revisión humana pendiente.
+    """
     global current_state
     with lock:
+        if body.revision is not None and body.revision != state_revision(current_state):
+            raise HTTPException(
+                status_code=409,
+                detail="El estado de la partida cambió; vuelve a consultar los destinos legales.",
+            )
+        previous = deepcopy(current_state)
         try:
             candidate = apply_move(current_state, body.unit_id, body.destination.as_scenario_position())
         except ScenarioValidationError as error:
@@ -280,14 +431,29 @@ def move(body: MoveRequest):
         except (ValueError, TypeError) as error:
             raise HTTPException(status_code=422, detail=str(error)) from error
         current_state = candidate
-        return {"state": deepcopy(current_state)}
+        return state_response(current_state, source=source_name, previous=previous)
 
 
 @app.post("/api/collect")
 def collect(body: CollectRequest):
-    """Recoge explícitamente la reina sin desplazar a la unidad."""
+    """Aplicar la recogida de reina por API si está autorizada.
+    
+    Purpose: Aplicar la recogida de reina por API si está autorizada.
+    Preconditions: Unidad y revisión correctas, acción permitida sin jaque propio.
+    Postconditions: Turno consumido y nuevo estado confirmado, o rechazo sin mutación.
+    Complexity: Costo de transición y validación O(S+T_move).
+    AI usage: Yes.
+    AI intervention: IA participó en integración de acción especial con frontend y motor.
+    Student validation: Tests de recoger bajo jaque y turnos; revisión individual pendiente.
+    """
     global current_state
     with lock:
+        if body.revision is not None and body.revision != state_revision(current_state):
+            raise HTTPException(
+                status_code=409,
+                detail="El estado de la partida cambió; vuelve a consultar los destinos legales.",
+            )
+        previous = deepcopy(current_state)
         try:
             candidate = collect_queen(current_state, body.unit_id)
         except ScenarioValidationError as error:
@@ -295,14 +461,24 @@ def collect(body: CollectRequest):
         except (ValueError, TypeError) as error:
             raise HTTPException(status_code=422, detail=str(error)) from error
         current_state = candidate
-        return {"state": deepcopy(current_state)}
+        return state_response(current_state, source=source_name, previous=previous)
 
 
 @app.post("/api/kings")
 def set_kings(body: KingConfigurationRequest):
-    """Configura reyes manuales, automáticos o inicia sin ellos."""
+    """Configurar reyes manual, automática o sin reyes antes de jugar.
+    
+    Purpose: Configurar reyes manual, automática o sin reyes antes de jugar.
+    Preconditions: Modo y posiciones/cantidades válidos.
+    Postconditions: Estado oficial actualizado tras validar reyes, o rechazo atómico.
+    Complexity: Coste variable O(S+F*C+K) más generación opcional.
+    AI usage: Yes.
+    AI intervention: IA asistió interfaz y validación de configuración de reyes.
+    Student validation: Pruebas de reyes y escenarios; revisión humana pendiente.
+    """
     global current_state
     with lock:
+        previous = deepcopy(current_state)
         try:
             if body.mode == "manual":
                 if body.kings is None or set(body.kings) != {"A", "B"}:
@@ -323,23 +499,40 @@ def set_kings(body: KingConfigurationRequest):
         except (ValueError, TypeError) as error:
             raise HTTPException(status_code=422, detail=str(error)) from error
         current_state = candidate
-        return {"state": deepcopy(current_state)}
+        return state_response(current_state, source=source_name, previous=previous)
 
 
 def search_state(state: dict, body: SearchRequest):
-    """Ejecuta en el estado dado el algoritmo de búsqueda de rutas solicitado."""
+    """Despachar BFS/DFS/UCS/A*/Beam usando los parámetros validados.
+    
+    Purpose: Despachar BFS/DFS/UCS/A*/Beam usando los parámetros validados.
+    Preconditions: SearchRequest válido y estado copiado.
+    Postconditions: Resultado real del algoritmo con etiquetas y sin jugada oficial.
+    Complexity: Costo del algoritmo elegido y serialización de métricas.
+    AI usage: Yes.
+    AI intervention: IA contribuyó a contrato e integración de algoritmos de navegación.
+    Student validation: Pruebas API/search y comparaciones 1–5; revisión personal pendiente.
+    """
     goal = body.goal.as_scenario_position()
     match body.algorithm:
         case "bfs":
-            return bfs(state, body.unit_id, goal)
+            result = bfs(state, body.unit_id, goal)
         case "dfs":
-            return dfs(state, body.unit_id, goal)
+            result = dfs(state, body.unit_id, goal)
         case "ucs":
-            return ucs(state, body.unit_id, goal)
+            result = ucs(state, body.unit_id, goal)
         case "astar":
-            return astar(state, body.unit_id, goal, body.heuristic)
+            result = astar(state, body.unit_id, goal, body.heuristic)
         case "beam":
-            return beam_search(state, body.unit_id, goal, body.k)
+            result = beam_search(state, body.unit_id, goal, body.k)
+    result["algorithm"] = body.algorithm
+    result["unit_id"] = body.unit_id
+    result["goal"] = goal
+    if body.algorithm == "astar":
+        result["heuristic"] = body.heuristic
+    if body.algorithm == "beam":
+        result["k"] = body.k
+    return result
 
 
 @app.post("/api/search")
@@ -351,11 +544,31 @@ def search(body: SearchRequest):
 
 
 def evaluate_state(state: dict, body: AdversarialRequest):
-    """Evalúa el estado con Minimax o alfa-beta y la profundidad configurada."""
-    depth = body.depth if body.depth is not None else state.get("juego", {}).get("profundidad_maxima_minimax", 4)
+    """Despachar Minimax o alfa-beta con profundidad configurada en JSON o solicitud.
+    
+    Purpose: Despachar Minimax o alfa-beta con profundidad configurada en JSON o solicitud.
+    Preconditions: AdversarialRequest válido y estado copiado.
+    Postconditions: Recomendación y métricas, no ejecución de turno.
+    Complexity: Costo del algoritmo adversarial elegido.
+    AI usage: Yes.
+    AI intervention: IA asistió parámetros de profundidad/orden y contrato adversarial.
+    Student validation: Pruebas de API/adversarial y comparación 7–10; revisión personal pendiente.
+    """
+    game = state.get("juego", {})
+    configured_depth = game.get("profundidad_maxima_minimax", 3) if isinstance(game, dict) else 3
+    depth = body.depth if body.depth is not None else configured_depth
+    if type(depth) is not int or depth < 0:
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                "La profundidad configurada debe ser un entero mayor o igual a 0"
+            ),
+        )
     if body.algorithm == "minimax":
         return minimax(state, depth, body.action_order)
-    return alpha_beta(state, depth, body.action_order)
+    if body.algorithm == "alpha_beta":
+        return alpha_beta(state, depth, body.action_order)
+    raise HTTPException(status_code=422, detail="El algoritmo adversarial no es válido")
 
 
 @app.post("/api/adversarial")
@@ -368,7 +581,16 @@ def adversarial(body: AdversarialRequest):
 
 @app.post("/api/verify")
 def verify(body: VerifyRequest):
-    """Verifica el estado, la ruta o la decisión indicada por la solicitud."""
+    """Exponer verificadores de estado, ruta y decisión por API.
+    
+    Purpose: Exponer verificadores de estado, ruta y decisión por API.
+    Preconditions: VerifyRequest bien formado.
+    Postconditions: Resultado de comprobación sin modificar partida oficial.
+    Complexity: Costo del verificador elegido más copia del estado.
+    AI usage: Yes.
+    AI intervention: IA asistió diseño del endpoint de verificación y tests de integridad.
+    Student validation: Pruebas /api/verify y regresiones; revisión personal pendiente.
+    """
     with lock:
         state = deepcopy(current_state)
     if body.kind == "state":
@@ -386,13 +608,22 @@ def verify(body: VerifyRequest):
 
 @app.post("/api/test")
 def test(body: TestRequest):
-    """Ejecuta la prueba configurada para el escenario y el algoritmo elegido."""
+    """Ejecutar una prueba de escenario según modo búsqueda/adversarial/partida.
+    
+    Purpose: Ejecutar una prueba de escenario según modo búsqueda/adversarial/partida.
+    Preconditions: Escenario preparado con configuración prueba válida.
+    Postconditions: Ruta, recomendación o presentación de estado según modo sin falsear salida.
+    Complexity: Costo de algoritmos según modo; O(1) despacho más copia del estado.
+    AI usage: Yes.
+    AI intervention: IA ayudó a implementar/validar los tres modos de prueba del profesor.
+    Student validation: Tests de modos y escenarios; validación individual pendiente.
+    """
     with lock:
         state = deepcopy(current_state)
     config = state.get("prueba") or {}
     mode = config.get("modo")
     if mode == "partida":
-        return {"mode": mode, "state": state}
+        return {"mode": mode, **state_response(state, source=source_name)}
     if mode == "busqueda":
         try:
             goal = config["objetivo"]
@@ -407,7 +638,15 @@ def test(body: TestRequest):
             raise HTTPException(status_code=422, detail="La configuración de la prueba de búsqueda no es válida") from error
         return {"mode": mode, "result": search_state(state, request)}
     if mode == "adversarial":
-        method = body.algorithm if body.algorithm in ("minimax", "alpha_beta") else "minimax"
+        if body.algorithm in ("minimax", "alpha_beta"):
+            method = body.algorithm
+        elif "algorithm" not in body.model_fields_set:
+            method = "minimax"
+        else:
+            raise HTTPException(
+                status_code=422,
+                detail="Se requiere minimax o alpha_beta para esta prueba adversarial",
+            )
         request = AdversarialRequest(algorithm=method, depth=body.depth, action_order=body.action_order)
         return {"mode": mode, "result": evaluate_state(state, request)}
     raise HTTPException(status_code=422, detail="El modo de prueba no es válido")

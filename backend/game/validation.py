@@ -4,6 +4,12 @@ from typing import Any, TypeGuard
 from backend.game.movement import has_legal_action, is_in_check, move_cost
 
 SUPPORTED_UNIT_TYPES = {"knight", "rook", "bishop", "estandar", "caballo", "torre", "alfil"}
+MAX_MAP_ROWS = 100
+MAX_MAP_COLUMNS = 100
+MAX_MAP_CELLS = 10_000
+MAX_UNITS = 200
+MAX_KINGS = 200
+MAX_ADVERSARIAL_DEPTH = 5
 
 
 class ScenarioValidationError(ValueError):
@@ -56,7 +62,16 @@ def validate_utf8_string(value: str, field: str) -> None:
 
 
 def carrier_winner(state: dict[str, Any]) -> str | None:
-    """Devuelve el bando del portador activo situado en su propia base."""
+    """Comprobar victoria por portador en la base propia.
+    
+    Purpose: Comprobar victoria por portador en la base propia.
+    Preconditions: Unidades, portador y bases consistentes.
+    Postconditions: Equipo ganador o ausencia de victoria sin alterar estado.
+    Complexity: O(U) por localización del portador.
+    AI usage: Yes.
+    AI intervention: IA asistió revisión de condición de victoria por entrega.
+    Student validation: Pruebas de captura, entrega y jaque; revisión personal pendiente.
+    """
     game = state.get("juego", {})
     carrier_id = game.get("portador_recurso") if isinstance(game, dict) else None
     units = state.get("unidades", [])
@@ -114,7 +129,16 @@ def _check_position(
 
 
 def _check_terrain(scenario: dict[str, Any], errors: list[str]) -> tuple[int | None, int | None]:
-    """Valida dimensiones, catálogo y matriz; devuelve las dimensiones válidas."""
+    """Validar que la matriz de terreno coincide con dimensiones y catálogo.
+    
+    Purpose: Validar que la matriz de terreno coincide con dimensiones y catálogo.
+    Preconditions: Objeto mapa y catálogo JSON disponibles.
+    Postconditions: Errores acumulados sobre matriz, costos y transitabilidad.
+    Complexity: O(F*C+T) sobre celdas y catálogo.
+    AI usage: Yes.
+    AI intervention: IA asistió detección de casos límite del contrato JSON y mensajes de error.
+    Student validation: Banco de terrenos inválidos y costo 0/negativo; revisión humana pendiente.
+    """
     map_data = scenario.get("mapa")
     rows = columns = None
     if not isinstance(map_data, dict):
@@ -124,12 +148,24 @@ def _check_terrain(scenario: dict[str, Any], errors: list[str]) -> tuple[int | N
         columns_value = map_data.get("columnas")
         if not _is_integer(rows_value) or rows_value <= 0:
             errors.append("mapa.filas: debe ser un entero positivo")
+        elif rows_value > MAX_MAP_ROWS:
+            errors.append(f"mapa.filas: no puede exceder {MAX_MAP_ROWS}")
         else:
             rows = rows_value
         if not _is_integer(columns_value) or columns_value <= 0:
             errors.append("mapa.columnas: debe ser un entero positivo")
+        elif columns_value > MAX_MAP_COLUMNS:
+            errors.append(f"mapa.columnas: no puede exceder {MAX_MAP_COLUMNS}")
         else:
             columns = columns_value
+        if (
+            _is_integer(rows_value)
+            and _is_integer(columns_value)
+            and rows_value > 0
+            and columns_value > 0
+            and rows_value * columns_value > MAX_MAP_CELLS
+        ):
+            errors.append(f"mapa: no puede exceder {MAX_MAP_CELLS} celdas")
 
     terrain_types = scenario.get("tipos_terreno")
     if not isinstance(terrain_types, dict):
@@ -176,11 +212,15 @@ def _check_terrain(scenario: dict[str, Any], errors: list[str]) -> tuple[int | N
 
 
 def validate_scenario(scenario: dict[str, Any]) -> None:
-    """Valida el contrato JSON y acumula los errores que puede detectar.
-
-    Recorre el árbol JSON, el mapa, las unidades, los reyes y los terrenos:
-    tiempo O(N + R*C + U + K + T), espacio auxiliar O(U + K + E).
-    No modifica el escenario ni usa IA; las búsquedas pueden confiar en sus invariantes.
+    """Comprobar contrato JSON externo, dimensiones, terrenos, posiciones y unidades.
+    
+    Purpose: Comprobar contrato JSON externo, dimensiones, terrenos, posiciones y unidades.
+    Preconditions: Entrada JSON (no necesariamente válida).
+    Postconditions: Escenario aceptable o excepción estructurada sin tocar el estado oficial.
+    Complexity: O(F*C+U+K) más validación de conectividad si corresponde.
+    AI usage: Yes.
+    AI intervention: IA asistió en generación/revisión de validadores atómicos, errores y matrices de casos.
+    Student validation: Banco de escenarios válidos/invalidos y tests; revisión individual pendiente.
     """
     if not isinstance(scenario, dict):
         raise ScenarioValidationError(["escenario: debe ser un objeto JSON"])
@@ -223,6 +263,8 @@ def validate_scenario(scenario: dict[str, Any]) -> None:
     if not isinstance(units, list):
         errors.append("unidades: debe ser una lista")
         units = []
+    elif len(units) > MAX_UNITS:
+        errors.append(f"unidades: no puede contener más de {MAX_UNITS} elementos")
     for index, unit in enumerate(units):
         field = f"unidades[{index}]"
         if not isinstance(unit, dict):
@@ -285,6 +327,11 @@ def validate_scenario(scenario: dict[str, Any]) -> None:
             errors.append("juego.estado: valor desconocido")
         if "resultado" in game and game["resultado"] not in (None, "A", "B", "empate"):
             errors.append("juego.resultado: debe ser null, 'A', 'B' o 'empate'")
+        configured_depth = game.get("profundidad_maxima_minimax", 3)
+        if type(configured_depth) is not int or configured_depth < 0:
+            errors.append(
+                "juego.profundidad_maxima_minimax: debe ser un entero mayor o igual a 0"
+            )
 
     resource = scenario.get("recurso")
     resource_position: tuple[int, int] | None = None
@@ -303,6 +350,30 @@ def validate_scenario(scenario: dict[str, Any]) -> None:
             if carrier_position != resource_position:
                 errors.append("recurso: debe ser null o coincidir con la posición de la unidad portadora")
 
+    resource_spawn = scenario.get("recurso_spawn")
+    resource_spawn_position: tuple[int, int] | None = None
+    if resource_spawn is not None:
+        resource_spawn_position = _check_position(
+            resource_spawn,
+            "recurso_spawn",
+            rows,
+            columns,
+            terrain,
+            terrain_types,
+            errors,
+        )
+    elif carrier_id is not None and resource is None:
+        errors.append(
+            "recurso_spawn: debe conservar el spawn original cuando la reina ya tiene portador"
+        )
+    if (
+        carrier_id is None
+        and resource_position is not None
+        and resource_spawn_position is not None
+        and resource_spawn_position != resource_position
+    ):
+        errors.append("recurso_spawn: debe coincidir con la posición inicial de recurso")
+
     kings: list[tuple[str, tuple[int, int]]] = []
     king_ids: set[str] = set()
     if "reyes" in scenario:
@@ -318,6 +389,10 @@ def validate_scenario(scenario: dict[str, Any]) -> None:
                 if not isinstance(group, list):
                     errors.append(f"reyes.{side}: debe ser una lista")
                     continue
+                if len(group) > MAX_KINGS:
+                    errors.append(
+                        f"reyes.{side}: no puede contener más de {MAX_KINGS} elementos"
+                    )
                 for index, king in enumerate(group):
                     field = f"reyes.{side}[{index}]"
                     if not isinstance(king, dict):
@@ -343,6 +418,8 @@ def validate_scenario(scenario: dict[str, Any]) -> None:
                         errors.append(f"{field}: un rey no puede ocupar una base")
                     if carrier_id is None and position == resource_position:
                         errors.append(f"{field}: un rey no puede ocupar la posición del recurso")
+                    if carrier_id is not None and position == resource_spawn_position:
+                        errors.append(f"{field}: un rey no puede ocupar recurso_spawn")
 
             seen_king_positions: set[tuple[int, int]] = set()
             for field, position in kings:
@@ -375,7 +452,16 @@ def validate_scenario(scenario: dict[str, Any]) -> None:
 
 
 def _base_positions_connected(state: dict[str, Any]) -> bool:
-    """Comprueba conectividad ortogonal de las bases sin ocupar casillas de rey."""
+    """Comprobar conectividad básica de bases bajo obstáculos fijos.
+    
+    Purpose: Comprobar conectividad básica de bases bajo obstáculos fijos.
+    Preconditions: Mapa validado y bases dentro de cuadrícula.
+    Postconditions: Booleano de conectividad, sin cambiar el escenario.
+    Complexity: O(F*C) recorridos de celdas.
+    AI usage: Yes.
+    AI intervention: IA ayudó a implementar y probar requisito de bases alcanzables.
+    Student validation: Pruebas con muro separador; revisión individual pendiente.
+    """
     bases = state.get("bases", {})
     if not isinstance(bases, dict) or "A" not in bases or "B" not in bases:
         return False
@@ -420,11 +506,15 @@ def _base_positions_connected(state: dict[str, Any]) -> bool:
 def validate_state(
     state: dict[str, Any], *, check_connectivity: bool = True
 ) -> None:
-    """Valida el estado; la conectividad se puede omitir tras validar el escenario.
-
-    `check_connectivity` debe permanecer activo al cargar/configurar reyes. Las
-    transiciones pueden omitirlo porque no cambian terreno, bases ni reyes.
-    Complexity: O(R*C + U + K); espacio O(R*C + U + K).
+    """Comprobar invariantes dinámicos, ocupación, portador, reyes y finales.
+    
+    Purpose: Comprobar invariantes dinámicos, ocupación, portador, reyes y finales.
+    Preconditions: Estado interno candidato construido con reglas del motor.
+    Postconditions: Acepta estado coherente o señala errores sin mutación externa.
+    Complexity: O(F*C+U+K) más coste de conectividad opcional.
+    AI usage: Yes.
+    AI intervention: IA participó en implementación de invariantes y pruebas Nemesis.
+    Student validation: Suite de motores y validaciones aprobada; revisión personal pendiente.
     """
     if not isinstance(state, dict):
         raise ScenarioValidationError(["estado: debe ser un objeto JSON"])
@@ -562,13 +652,15 @@ def _action_position(value: Any) -> dict[str, int]:
 
 
 def validate_action(state: dict[str, Any], action: dict[str, Any]) -> None:
-    """Valida movimiento o recogida explícita sin modificar el estado.
-
-    Preconditions: estado preparado, acción JSON y bando en turno.
-    Postconditions: una acción ilegal lanza `ValueError` y una estructura/tipo
-    inválido lanza `TypeError`; el movimiento consulta `move_cost`, que exige un
-    destino incluido en `legal_moves`.
-    Complexity: O(U + K*U*max(F,C) + D), según movimiento, jaque y trayecto.
+    """Rechazar acciones ilegales antes de crear el estado sucesor.
+    
+    Purpose: Rechazar acciones ilegales antes de crear el estado sucesor.
+    Preconditions: Estado válido; descripción de acción a evaluar.
+    Postconditions: Acción validada o excepción; no ejecuta movimiento ilegal.
+    Complexity: Dominado por generación de movimientos y comprobación de situación terminal.
+    AI usage: Yes.
+    AI intervention: IA contribuyó a validación y protección de atomicidad de jugadas.
+    Student validation: Pruebas de acciones inválidas y turnos; validación personal pendiente.
     """
     if not isinstance(action, dict):
         raise TypeError("La acción debe ser un objeto")
